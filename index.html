@@ -60,7 +60,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 svg { flex: none; }
 #app {
   max-width: 520px; margin: 0 auto; min-height: 100vh;
-  padding: 16px 20px calc(92px + env(safe-area-inset-bottom));
+  padding: calc(16px + var(--safe-top, 0px)) 20px calc(92px + max(env(safe-area-inset-bottom), var(--safe-bottom, 0px)));
 }
 .fade { animation: fade .25s ease both; }
 @keyframes fade { from { opacity: 0; } }
@@ -221,6 +221,12 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 @keyframes grow { from { height: 0; } }
 @keyframes slide { from { top: 0; } }
+/* Смена дня свайпом: новый день въезжает с той стороны, куда листали */
+.daybody { touch-action: pan-y; }
+.daybody.from-r { animation: inR .3s cubic-bezier(.22, 1, .36, 1) both; }
+.daybody.from-l { animation: inL .3s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes inR { from { opacity: 0; transform: translateX(44px); } }
+@keyframes inL { from { opacity: 0; transform: translateX(-44px); } }
 
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 48px 24px 24px; }
 .empty .ic {
@@ -332,7 +338,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 .foot { margin: 22px 0 0; text-align: center; font-size: 13px; line-height: 1.5; color: var(--muted); }
 .flink { border: 0; background: none; padding: 6px 2px; margin: -6px 0; color: var(--accent); font-weight: 600; }
 .toast {
-  position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  position: fixed; left: 50%; bottom: calc(96px + max(env(safe-area-inset-bottom), var(--safe-bottom, 0px))); transform: translateX(-50%);
   padding: 10px 16px; border-radius: 999px; background: var(--text); color: var(--bg); font-size: 13px; font-weight: 600;
   animation: fade .2s ease both; z-index: 20;
 }
@@ -341,7 +347,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
   background: var(--tab-bg); border-top: 1px solid var(--tab-border);
-  padding: 8px 8px max(12px, env(safe-area-inset-bottom));
+  padding: 8px 8px max(12px, env(safe-area-inset-bottom), var(--safe-bottom, 0px));
 }
 .tabs .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tab {
@@ -648,6 +654,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   let liveSig = "";
   let renderToken = 0;
   let enterNext = true;
+  let slideDir = 0;           // 1 — пришли свайпом влево (следующий день), -1 — вправо
   const pos = {};             // id -> { w, d }
   const opened = new Set();   // раскрытые вручную компактные карточки
 
@@ -883,6 +890,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     }
     html += `</nav>`;
 
+    html += `<div class="daybody${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-daybody>`;
     html += `<div class="dayhead"><div class="t"><h2>${DAYS[p.d]}, ${fmtDate(m.date)}</h2>${m.isToday ? `<span class="tag">сегодня</span>` : ""}</div>
       ${m.summary ? `<span class="summary" data-summary>${esc(m.summary)}</span>` : ""}</div>`;
 
@@ -895,6 +903,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
       html += `<div class="empty"><div class="ic">${I.moon}</div><div class="h">Пар нет</div>
         <div class="p">${esc(emptyHint(data, p.w, p.d, m.isPastDay))}</div></div>`;
     }
+    html += `</div>`;
     liveSig = m.sig;
     return { html, notToday: notToday && todayInData };
   }
@@ -1084,6 +1093,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const off = data._offline ? `<div class="offline">Нет сети · показано сохранённое</div>` : "";
     app.innerHTML = head + off + s.html;
     enterNext = false;
+    slideDir = 0;
   }
 
   function teacherRowsHTML(list, subjects) {
@@ -1131,6 +1141,9 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
       <div class="list pad"><span class="lbl15">Тема</span>
         <div class="seg3" role="group" aria-label="Тема">${opts.map(([v, l]) =>
           `<button data-act="theme" data-v="${v}" aria-pressed="${pref === v}" class="${pref === v ? "on" : ""}">${l}</button>`).join("")}</div></div>
+      ${fsSupported() ? `<div class="list" style="margin-top:10px"><div class="srow"><div class="body"><span class="nm">Во весь экран</span>
+        <span class="sub">Без шапки Telegram, больше места для пар</span></div>
+        <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
       <h2 class="sec" id="nsec">Уведомления в чате</h2>
       ${notifSettingsHTML()}
       <p class="foot">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
@@ -1212,6 +1225,9 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     } else if (act === "notif") {
       haptic("light");
       go("notif", null, true);
+    } else if (act === "fs") {
+      haptic("select");
+      setFullscreen(!tg.isFullscreen);
     } else if (act === "to-settings") {
       haptic("light");
       go("settings", null, true);
@@ -1286,7 +1302,112 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     else go(t, null, false);
   }));
 
+  // ---------------- свайпы между днями ----------------
+  // Влево — следующий день, вправо — предыдущий; на краю недели переходим на соседнюю неделю.
+  function shiftDay(dir) {
+    if (view !== "schedule" && view !== "teacher") return false;
+    const id = view === "teacher" ? target : "g";
+    const data = mem[id], p = pos[id];
+    if (!data || !p) return false;
+    let w = p.w, d = p.d + dir;
+    if (d > 6) { if (w >= data.weeks.length - 1) return false; w += 1; d = 0; }
+    if (d < 0) { if (w <= 0) return false; w -= 1; d = 6; }
+    pos[id] = { w, d };
+    opened.clear();
+    enterNext = true;
+    slideDir = dir;
+    haptic("select");
+    render();
+    return true;
+  }
+  let swipe = null;
+  function swipeBody() { return app.querySelector("[data-daybody]"); }
+  function swipeReset() {
+    const body = swipeBody();
+    if (!body) return;
+    body.style.transition = "transform .22s ease, opacity .22s ease";
+    body.style.transform = "";
+    body.style.opacity = "";
+  }
+  app.addEventListener("touchstart", (e) => {
+    swipe = null;
+    if ((view !== "schedule" && view !== "teacher") || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    // у самых краёв экрана — системные жесты «назад», их не перехватываем
+    if (t.clientX < 24 || t.clientX > window.innerWidth - 24) return;
+    if (e.target.closest("input, select, textarea")) return;
+    swipe = { x: t.clientX, y: t.clientY, t: Date.now(), dx: 0, lock: "" };
+  }, { passive: true });
+  app.addEventListener("touchmove", (e) => {
+    if (!swipe || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+    if (!swipe.lock) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      swipe.lock = Math.abs(dx) > Math.abs(dy) * 1.3 ? "x" : "y";
+    }
+    if (swipe.lock !== "x") return;
+    if (e.cancelable) e.preventDefault();   // пока листаем вбок — страница не прокручивается
+    swipe.dx = dx;
+    const body = swipeBody();
+    if (body) {
+      body.style.transition = "none";
+      body.style.transform = `translateX(${Math.round(dx * 0.4)}px)`;
+      body.style.opacity = String(1 - Math.min(Math.abs(dx) / 500, 0.4));
+    }
+  }, { passive: false });
+  app.addEventListener("touchend", () => {
+    const s = swipe;
+    swipe = null;
+    if (!s || s.lock !== "x") return;
+    const fast = Math.abs(s.dx) > 30 && Date.now() - s.t < 250;
+    if ((Math.abs(s.dx) >= 60 || fast) && shiftDay(s.dx < 0 ? 1 : -1)) return;
+    swipeReset();   // не дотянули или дальше дней нет — возвращаем на место
+  });
+  app.addEventListener("touchcancel", () => { if (swipe && swipe.lock === "x") swipeReset(); swipe = null; });
+  // На компьютере — стрелками ← →
+  document.addEventListener("keydown", (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.target.closest("input, select, textarea")) return;
+    if (e.key === "ArrowRight" && shiftDay(1)) e.preventDefault();
+    else if (e.key === "ArrowLeft" && shiftDay(-1)) e.preventDefault();
+  });
+
+  // ---------------- полноэкранный режим ----------------
+  // Только на телефонах (на компьютере «во весь экран» — это весь монитор). По умолчанию включён.
+  const MOBILE = inTG && /^(ios|android|android_x)$/.test(String(tg.platform));
+  let fsFailed = false;
+  const fsSupported = () => MOBILE && !fsFailed && tgAtLeast("8.0") && typeof tg.requestFullscreen === "function";
+  function applyInsets() {
+    if (!tg) return;
+    const fs = !!tg.isFullscreen;
+    const sa = tg.safeAreaInset || {}, ca = tg.contentSafeAreaInset || {};
+    // Сверху в полноэкранном режиме — строка состояния телефона и кнопки Telegram «Закрыть» / «⋯»
+    ROOT.style.setProperty("--safe-top", fs ? `${(+sa.top || 0) + (+ca.top || 0)}px` : "0px");
+    ROOT.style.setProperty("--safe-bottom", `${(+sa.bottom || 0) + (+ca.bottom || 0)}px`);
+    ROOT.classList.toggle("fs", fs);
+  }
+  function setFullscreen(on) {
+    if (!fsSupported()) return;
+    try { on ? tg.requestFullscreen() : tg.exitFullscreen(); } catch (e) { /* старый клиент */ }
+  }
+
   // ---------------- запуск ----------------
+  if (tg && tgAtLeast("8.0")) {
+    for (const ev of ["safeAreaChanged", "contentSafeAreaChanged"]) {
+      try { tg.onEvent(ev, applyInsets); } catch (e) { /* старый клиент */ }
+    }
+    try {
+      tg.onEvent("fullscreenChanged", () => {
+        applyInsets();
+        store.set("fullscreen", tg.isFullscreen ? "1" : "0");
+        if (view === "settings") renderSettings();
+      });
+      tg.onEvent("fullscreenFailed", (e) => {
+        if (e && e.error === "UNSUPPORTED") { fsFailed = true; if (view === "settings") renderSettings(); }
+      });
+    } catch (e) { /* старый клиент */ }
+    applyInsets();
+  }
   if (tg) {
     try { tg.ready(); } catch (e) { /* вне Telegram */ }
     try { tg.expand(); } catch (e) { /* вне Telegram */ }
@@ -1299,6 +1420,8 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   }
   applyTheme();
   syncTabs();
+  // Во весь экран — сразу при запуске, если не выключали в настройках
+  if (fsSupported() && store.get("fullscreen") !== "0" && !tg.isFullscreen) setFullscreen(true);
 
   // Сначала скелет, потом всё нужное для первого экрана разом — чтобы анимация не обрывалась
   app.innerHTML = skeletonHTML();
