@@ -227,12 +227,18 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .track { position: relative; touch-action: pan-y; }
 .page { position: relative; z-index: 1; }
 .page.prev, .page.next { position: absolute; top: 0; left: 0; right: 0; max-height: 0; overflow: hidden; pointer-events: none; }
-/* Пока листаем, дни становятся «карточками»: скруглённая рамка под каждым днём, лента чуть уменьшается */
+/* Пока листаем, дни становятся «карточками»: всё чуть уменьшается (плавно, силами видеокарты),
+   под каждым днём проявляется скруглённая рамка; отпустил — всё так же плавно возвращается */
+.pager { position: relative; transition: transform .34s cubic-bezier(.2, .8, .2, 1); }
+.pager.moving { will-change: transform; }
+.pager.lift { transform: scale(.93); }
 .frame {
   display: none; position: absolute; z-index: 0; left: -12px; right: -12px; top: -10px; height: 100vh;
   border-radius: 30px; background: var(--bg); border: 1px solid var(--border);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .24); opacity: 0; pointer-events: none; will-change: opacity;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .24); opacity: 0; pointer-events: none;
+  transition: opacity .3s ease; will-change: opacity;
 }
+.pager.lift .frame { opacity: 1; }
 .frame.prev { transform: translate3d(calc(-100% + 24px - var(--pgap)), 0, 0); }
 .frame.next { transform: translate3d(calc(100% - 24px + var(--pgap)), 0, 0); }
 .track.moving .frame { display: block; }
@@ -939,11 +945,11 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 
     // Текущий день и соседние (для листания пальцем) — соседи лежат за краями экрана
     const prev = neighborPos(data, p.w, p.d, -1), next = neighborPos(data, p.w, p.d, 1);
-    html += `<div class="track" data-track>${prev ? `<div class="frame prev"></div>` : ""}<div class="frame"></div>${next ? `<div class="frame next"></div>` : ""}`;
+    html += `<div class="pager" data-pager><div class="track" data-track>${prev ? `<div class="frame prev"></div>` : ""}<div class="frame"></div>${next ? `<div class="frame next"></div>` : ""}`;
     if (prev) html += `<div class="page prev" aria-hidden="true" inert>${dayBodyHTML(data, prev.w, prev.d, isTeacher, false)}</div>`;
     html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
     if (next) html += `<div class="page next" aria-hidden="true" inert>${dayBodyHTML(data, next.w, next.d, isTeacher, false)}</div>`;
-    html += `</div>`;
+    html += `</div></div>`;
     liveSig = m.sig;
     return { html, notToday: notToday && todayInData };
   }
@@ -1265,10 +1271,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
       haptic("light");
       go("teacher", el.dataset.t, true);
     } else if (act === "open") {
-      const key = el.dataset.key;
-      opened.has(key) ? opened.delete(key) : opened.add(key);
-      haptic("select");
-      render();
+      toggleCard(el.dataset.key);
     } else if (act === "back") {
       back();
     } else if (act === "notif") {
@@ -1382,6 +1385,38 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     }
   }
 
+  // ---------------- раскрытие карточки пары ----------------
+  // Меняем только эту карточку и плавно тянем её высоту — остальной экран не перерисовываем
+  function toggleCard(key) {
+    opened.has(key) ? opened.delete(key) : opened.add(key);
+    haptic("select");
+    const isTeacher = view === "teacher";
+    const id = isTeacher ? target : "g";
+    const data = mem[id], p = pos[id];
+    const btn = [...app.querySelectorAll("[data-cur] [data-key]")].find((x) => x.dataset.key === key);
+    const row = btn && btn.closest(".row");
+    if (!data || !p || !row || REDUCED || settling) { render(); return; }
+    const m = dayModel(data, p.w, p.d, isTeacher);
+    const it = m.items.find((x) => x.type === "lesson" && x.key === key);
+    if (!it) { render(); return; }
+    const oldBody = row.querySelector(".card, .cc");
+    const h0 = oldBody.getBoundingClientRect().height;
+    const list = row.parentElement;
+    if (list) list.classList.remove("enter");   // чтобы не проиграть заново анимацию появления
+    const tmp = document.createElement("ol");
+    tmp.innerHTML = lessonHTML(it, parseInt(row.style.getPropertyValue("--i"), 10) || 0, isTeacher);
+    const fresh = tmp.firstElementChild;
+    row.replaceWith(fresh);
+    liveSig = m.sig;
+    const body = fresh.querySelector(".card, .cc");
+    const h1 = body.getBoundingClientRect().height;
+    const ease = "cubic-bezier(.2, .8, .2, 1)";
+    body.animate([{ height: `${h0}px`, overflow: "hidden" }, { height: `${h1}px`, overflow: "hidden" }], { duration: 360, easing: ease });
+    [...body.children].forEach((c, i) => c.animate(
+      [{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }],
+      { duration: 300, delay: 50 + i * 35, easing: ease, fill: "backwards" }));
+  }
+
   // ---------------- свайпы между днями ----------------
   // Как листание страниц: лента «вчера | сегодня | завтра» едет за пальцем один в один,
   // отпустил — доезжает до соседнего дня с той же скоростью (или пружинит обратно).
@@ -1400,7 +1435,15 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     return track.offsetWidth + (parseFloat(getComputedStyle(ROOT).getPropertyValue("--pgap")) || 40);
   }
   const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const SHRINK = REDUCED ? 0 : 0.075;   // насколько карточка уменьшается посередине пути
+  const LIFT = REDUCED ? 1 : 0.93;   // во сколько раз уменьшается лента, пока её держишь (как в .pager.lift)
+  let liftDropAt = 0;
+  function pagerEl() { return app.querySelector("[data-pager]"); }
+  function lift(on) {
+    const pg = pagerEl();
+    if (!pg || REDUCED) return;
+    if (!on && pg.classList.contains("lift")) liftDropAt = performance.now();
+    pg.classList.toggle("lift", on);
+  }
   let stepNow = 390;
   let movingFrames = [];
   function startMoving(track) {
@@ -1412,27 +1455,37 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     movingFrames = [...track.querySelectorAll(".frame")];
     movingFrames.forEach((el) => { el.style.height = `${nmax + 20}px`; });
     // уменьшаемся к середине видимой части экрана — как карточки приложений
-    track.style.transformOrigin = `50% ${Math.round(window.innerHeight / 2 - r.top)}px`;
+    const pg = pagerEl();
+    if (pg) { pg.style.transformOrigin = `50% ${Math.round(window.innerHeight / 2 - r.top)}px`; pg.classList.add("moving"); }
     stepNow = stepPx(track);
     track.classList.add("moving");
   }
   function stopMoving(track) {
     track.style.transform = "";
     track.querySelectorAll(".page.prev, .page.next").forEach((el) => { el.style.maxHeight = ""; });
-    movingFrames.forEach((el) => { el.style.opacity = ""; });
     movingFrames = [];
     track.classList.remove("moving");
+    const pg = pagerEl();
+    if (pg) pg.classList.remove("moving", "lift");
   }
-  // Положение ленты → её вид: чем дальше от «ровного» дня, тем меньше и заметнее карточки
+  // Каждый кадр двигаем только ленту — это самое дешёвое, что умеет браузер
   let liveX = 0;
   function placeTrack(track, x) {
     liveX = x;
-    const d = Math.min(Math.abs(x), Math.abs(x + stepNow), Math.abs(x - stepNow));
-    const k = Math.min(1, d / (stepNow * 0.3));
-    const sc = 1 - SHRINK * k;
-    track.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0) scale(${sc.toFixed(4)})`;
-    const o = k.toFixed(3);
-    for (const el of movingFrames) el.style.opacity = o;
+    track.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
+  }
+  // Подсветка дня в строке сверху переезжает сразу, как только понятно, куда листаем
+  function previewChips(dir) {
+    const c = curPos();
+    const np = c && neighborPos(c.data, c.p.w, c.p.d, dir);
+    if (!np || np.w !== c.p.w) return;
+    const week = c.data.weeks[np.w], today = samaraNow().date;
+    app.querySelectorAll(".days .day").forEach((b) => {
+      const d = +b.dataset.d, on = d === np.d;
+      b.classList.toggle("on", on);
+      b.classList.toggle("dim", addDays(week.monday, d) < today && !on);
+      b.setAttribute("aria-pressed", String(on));
+    });
   }
   function commitDay(dir) {
     const c = curPos();
@@ -1455,7 +1508,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const K = 260, C = 2 * Math.sqrt(K) * 0.9;   // жёсткость и затухание: мягко, почти без перелёта
     let last = performance.now();
     settling = true;
-    if (dir) haptic("select");
+    if (dir) { haptic("select"); previewChips(dir); }
     cancelAnimationFrame(springFrame);
     const stepFn = (now) => {
       let dt = Math.min(0.034, (now - last) / 1000);
@@ -1469,9 +1522,14 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
       }
       if (Math.abs(pos_ - to) < 0.6 && Math.abs(vel) < 25) {
         placeTrack(track, to);
-        settling = false;
-        if (dir) { commitDay(dir); return; }
-        stopMoving(track);
+        // ждём, пока лента полностью вернётся к обычному размеру, — тогда подмена дня незаметна
+        const wait = Math.max(0, 360 - (performance.now() - liftDropAt));
+        const finish = () => {
+          settling = false;
+          if (dir) commitDay(dir);
+          else stopMoving(track);
+        };
+        if (wait > 0) setTimeout(finish, wait); else finish();
         return;
       }
       placeTrack(track, pos_);
@@ -1509,6 +1567,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
       settling = false;
       base = liveX;
       lock = "x";
+      lift(true);
     } else if (t.clientX < 24 || t.clientX > window.innerWidth - 24) {
       return;   // у самых краёв экрана — системные жесты «назад», их не перехватываем
     }
@@ -1523,7 +1582,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     if (!swipe.lock) {
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
       swipe.lock = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
-      if (swipe.lock === "x") swipe.x0 = t.clientX;   // лента трогается с места без рывка
+      if (swipe.lock === "x") { swipe.x0 = t.clientX; lift(true); }   // лента трогается с места без рывка
       else { const track = trackEl(); if (track) stopMoving(track); }   // это прокрутка, не листание
     }
     if (swipe.lock !== "x") return;
@@ -1532,7 +1591,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const v = (t.clientX - swipe.lastX) / Math.max(8, now - swipe.lastT);
     swipe.v = swipe.v ? swipe.v * 0.35 + v * 0.65 : v;   // скорость, px/мс (сглаженная)
     swipe.lastX = t.clientX; swipe.lastT = now;
-    swipe.x = rubber(swipe.base + (t.clientX - swipe.x0));
+    swipe.x = rubber(swipe.base + (t.clientX - swipe.x0) / LIFT);   // лента уменьшена — палец ведёт её один в один
     if (dragFrame) return;
     dragFrame = requestAnimationFrame(() => {
       dragFrame = 0;
@@ -1547,6 +1606,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const track = trackEl();
     if (!s || s.lock !== "x") { if (track && !settling && track.classList.contains("moving")) stopMoving(track); return; }
     if (track) placeTrack(track, s.x);   // догоняем последнее положение пальца
+    lift(false);
     const v = performance.now() - s.lastT < 90 ? s.v : 0;   // палец остановился — без броска
     const projected = s.x + v * 300;   // куда докатится за ~0,3 с
     let dir = projected < -stepNow * 0.3 ? 1 : projected > stepNow * 0.3 ? -1 : 0;
@@ -1556,7 +1616,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   app.addEventListener("touchcancel", () => {
     const s = swipe;
     swipe = null;
-    if (s && s.lock === "x") settle(0, s.x, 0);
+    if (s && s.lock === "x") { lift(false); settle(0, s.x, 0); }
     else { const track = trackEl(); if (track && !settling) stopMoving(track); }
   });
   // На компьютере — стрелками ← →
