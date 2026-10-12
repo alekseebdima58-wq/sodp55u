@@ -1,0 +1,1317 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1014">
+<title>Расписание СОДП-55у</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+/* ---------- палитра ---------- */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0E1014; --surface: #171A20; --surface2: #1F232B; --border: #262B34; --sep: #23272F; --strong: #2E333D;
+  --text: #ECEEF2; --text2: #B7BDC8; --muted: #8C93A0; --faint: #5B6271;
+  --accent: #6EA8FF; --on-accent: #0E1014; --tab-bg: #12151A; --tab-border: #20242C;
+  --past-bg: #13161B; --past-border: #1F232A; --past-title: #A9B0BB; --past-muted: #858C99;
+  --dot-past: #2E333D; --done: #4A505C; --today-border: #3A4150;
+  --tag-bg: #16261C; --tag-fg: #3DDC84; --warn-bg: #2A2417; --warn-fg: #FFB547;
+  --red-bg: #2E1B1A; --red-fg: #FF8A7A; --acc-soft: #1D2737; --unread: #1A1E26;
+  --tint-a: .09; --track-a: .32; --badge-a: .15;
+  --lec-fg: #6FDBA4; --lec-bar: #4CC38A; --lec-rgb: 76,195,138;
+  --prac-fg: #F2B85C; --prac-bar: #E8A33D; --prac-rgb: 232,163,61;
+  --lab-fg: #B39BFF; --lab-bar: #8B5CF6; --lab-rgb: 139,92,246;
+  --oth-fg: #7CC8E8; --oth-bar: #4DB3DE; --oth-rgb: 77,179,222;
+  --av-s: 30%; --av-l: 19%; --avf-s: 85%; --avf-l: 76%;
+}
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F2F3F6; --surface: #FFFFFF; --surface2: #F0F2F5; --border: #E1E4EA; --sep: #ECEEF2; --strong: #D3D7DF;
+  --text: #14171C; --text2: #3D4452; --muted: #646B78; --faint: #A1A7B2;
+  --accent: #2563D9; --on-accent: #FFFFFF; --tab-bg: #FFFFFF; --tab-border: #E1E4EA;
+  --past-bg: #F7F8FA; --past-border: #E8EAEE; --past-title: #545B67; --past-muted: #646B78;
+  --dot-past: #D3D7DF; --done: #B8BEC8; --today-border: #AEB4BF;
+  --tag-bg: #E2F4E9; --tag-fg: #0B7A3B; --warn-bg: #FDF1DC; --warn-fg: #9A5A00;
+  --red-bg: #FDE7E4; --red-fg: #C0392B; --acc-soft: #E6EEFC; --unread: #F3F7FF;
+  --tint-a: .07; --track-a: .32; --badge-a: .12;
+  --lec-fg: #13804A; --lec-bar: #3DBE7A; --lec-rgb: 61,190,122;
+  --prac-fg: #985800; --prac-bar: #E59A2B; --prac-rgb: 229,154,43;
+  --lab-fg: #6B46D6; --lab-bar: #8B5CF6; --lab-rgb: 139,92,246;
+  --oth-fg: #1F6F99; --oth-bar: #3A9FD0; --oth-rgb: 58,159,208;
+  --av-s: 80%; --av-l: 94%; --avf-s: 55%; --avf-l: 38%;
+}
+.k-lec  { --k-fg: var(--lec-fg);  --k-bar: var(--lec-bar);  --k-rgb: var(--lec-rgb); }
+.k-prac { --k-fg: var(--prac-fg); --k-bar: var(--prac-bar); --k-rgb: var(--prac-rgb); }
+.k-lab  { --k-fg: var(--lab-fg);  --k-bar: var(--lab-bar);  --k-rgb: var(--lab-rgb); }
+.k-oth  { --k-fg: var(--oth-fg);  --k-bar: var(--oth-bar);  --k-rgb: var(--oth-rgb); }
+
+/* ---------- основа ---------- */
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); }
+body {
+  color: var(--text); font-family: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+svg { flex: none; }
+#app {
+  max-width: 520px; margin: 0 auto; min-height: 100vh;
+  padding: 16px 20px calc(92px + env(safe-area-inset-bottom));
+}
+.fade { animation: fade .25s ease both; }
+@keyframes fade { from { opacity: 0; } }
+
+/* ---------- шапка ---------- */
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 26px; font-weight: 600; letter-spacing: -.01em; line-height: 1.15; }
+.top-actions { display: flex; gap: 8px; align-items: center; }
+.btn {
+  height: 44px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--accent); font-size: 14px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.icon-btn { width: 44px; padding: 0; color: var(--text); }
+.offline {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 10px;
+  border-radius: 999px; background: var(--warn-bg); color: var(--warn-fg); font-size: 12px; font-weight: 600;
+}
+
+/* ---------- неделя и дни ---------- */
+.week {
+  display: flex; align-items: center; gap: 4px; margin-top: 12px; padding: 2px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+}
+.week button {
+  width: 44px; height: 44px; flex: none; border: 0; border-radius: 12px; background: transparent;
+  color: var(--text); display: grid; place-items: center; padding: 0;
+}
+.week button:disabled { opacity: .3; cursor: default; }
+.week .mid { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.wl { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); min-height: 13px; }
+.wl.cur { color: var(--accent); }
+.wr { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.day {
+  height: 58px; padding: 0; border-radius: 14px; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  transition: background .2s, border-color .2s, opacity .2s;
+}
+.day .s { font-size: 12px; font-weight: 500; opacity: .8; }
+.day .n { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.day .dots { display: flex; gap: 3px; height: 5px; }
+.day .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--k-bar); }
+.day.dim { color: var(--muted); background: transparent; opacity: .45; }
+.day.dim .dots i { background: var(--faint); }
+.day.today { border-color: var(--today-border); }
+.day.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.day.on .dots i { background: var(--on-accent); }
+.dayhead { display: flex; flex-direction: column; gap: 2px; margin: 14px 0 8px; }
+.dayhead .t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dayhead h2 { margin: 0; font-size: 17px; font-weight: 600; }
+.tag { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--tag-bg); color: var(--tag-fg); }
+.summary { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- лента пар ---------- */
+.tl { list-style: none; margin: 0; padding: 0; }
+.row, .brk { display: grid; grid-template-columns: 48px 14px minmax(0, 1fr); column-gap: 12px; }
+.time { position: relative; padding-top: 14px; display: flex; flex-direction: column; gap: 2px; font-variant-numeric: tabular-nums; }
+.time .st { font-size: 15px; font-weight: 700; }
+.time .en { font-size: 13px; color: var(--muted); }
+.row.live .time .st { color: var(--k-fg); }
+.row.past .time .st { color: var(--past-muted); }
+
+.rail { display: flex; flex-direction: column; align-items: center; isolation: isolate; }
+.seg-top { width: 2px; height: 17px; flex: none; background: var(--border); }
+.row.first .seg-top { background: transparent; }
+.row.after-past .seg-top { background: var(--done); }
+.dot {
+  position: relative; width: 12px; height: 12px; flex: none; border-radius: 50%;
+  border: 2px solid var(--k-bar); background: var(--bg);
+}
+.row.live .dot { background: var(--k-bar); }
+.row.past .dot { border-color: var(--done); background: var(--dot-past); }
+.row.live .dot::after, .row.next .dot::after {
+  content: ""; position: absolute; inset: -6px; border-radius: 50%; z-index: -1;
+  background: rgba(var(--k-rgb), .45); animation: halo 2.4s ease-in-out infinite;
+}
+.row.next .dot::after { background: rgba(var(--k-rgb), .32); animation-duration: 4.8s; }
+@keyframes halo { 0%, 100% { transform: scale(.5); opacity: .95; } 50% { transform: scale(1.2); opacity: 0; } }
+.seg { position: relative; flex: 1; width: 4px; border-radius: 2px; background: rgba(var(--k-rgb), var(--track-a)); }
+.row.past .seg { width: 2px; background: var(--done); }
+.row.past.last .seg { background: transparent; }
+.fill { position: absolute; left: 0; top: 0; width: 100%; height: var(--p); border-radius: 2px; background: var(--k-bar); transition: height .6s ease; }
+.mark {
+  position: absolute; left: 50%; top: var(--p); width: 10px; height: 10px; margin: -5px 0 0 -5px;
+  border-radius: 50%; background: var(--k-bar); border: 2px solid var(--bg); transition: top .6s ease;
+}
+.nowlbl {
+  position: absolute; right: 14px; top: var(--p); margin-top: -8px; font-size: 12px; font-weight: 700;
+  line-height: 16px; color: var(--k-fg); white-space: nowrap; font-variant-numeric: tabular-nums; transition: top .6s ease;
+}
+.cap {
+  position: absolute; left: 50%; bottom: 0; width: 10px; height: 10px; margin-left: -5px;
+  border-radius: 50%; background: var(--bg); border: 2px solid var(--k-bar);
+}
+
+.card {
+  min-width: 0; margin: 3px 0; padding: 12px 14px; border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;
+  text-align: left;
+}
+.row.live .card {
+  background: linear-gradient(rgba(var(--k-rgb), var(--tint-a)), rgba(var(--k-rgb), var(--tint-a))), var(--surface);
+  border-color: rgba(var(--k-rgb), .45);
+}
+.row.next .card { border-color: rgba(var(--k-rgb), .3); }
+.row.past .card { background: var(--past-bg); border-color: var(--past-border); }
+.row.past .card h3 { color: var(--past-title); }
+.card.opened { cursor: pointer; }
+.hd { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 8px; min-width: 0; }
+.status { min-width: 0; font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row.live .status, .row.next .status { color: var(--k-fg); }
+.kind {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 5px; border-radius: 8px;
+  background: rgba(var(--k-rgb), var(--badge-a)); color: var(--k-fg); font-size: 12px; font-weight: 600;
+}
+.kind::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--k-bar); }
+.card h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--text2); min-width: 0; }
+.meta > span, .tlink { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.meta .x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tlink { border: 0; background: none; padding: 4px 0; margin: -4px 0; color: var(--accent); }
+
+.cc {
+  min-width: 0; width: 100%; margin: 3px 0; padding: 10px 14px; border-radius: 16px; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 3px;
+}
+.cc h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 20px; overflow-wrap: anywhere; }
+.cc .ln { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; line-height: 16px; color: var(--muted); }
+.cc .ln .bar { width: 4px; height: 12px; flex: none; border-radius: 2px; background: var(--k-bar); }
+.cc .ln .x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row.past .cc { background: var(--past-bg); border-color: var(--past-border); }
+.row.past .cc h3 { color: var(--past-title); }
+.row.past .cc .ln { color: var(--past-muted); }
+
+.brk { height: 28px; }
+.brk.active { height: 44px; }
+.brk .time { padding: 0; }
+.rail2 { position: relative; display: flex; justify-content: center; }
+.dash { width: 2px; height: 100%; background-image: repeating-linear-gradient(to bottom, var(--faint) 0 3px, transparent 3px 7px); }
+.brk.active .dash { background-image: repeating-linear-gradient(to bottom, var(--text2) 0 3px, transparent 3px 7px); }
+.bmark {
+  position: absolute; left: 50%; top: var(--p); width: 10px; height: 10px; margin: -5px 0 0 -5px;
+  border-radius: 50%; background: var(--text); border: 2px solid var(--bg); transition: top .6s ease;
+}
+.bnow { position: absolute; right: 0; top: var(--p); margin-top: -8px; font-size: 12px; font-weight: 700; line-height: 16px; transition: top .6s ease; }
+.blbl { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.brk.active .blbl { color: var(--text); font-weight: 600; }
+
+/* появление ленты при смене дня/недели */
+.tl.enter .dot { animation: pop .45s cubic-bezier(.34, 1.56, .64, 1) both; animation-delay: calc(var(--i) * 90ms); }
+.tl.enter .card, .tl.enter .cc { animation: rise .35s ease both; animation-delay: calc(var(--i) * 60ms); }
+.tl.enter .fill { animation: grow .9s cubic-bezier(.22, 1, .36, 1) both; animation-delay: calc(var(--i) * 90ms + 250ms); }
+.tl.enter .mark { animation: slide .9s cubic-bezier(.22, 1, .36, 1) both; animation-delay: calc(var(--i) * 90ms + 250ms); }
+.tl.enter .nowlbl { animation: slide .9s cubic-bezier(.22, 1, .36, 1) both, fade .4s ease both; animation-delay: calc(var(--i) * 90ms + 250ms), calc(var(--i) * 90ms + 850ms); }
+@keyframes pop { from { transform: scale(0); } }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+@keyframes grow { from { height: 0; } }
+@keyframes slide { from { top: 0; } }
+
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 48px 24px 24px; }
+.empty .ic {
+  width: 64px; height: 64px; margin-bottom: 6px; border-radius: 20px; background: var(--surface);
+  border: 1px solid var(--border); color: var(--text2); display: grid; place-items: center;
+}
+.empty .h { font-size: 18px; font-weight: 600; }
+.empty .p { max-width: 260px; font-size: 14px; line-height: 1.45; color: var(--muted); }
+
+.sk {
+  height: 76px; margin-top: 10px; border-radius: 18px;
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+  background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* ---------- преподаватели ---------- */
+.search {
+  display: flex; align-items: center; gap: 10px; height: 48px; margin-top: 16px; padding: 0 14px;
+  border-radius: 14px; background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+}
+.search input {
+  flex: 1; min-width: 0; height: 44px; border: 0; outline: none; background: transparent;
+  color: var(--text); font: inherit; font-size: 15px;
+}
+.search input::placeholder { color: var(--muted); }
+.sec { margin: 20px 4px 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.list { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
+.item {
+  width: 100%; min-height: 60px; display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  border: 0; border-top: 1px solid var(--sep); background: transparent; color: var(--text); text-align: left;
+}
+.list > .item:first-child { border-top: 0; }
+.item .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.item .nm { font-size: 15px; font-weight: 600; }
+.item .sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .chev { color: var(--faint); }
+.av {
+  width: 40px; height: 40px; flex: none; border-radius: 13px; display: grid; place-items: center;
+  font-family: "Unbounded", "Onest", sans-serif; font-size: 13px; font-weight: 600;
+  background: hsl(var(--h) var(--av-s) var(--av-l)); color: hsl(var(--h) var(--avf-s) var(--avf-l));
+}
+.av.big { width: 56px; height: 56px; border-radius: 18px; font-size: 18px; }
+.nothing { padding: 18px 14px; font-size: 14px; color: var(--muted); }
+.tcard {
+  display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 22px;
+}
+.tcard .nm { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.3; }
+.tcard .sub { margin-top: 4px; font-size: 13px; color: var(--muted); line-height: 1.4; }
+
+/* ---------- уведомления ---------- */
+.bell { position: relative; }
+.bell .badge {
+  position: absolute; top: 9px; right: 10px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px var(--surface);
+}
+.nitem { align-items: flex-start; padding: 14px; }
+.nitem.unread { background: var(--unread); }
+.nitem.unread .nm { font-weight: 700; }
+.tile { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; }
+.t-cancel { background: var(--red-bg); color: var(--red-fg); }
+.t-add { background: var(--tag-bg); color: var(--tag-fg); }
+.t-room { background: var(--acc-soft); color: var(--accent); }
+.t-other { background: var(--warn-bg); color: var(--warn-fg); }
+.nitem .nm { font-weight: 600; line-height: 1.3; }
+.nitem .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.nitem .when { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.nitem .desc { font-size: 13px; line-height: 1.4; color: var(--text2); white-space: normal; }
+.kv { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 14px; border-top: 1px solid var(--sep); }
+.list > .kv:first-child { border-top: 0; }
+.kv .k { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; }
+.kv .v { flex: none; font-size: 14px; color: var(--muted); }
+.kv .v.on { color: var(--text); font-weight: 600; }
+.srow { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px; border-top: 1px solid var(--sep); }
+.list > .srow:first-child { border-top: 0; }
+.srow .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.srow .nm { font-size: 15px; font-weight: 600; }
+.srow .sub { font-size: 12px; color: var(--muted); }
+.sw { width: 60px; height: 44px; flex: none; padding: 0; border: 0; background: transparent; display: grid; place-items: center; }
+.sw .tr { position: relative; width: 52px; height: 32px; border-radius: 999px; background: var(--strong); transition: background .2s; }
+.sw .kn {
+  position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%;
+  background: #FFFFFF; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .2s;
+}
+.sw[aria-checked="true"] .tr { background: var(--accent); }
+.sw[aria-checked="true"] .kn { transform: translateX(20px); }
+.sw:disabled { opacity: .45; cursor: default; }
+.selrow { display: flex; align-items: center; gap: 12px; padding: 0 14px 12px 16px; font-size: 14px; color: var(--text2); }
+.selrow[hidden] { display: none; }
+.selrow span { flex: 1; }
+.nsel {
+  height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--strong);
+  background: var(--surface2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600;
+}
+.nstatus { margin: 8px 4px 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.nstatus.ok { color: var(--tag-fg); }
+.nstatus.err { color: var(--red-fg); }
+.hint { margin: 12px 4px 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+.btn.wide { width: 100%; margin-top: 12px; background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* ---------- настройки ---------- */
+.pad { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.lbl15 { font-size: 15px; font-weight: 500; }
+.seg3 { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--bg); }
+.seg3 button { height: 40px; padding: 0 4px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; }
+.seg3 button.on { background: var(--surface2); border-color: var(--border); color: var(--text); }
+html[data-theme="light"] .seg3 button.on { background: var(--surface); }
+.foot { margin: 22px 0 0; text-align: center; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.flink { border: 0; background: none; padding: 6px 2px; margin: -6px 0; color: var(--accent); font-weight: 600; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  padding: 10px 16px; border-radius: 999px; background: var(--text); color: var(--bg); font-size: 13px; font-weight: 600;
+  animation: fade .2s ease both; z-index: 20;
+}
+
+/* ---------- нижняя панель ---------- */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: var(--tab-bg); border-top: 1px solid var(--tab-border);
+  padding: 8px 8px max(12px, env(safe-area-inset-bottom));
+}
+.tabs .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tab {
+  min-height: 48px; border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 500;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.tab.on { color: var(--accent); font-weight: 600; }
+
+/* Узкие телефоны (360–380 px): чуть меньше полей, чтобы статус пары и подписи не обрезались */
+@media (max-width: 380px) {
+  #app { padding-left: 14px; padding-right: 14px; }
+  .row, .brk { column-gap: 10px; }
+  .card { padding: 12px; }
+  .seg3 button { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<nav class="tabs" aria-label="Разделы">
+  <div class="in">
+    <button class="tab on" data-tab="schedule">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="12" cy="16" r="1.5"/></svg>
+      Расписание
+    </button>
+    <button class="tab" data-tab="teachers">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1M16 4a4 4 0 0 1 0 8M22 21v-1a6 6 0 0 0-4-5.6"/></svg>
+      Преподаватели
+    </button>
+    <button class="tab" data-tab="settings">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      Настройки
+    </button>
+  </div>
+</nav>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------------- Telegram ----------------
+  const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  const inTG = !!(tg && tg.platform && tg.platform !== "unknown");
+  const tgAtLeast = (v) => { try { return !!(tg && tg.isVersionAtLeast && tg.isVersionAtLeast(v)); } catch (e) { return false; } };
+
+  const ROOT = document.documentElement;
+  const app = document.getElementById("app");
+  const tabs = document.querySelectorAll(".tab");
+
+  const DAYS = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"];
+  const SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+  const WHEN = ["в понедельник", "во вторник", "в среду", "в четверг", "в пятницу", "в субботу", "в воскресенье"];
+  const MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня",
+                  "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+  const MSHORT = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+  const HUES = [214, 150, 32, 268, 338, 188, 4, 92, 248, 120];
+  const BG = { dark: "#0E1014", light: "#F2F3F6" };
+
+  // Для проверки можно открыть страницу с ?now=2026-10-12T10:52 — время «застынет» на этом моменте
+  const NOW_OVERRIDE = new URLSearchParams(location.search).get("now");
+
+  // ---------------- иконки ----------------
+  const svg = (d, s = 16, w = 2) =>
+    `<svg aria-hidden="true" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const I = {
+    left: svg('<path d="m15 18-6-6 6-6"/>', 20),
+    right: svg('<path d="m9 18 6-6-6-6"/>', 20),
+    chev: svg('<path d="m9 18 6-6-6-6"/>', 18),
+    pin: svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>', 14),
+    user: svg('<circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/>', 14),
+    users: svg('<circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1M16 4a4 4 0 0 1 0 8M22 21v-1a6 6 0 0 0-4-5.6"/>', 14),
+    cup: svg('<path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2M10 2v2M14 2v2"/>', 14),
+    check: svg('<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 5-5"/>', 13, 2.4),
+    moon: svg('<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>', 28, 1.8),
+    wifi: svg('<path d="M12 20h.01M2 8.82a15 15 0 0 1 20 0M5 12.86a10 10 0 0 1 14 0M8.5 16.43a5 5 0 0 1 7 0"/><path d="m2 2 20 20"/>', 28, 1.8),
+    search: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', 18),
+    refresh: svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', 18),
+    ext: svg('<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>', 18),
+    bell: svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', 20),
+    bellBig: svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', 28, 1.8),
+    xc: svg('<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/>', 20),
+    plus: svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>', 20),
+    pinBig: svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>', 20),
+    swap: svg('<path d="M7 4 3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/>', 20),
+  };
+
+
+  // ---------------- утилиты ----------------
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* хранилище недоступно */ } },
+  };
+
+  // ---------------- настройки уведомлений ----------------
+  // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
+  // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
+  const QS = new URLSearchParams(location.search);
+  const TG_USER = (() => {
+    try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
+  })();
+  function parseCode(code) {
+    const m = /^(\d{1,2})\.([01])\.([01])\.([01])$/.exec(code || "");
+    if (!m) return null;
+    const min = +m[1];
+    return { on: min > 0, min: [5, 10, 15, 30].includes(min) ? min : 15, morning: m[2] === "1", evening: m[3] === "1", changes: m[4] === "1" };
+  }
+  const nCode = (s) => `${s.on ? s.min : 0}.${+s.morning}.${+s.evening}.${+s.changes}`;
+  const nkey = (() => {
+    const k = QS.get("k");
+    if (k && /^[0-9a-f]{32}$/.test(k)) { store.set("nkey", JSON.stringify({ k, u: TG_USER })); return k; }
+    try {
+      const s = JSON.parse(store.get("nkey") || "null");
+      if (s && /^[0-9a-f]{32}$/.test(s.k) && (!TG_USER || !s.u || s.u === TG_USER)) return s.k;
+    } catch (e) { /* нет сохранённого ключа */ }
+    return "";
+  })();
+  let nstate = (() => {
+    let state = parseCode(QS.get("n"));
+    const ts = (+QS.get("ts") || 0) * 1000;
+    try {
+      // Если менял в приложении позже, чем бот выдал этот адрес, — показываем своё
+      const local = JSON.parse(store.get("nlocal") || "null");
+      if (local && (!TG_USER || !local.u || local.u === TG_USER) && local.t > ts && parseCode(local.code)) {
+        state = parseCode(local.code);
+        if (local.min) state.min = local.min;
+      }
+    } catch (e) { /* нет сохранённого */ }
+    return state;
+  })();
+
+  function haptic(kind) {
+    if (!tg || !tg.HapticFeedback || !tgAtLeast("6.1")) return;
+    try {
+      if (kind === "select") tg.HapticFeedback.selectionChanged();
+      else tg.HapticFeedback.impactOccurred(kind || "light");
+    } catch (e) { /* старый клиент */ }
+  }
+
+  function toUTC(iso) { const [y, m, d] = iso.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); }
+  function addDays(iso, n) { const t = toUTC(iso); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
+  function weekday(iso) { return (toUTC(iso).getUTCDay() + 6) % 7; }
+  function mondayOf(iso) { return addDays(iso, -weekday(iso)); }
+  function dayNum(iso) { return toUTC(iso).getUTCDate(); }
+  function fmtDate(iso) { const t = toUTC(iso); return `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]}`; }
+
+  function samaraNow() {
+    if (NOW_OVERRIDE && /^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}$/.test(NOW_OVERRIDE)) {
+      const [date, hm] = NOW_OVERRIDE.split("T");
+      const [h, m] = hm.split(":").map(Number);
+      return { date, wd: weekday(date), sec: h * 3600 + m * 60, label: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` };
+    }
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Samara", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+    }).formatToParts(new Date());
+    const p = {};
+    parts.forEach((x) => { p[x.type] = x.value; });
+    const date = `${p.year}-${p.month}-${p.day}`;
+    return { date, wd: weekday(date), sec: (+p.hour) * 3600 + (+p.minute) * 60 + (+p.second), label: `${p.hour}:${p.minute}` };
+  }
+
+  function toSec(hhmm) {
+    if (!hhmm || !/^\d{1,2}:\d{2}$/.test(hhmm)) return null;
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 3600 + m * 60;
+  }
+  function plural(n, a, b, c) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return a;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return b;
+    return c;
+  }
+  // Длительность в «1 ч 18 мин»; округляем вверх, чтобы не показывать «0 мин»
+  function dur(sec) {
+    const m = Math.max(1, Math.ceil(sec / 60));
+    const h = Math.floor(m / 60), r = m % 60;
+    if (h && r) return `${h} ч ${r} мин`;
+    if (h) return `${h} ч`;
+    return `${r} мин`;
+  }
+  function kindOf(t) {
+    const s = (t || "").toLowerCase();
+    if (s.includes("лекц")) return { cls: "k-lec", label: "Лекция" };
+    if (s.includes("практ")) return { cls: "k-prac", label: "Практика" };
+    if (s.includes("лаб")) return { cls: "k-lab", label: "Лабораторная" };
+    const raw = (t || "").trim();
+    return { cls: "k-oth", label: !raw || raw === "Занятие" ? "Занятие" : raw[0].toUpperCase() + raw.slice(1) };
+  }
+  function shortName(full) {
+    const p = String(full).trim().split(/\s+/);
+    return p.length >= 3 ? `${p[0]} ${p[1][0]}. ${p[2][0]}.` : String(full).trim();
+  }
+  function initials(full) {
+    const p = String(full).trim().split(/\s+/);
+    return (((p[0] || "")[0] || "") + ((p[1] || "")[0] || "")).toUpperCase();
+  }
+  function hue(s) { let h = 0; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return HUES[h % HUES.length]; }
+  // «2302 (Корпус 1-2)» → «ауд. 2302 · корп. 1-2», «5206 (Корпус 5 г. Самара)» → «ауд. 5206 · корп. 5»
+  function roomText(room) {
+    room = (room || "").trim();
+    if (!room) return "";
+    const m = /^(\d+[\wа-яА-ЯёЁ\/-]*)\s*(.*)$/.exec(room);
+    if (!m) return room;
+    let rest = m[2].trim().replace(/^\(|\)$/g, "").trim();
+    rest = rest.replace(/\s*г\.\s*Самара/i, "").replace(/^корпус\s*/i, "корп. ").trim();
+    return rest ? `ауд. ${m[1]} · ${rest}` : `ауд. ${m[1]}`;
+  }
+  function fmtUpdated(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(iso || "");
+    if (!m) return "";
+    return `${+m[3]} ${MSHORT[+m[2] - 1]} в ${m[4]}:${m[5]}`;
+  }
+
+  // ---------------- данные ----------------
+  const mem = {};
+  let index = null;
+  let meta = null;
+  let changes = null;   // лента изменений расписания из data/changes.json
+
+  async function fetchJSON(path) {
+    const key = "cache:" + path;
+    try {
+      const r = await fetch(`${path}?t=${Date.now()}`, { cache: "no-store" });
+      if (!r.ok) throw new Error(String(r.status));
+      const j = await r.json();
+      store.set(key, JSON.stringify(j));
+      return j;
+    } catch (err) {
+      const s = store.get(key);
+      if (s) { try { const j = JSON.parse(s); j._offline = true; return j; } catch (e) { /* битый кэш */ } }
+      throw err;
+    }
+  }
+  const pending = {};
+  function load(id) {
+    if (mem[id]) return Promise.resolve(mem[id]);
+    if (!pending[id]) {
+      pending[id] = fetchJSON(`data/${id}.json`)
+        .then((j) => { mem[id] = j; return j; })
+        .finally(() => { delete pending[id]; });
+    }
+    return pending[id];
+  }
+  function teacherName(id) {
+    const t = index && index.teachers.find((x) => x.id === id);
+    return t ? t.name : "";
+  }
+  // Ищем преподавателя по фамилии в поле «extra» пары группы
+  function matchTeacher(extra) {
+    if (!index || !extra) return null;
+    const low = extra.toLowerCase();
+    let best = null, bestPos = Infinity;
+    for (const t of index.teachers) {
+      const surname = t.name.split(/\s+/)[0].toLowerCase();
+      const pos = low.indexOf(surname);
+      if (pos >= 0 && pos < bestPos) { best = t; bestPos = pos; }
+    }
+    return best;
+  }
+  // Предметы каждого преподавателя у группы — из расписания группы
+  function groupTeacherSubjects() {
+    const res = new Map();
+    const g = mem.g;
+    if (!g || !index) return res;
+    for (const w of g.weeks) for (const d of w.days) for (const l of d.lessons) {
+      const t = matchTeacher(l.extra);
+      if (!t) continue;
+      if (!res.has(t.id)) res.set(t.id, new Set());
+      if (l.subject) res.get(t.id).add(l.subject);
+    }
+    return res;
+  }
+
+  // ---------------- тема ----------------
+  function themePref() { const p = store.get("theme"); return p === "light" || p === "dark" ? p : "auto"; }
+  function effectiveTheme() {
+    const p = themePref();
+    if (p !== "auto") return p;
+    if (inTG && (tg.colorScheme === "light" || tg.colorScheme === "dark")) return tg.colorScheme;
+    return window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  function applyTheme() {
+    const t = effectiveTheme();
+    ROOT.dataset.theme = t;
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute("content", BG[t]);
+    if (inTG && tgAtLeast("6.1")) {
+      try { tg.setHeaderColor(tgAtLeast("6.9") ? BG[t] : "bg_color"); } catch (e) { /* старый клиент */ }
+      try { tg.setBackgroundColor(BG[t]); } catch (e) { /* старый клиент */ }
+    }
+  }
+
+  // ---------------- состояние и навигация ----------------
+  let view = "schedule";      // schedule | teachers | teacher | settings | notif
+  let target = "g";           // файл данных: g — группа, tN — преподаватель
+  let stack = [];             // для кнопки «назад»
+  let query = "";
+  let liveSig = "";
+  let renderToken = 0;
+  let enterNext = true;
+  const pos = {};             // id -> { w, d }
+  const opened = new Set();   // раскрытые вручную компактные карточки
+
+  function syncTabs() {
+    const tab = view === "teacher" ? "teachers" : view === "notif" ? "schedule" : view;
+    tabs.forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
+  }
+  function syncBack() {
+    if (!tg || !tg.BackButton || !tgAtLeast("6.1")) return;
+    try { stack.length ? tg.BackButton.show() : tg.BackButton.hide(); } catch (e) { /* старый клиент */ }
+  }
+  function go(v, t, push) {
+    if (push) stack.push({ view, target });
+    else stack = [];
+    view = v;
+    if (t) target = t;
+    enterNext = true;
+    opened.clear();
+    syncBack();
+    syncTabs();
+    render();
+    window.scrollTo(0, 0);
+  }
+  function back() {
+    const prev = stack.pop();
+    if (!prev) return;
+    haptic("light");
+    view = prev.view;
+    target = prev.target;
+    enterNext = true;
+    syncBack();
+    syncTabs();
+    render();
+  }
+
+  function pickDefault(data) {
+    const now = samaraNow();
+    const mon = mondayOf(now.date);
+    let w = data.weeks.findIndex((x) => x.monday === mon);
+    let d = now.wd;
+    if (w < 0) {
+      w = data.weeks.findIndex((x) => x.monday > mon);
+      if (w < 0) w = data.weeks.length - 1;
+      d = 0;
+    }
+    return { w, d };
+  }
+  function lessonsOf(week, d) {
+    const day = week.days.find((x) => x.idx === d);
+    return day ? day.lessons : [];
+  }
+
+  // ---------------- модель дня ----------------
+  function dayModel(data, w, d, isTeacher) {
+    const week = data.weeks[w];
+    const date = addDays(week.monday, d);
+    const lessons = lessonsOf(week, d);
+    const now = samaraNow();
+    const isToday = date === now.date;
+    const isPastDay = date < now.date;
+    const n = lessons.length;
+
+    let nextStart = null;
+    if (isToday) {
+      for (const l of lessons) {
+        const s = toSec(l.start);
+        if (s != null && s > now.sec && (nextStart == null || s < nextStart)) nextStart = s;
+      }
+    }
+    const status = lessons.map((l) => {
+      const s = toSec(l.start), e = toSec(l.end);
+      if (isPastDay) return "past";
+      if (!isToday || s == null || e == null) return "up";
+      if (now.sec >= e) return "past";
+      if (now.sec >= s) return "live";
+      return s === nextStart ? "next" : "up";
+    });
+
+    const items = [];
+    let activeBreak = -1;
+    lessons.forEach((l, i) => {
+      if (i > 0) {
+        const prev = lessons[i - 1];
+        const bs = toSec(prev.end), be = toSec(l.start);
+        if (bs != null && be != null && be > bs) {
+          const active = isToday && now.sec >= bs && now.sec < be;
+          if (active) activeBreak = i;
+          items.push({
+            type: "break", i, active,
+            text: active ? `ещё ${dur(be - now.sec)}` : dur(be - bs),
+            p: active ? Math.round((now.sec - bs) / (be - bs) * 100) : 0,
+            nowLabel: now.label,
+          });
+        }
+      }
+      const st = status[i];
+      const s = toSec(l.start), e = toSec(l.end);
+      const k = kindOf(l.type);
+      const key = `${date}|${i}`;
+      const compact = (st === "past" || (n >= 3 && st !== "live" && st !== "next")) && !opened.has(key);
+      const p = st === "live" ? Math.min(100, Math.max(0, Math.round((now.sec - s) / (e - s) * 100))) : 0;
+      let statusText;
+      if (st === "live") statusText = `Идёт · ещё ${dur(e - now.sec)}`;
+      else if (st === "next") statusText = `Через ${dur(s - now.sec)}`;
+      else if (st === "past") statusText = "Прошла";
+      else statusText = l.number && l.number !== "?" ? `${l.number} пара` : (s != null && e != null ? dur(e - s) : "");
+      const teacher = isTeacher ? null : matchTeacher(l.extra);
+      items.push({
+        type: "lesson", i, key, st, k, compact, p, statusText,
+        start: l.start || "", end: l.end || "", time: l.time || "",
+        subject: l.subject || "Занятие", room: roomText(l.room), extra: (l.extra || "").trim(), teacher,
+        first: i === 0, last: i === n - 1, afterPast: i > 0 && status[i - 1] === "past" && isToday,
+        showNow: st === "live" && p >= 30, nowLabel: now.label,
+      });
+    });
+
+    let summary = "";
+    if (n) {
+      const starts = lessons.map((l) => l.start).filter(Boolean);
+      const ends = lessons.map((l) => l.end).filter(Boolean);
+      summary = `${n} ${plural(n, "пара", "пары", "пар")}`;
+      if (starts.length && ends.length) summary += ` · ${starts[0]} – ${ends[ends.length - 1]}`;
+      if (isToday && status.every((x) => x === "past")) summary += " · пары закончились";
+    }
+    const sig = [date, now.date, status.join(","), activeBreak, items.filter((x) => x.showNow).length,
+      [...opened].join(",")].join("|");
+    return { date, isToday, isPastDay, n, items, summary, sig };
+  }
+
+  function emptyHint(data, w, d, isPastDay) {
+    if (isPastDay) return "В этот день занятий не было.";
+    for (let wi = w; wi < data.weeks.length; wi++) {
+      for (let di = wi === w ? d + 1 : 0; di < 7; di++) {
+        if (lessonsOf(data.weeks[wi], di).length) {
+          return `Свободный день. Следующие пары — ${WHEN[di]}, ${fmtDate(addDays(data.weeks[wi].monday, di))}.`;
+        }
+      }
+    }
+    return "Свободный день. Дальше в расписании пар пока нет.";
+  }
+
+  function weekLabel(monday) {
+    const cur = mondayOf(samaraNow().date);
+    const diff = Math.round((toUTC(monday) - toUTC(cur)) / (7 * 86400000));
+    return { "-1": "Прошлая неделя", "0": "Эта неделя", "1": "Следующая неделя", "2": "Через неделю" }[diff] || "";
+  }
+  function weekRange(monday) {
+    const a = toUTC(monday), b = toUTC(addDays(monday, 6));
+    return a.getUTCMonth() === b.getUTCMonth()
+      ? `${a.getUTCDate()} – ${b.getUTCDate()} ${MONTHS[b.getUTCMonth()]}`
+      : `${a.getUTCDate()} ${MSHORT[a.getUTCMonth()]} – ${b.getUTCDate()} ${MSHORT[b.getUTCMonth()]}`;
+  }
+
+  // ---------------- разметка ----------------
+  function skeletonHTML() {
+    return `<div class="top"><div><div class="eyebrow">ПривГУПС</div><h1>${esc((index && index.group) || "СОДП-55у")}</h1></div></div>
+      <div class="sk" style="height:50px"></div><div class="sk" style="height:58px"></div>
+      <div class="sk" style="height:120px;margin-top:22px"></div><div class="sk"></div><div class="sk"></div>`;
+  }
+  function errorHTML() {
+    return `<div class="empty fade"><div class="ic">${I.wifi}</div><div class="h">Не удалось загрузить</div>
+      <div class="p">Проверь интернет и попробуй ещё раз.</div>
+      <button class="btn" data-act="retry" style="margin-top:8px">Повторить</button></div>`;
+  }
+
+  function lessonHTML(it, n, isTeacher) {
+    const cls = ["row", it.st, it.k.cls, it.first ? "first" : "", it.last ? "last" : "", it.afterPast ? "after-past" : ""].join(" ");
+    let rail = `<span class="seg-top"></span><span class="dot"></span><span class="seg" style="--p:${it.p}%">`;
+    if (it.st === "live") {
+      rail += `<span class="fill"></span><span class="mark"></span>`
+        + `<span class="nowlbl" data-nowlbl${it.showNow ? "" : " hidden"}>${esc(it.nowLabel)}</span>`;
+    }
+    if (it.st !== "past") rail += `<span class="cap"></span>`;
+    rail += `</span>`;
+
+    let body;
+    if (it.compact) {
+      const lead = it.st === "past" ? I.check : `<span class="bar"></span>`;
+      const who = isTeacher ? it.extra : (it.teacher ? shortName(it.teacher.name) : it.extra);
+      const parts = it.st === "past" ? ["Прошла", it.k.label, it.room] : [it.k.label, it.room, who];
+      body = `<button class="cc" data-act="open" data-key="${esc(it.key)}" aria-expanded="false">
+        <h3>${esc(it.subject)}</h3><span class="ln">${lead}<span class="x">${esc(parts.filter(Boolean).join(" · "))}</span></span></button>`;
+    } else {
+      let meta = it.room ? `<span>${I.pin}<span class="x">${esc(it.room)}</span></span>` : "";
+      if (isTeacher) {
+        if (it.extra) meta += `<span>${I.users}<span class="x">${esc(it.extra)}</span></span>`;
+      } else if (it.teacher) {
+        meta += `<button class="tlink" data-act="teacher" data-t="${esc(it.teacher.id)}">${I.user}<span class="x">${esc(shortName(it.teacher.name))}</span></button>`;
+      } else if (it.extra) {
+        meta += `<span>${I.user}<span class="x">${esc(it.extra)}</span></span>`;
+      }
+      const isOpened = opened.has(it.key);
+      body = `<div class="card${isOpened ? " opened" : ""}"${isOpened ? ` data-act="open" data-key="${esc(it.key)}"` : ""}>
+        <div class="hd"><span class="status" data-status>${esc(it.statusText)}</span><span class="kind">${esc(it.k.label)}</span></div>
+        <h3>${esc(it.subject)}</h3>${meta ? `<div class="meta">${meta}</div>` : ""}</div>`;
+    }
+    return `<li class="${cls}" style="--i:${n}" data-row="${it.i}">
+      <div class="time"><span class="st">${esc(it.start || it.time || "—")}</span><span class="en">${esc(it.end)}</span></div>
+      <div class="rail">${rail}</div>${body}</li>`;
+  }
+
+  function breakHTML(it) {
+    return `<li class="brk${it.active ? " active" : ""}" style="--p:${it.p}%" data-brk="${it.i}" aria-hidden="${it.active ? "false" : "true"}">
+      <div class="time">${it.active ? `<span class="bnow" data-bnow>${esc(it.nowLabel)}</span>` : ""}</div>
+      <div class="rail2"><span class="dash"></span>${it.active ? `<span class="bmark"></span>` : ""}</div>
+      <div class="blbl">${I.cup}<span data-btext>Перерыв · ${esc(it.text)}</span></div></li>`;
+  }
+
+  function scheduleHTML(data, id, isTeacher) {
+    const p = pos[id];
+    const week = data.weeks[p.w];
+    const m = dayModel(data, p.w, p.d, isTeacher);
+    const now = samaraNow();
+    const def = pickDefault(data);
+    const notToday = !(p.w === def.w && p.d === def.d && m.isToday);
+    const todayInData = data.weeks.some((x) => x.monday === mondayOf(now.date));
+
+    const label = weekLabel(week.monday);
+    let html = `<div class="week">
+      <button data-act="week" data-dir="-1" aria-label="Предыдущая неделя"${p.w <= 0 ? " disabled" : ""}>${I.left}</button>
+      <div class="mid" aria-live="polite"><span class="wl${label === "Эта неделя" ? " cur" : ""}">${esc(label)}</span><span class="wr">${esc(weekRange(week.monday))}</span></div>
+      <button data-act="week" data-dir="1" aria-label="Следующая неделя"${p.w >= data.weeks.length - 1 ? " disabled" : ""}>${I.right}</button></div>`;
+
+    html += `<nav class="days" aria-label="Дни недели">`;
+    for (let d = 0; d < 7; d++) {
+      const date = addDays(week.monday, d);
+      const ls = lessonsOf(week, d);
+      const on = d === p.d, today = date === now.date, dim = date < now.date && !on;
+      const dots = ls.slice(0, 4).map((l) => `<i class="${kindOf(l.type).cls}"></i>`).join("");
+      const aria = `${DAYS[d]}, ${fmtDate(date)}${today ? ", сегодня" : ""}, ${ls.length ? ls.length + " " + plural(ls.length, "пара", "пары", "пар") : "пар нет"}`;
+      html += `<button class="day${on ? " on" : ""}${today ? " today" : ""}${dim ? " dim" : ""}" data-act="day" data-d="${d}" aria-pressed="${on}" aria-label="${esc(aria)}">
+        <span class="s">${SHORT[d]}</span><span class="n">${dayNum(date)}</span><span class="dots">${dots}</span></button>`;
+    }
+    html += `</nav>`;
+
+    html += `<div class="dayhead"><div class="t"><h2>${DAYS[p.d]}, ${fmtDate(m.date)}</h2>${m.isToday ? `<span class="tag">сегодня</span>` : ""}</div>
+      ${m.summary ? `<span class="summary" data-summary>${esc(m.summary)}</span>` : ""}</div>`;
+
+    if (m.n) {
+      let n = 0;
+      html += `<ol class="tl${enterNext ? " enter" : ""}">`;
+      for (const it of m.items) html += it.type === "break" ? breakHTML(it) : lessonHTML(it, n++, isTeacher);
+      html += `</ol>`;
+    } else {
+      html += `<div class="empty"><div class="ic">${I.moon}</div><div class="h">Пар нет</div>
+        <div class="p">${esc(emptyHint(data, p.w, p.d, m.isPastDay))}</div></div>`;
+    }
+    liveSig = m.sig;
+    return { html, notToday: notToday && todayInData };
+  }
+
+  // ---------------- экраны ----------------
+  function render() {
+    const token = ++renderToken;
+    if (view === "settings") return renderSettings();
+    if (view === "teachers") return renderTeachers(token);
+    if (view === "notif") return renderNotif(token);
+    return renderSchedule(token);
+  }
+
+  // ---------------- уведомления ----------------
+  function changeItems() { return changes && Array.isArray(changes.items) ? changes.items : []; }
+  function hasUnseen() {
+    const items = changeItems();
+    if (!items.length) return false;
+    const seen = store.get("seenChanges") || "";
+    return items[items.length - 1].ts > seen;
+  }
+  function openNotifySettings() {
+    const bot = (index && index.bot) || "sodp55u_bot";
+    const url = `https://t.me/${bot}?start=notify`;
+    haptic("light");
+    if (inTG && tgAtLeast("6.1")) { try { tg.openTelegramLink(url); return; } catch (e) { /* ниже — обычная ссылка */ } }
+    window.open(url, "_blank", "noopener");
+  }
+  const CHANGE_VIEW = {
+    cancel: { tile: "t-cancel", icon: "xc", title: "Пара отменена" },
+    add: { tile: "t-add", icon: "plus", title: "Добавлена пара" },
+    replace: { tile: "t-other", icon: "swap", title: "Замена пары" },
+    room: { tile: "t-room", icon: "pinBig", title: "Другая аудитория" },
+    type: { tile: "t-other", icon: "swap", title: "Изменился тип занятия" },
+    teacher: { tile: "t-other", icon: "swap", title: "Другой преподаватель" },
+  };
+  function changeHTML(c, unread) {
+    const v = CHANGE_VIEW[c.kind] || CHANGE_VIEW.type;
+    const when = `${SHORT[weekday(c.date)]}, ${fmtDate(c.date)}${c.start ? ", " + c.start : ""}`;
+    let what;
+    if (c.kind === "cancel") what = `${c.subject}, ${c.type}`;
+    else if (c.kind === "add") what = `${c.subject}, ${c.type}${c.room ? " · " + c.room : ""}`;
+    else if (c.kind === "replace") what = `${c.old} → ${c.subject}`;
+    else what = `${c.subject}: ${c.old} → ${c.new}`;
+    const ts = String(c.ts || "");
+    const posted = ts.slice(0, 10) === samaraNow().date ? ts.slice(11, 16) : (ts ? `${+ts.slice(8, 10)} ${MSHORT[+ts.slice(5, 7) - 1]}` : "");
+    return `<button class="item nitem${unread ? " unread" : ""}" data-act="jump" data-date="${esc(c.date)}">
+      <span class="tile ${v.tile}" aria-hidden="true">${I[v.icon]}</span>
+      <span class="body"><span class="row1"><span class="nm">${v.title}</span><span class="when">${esc(posted)}</span></span>
+      <span class="desc">${esc(when)} · ${esc(what)}</span></span></button>`;
+  }
+  async function renderNotif(token) {
+    if (!changes) {
+      app.innerHTML = skeletonHTML();
+      try { changes = await fetchJSON("data/changes.json"); } catch (e) { changes = { items: [] }; }
+      if (token !== renderToken) return;
+    }
+    const items = changeItems().slice().reverse();
+    const seen = store.get("seenChanges") || "";
+    const today = samaraNow().date, yesterday = addDays(today, -1);
+    const groups = [["Сегодня", []], ["Вчера", []], ["Ранее", []]];
+    for (const c of items) {
+      const d = String(c.ts || "").slice(0, 10);
+      groups[d === today ? 0 : d === yesterday ? 1 : 2][1].push(c);
+    }
+    const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
+    let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div class="eyebrow">Уведомления</div></div></div>
+      <h1 style="margin-top:10px">Изменения</h1>`;
+    if (!items.length) {
+      html += `<div class="empty"><div class="ic">${I.bellBig}</div><div class="h">Изменений пока нет</div>
+        <div class="p">Бот сверяет расписание с сайтом каждые 6 часов. Отмены, замены и смену аудиторий покажем здесь.</div></div>`;
+    } else {
+      for (const [title, list] of groups) {
+        if (!list.length) continue;
+        html += `<h2 class="sec">${title}</h2><div class="list">${list.map((c) => changeHTML(c, String(c.ts) > seen)).join("")}</div>`;
+      }
+    }
+    html += `<p class="hint">Бот может присылать в чат напоминания перед парой, сводки на день и эти изменения.</p>
+      <button class="btn wide" data-act="to-settings">${I.bell}Настроить уведомления</button>`;
+    app.innerHTML = html;
+    if (items.length) store.set("seenChanges", String(items[0].ts));
+  }
+  function canEditNotify() {
+    return !!(nstate && nkey && index && index.relay && window.crypto && crypto.subtle);
+  }
+  function notifSettingsHTML() {
+    if (!nstate) {
+      return `<div class="list"><button class="item" data-act="notify-settings"><span class="body"><span class="nm" style="font-weight:500">Настроить в чате с ботом</span>
+        <span class="sub">Напоминания о парах, сводки и изменения</span></span><span class="chev">${I.chev}</span></button></div>`;
+    }
+    const dis = canEditNotify() ? "" : " disabled";
+    const sw = (key, title, sub) => `<div class="srow"><div class="body"><span class="nm">${title}</span><span class="sub">${sub}</span></div>
+      <button class="sw" role="switch" data-act="ntoggle" data-k="${key}" aria-checked="${!!nstate[key]}" aria-label="${title}"${dis}>
+      <span class="tr"><span class="kn"></span></span></button></div>`;
+    const opts = [5, 10, 15, 30].map((m) => `<option value="${m}"${m === nstate.min ? " selected" : ""}>${m} мин</option>`).join("");
+    const status = canEditNotify()
+      ? `Изменения сохраняются сами`
+      : `Чтобы менять здесь, открой приложение кнопкой «Расписание» в чате с ботом. <button class="flink" data-act="notify-settings">Настроить в чате</button>`;
+    return `<div class="list">
+      ${sw("on", "Напоминание о паре", "С аудиторией и преподавателем")}
+      <label class="selrow" id="nminrow"${nstate.on ? "" : " hidden"}><span>Напоминать за</span>
+        <select class="nsel" id="nmin" aria-label="За сколько минут напоминать"${dis}>${opts}</select></label>
+      ${sw("morning", "Утренняя сводка", "Пары на день в 7:30")}
+      ${sw("evening", "Пары на завтра", "Вечером в 20:00")}
+      ${sw("changes", "Изменения в расписании", "Отмена, замена, другая аудитория")}
+      </div><p class="nstatus" id="nstatus" aria-live="polite">${status}</p>`;
+  }
+
+  // Подписываем настройки личным ключом и кладём в канал — бот заберёт их за пару секунд
+  let saveTimer = null;
+  function setNStatus(html, kind) {
+    const el = document.getElementById("nstatus");
+    if (!el) return;
+    el.className = "nstatus" + (kind ? " " + kind : "");
+    el.innerHTML = html;
+  }
+  async function hmacHex(keyHex, msg) {
+    const raw = new Uint8Array(keyHex.match(/../g).map((h) => parseInt(h, 16)));
+    const key = await crypto.subtle.importKey("raw", raw, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(msg));
+    return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  function scheduleSave() {
+    setNStatus("Сохраняю…");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveNotify, 700);
+  }
+  async function saveNotify() {
+    const code = nCode(nstate);
+    const t = Date.now();
+    const nonce = [...crypto.getRandomValues(new Uint8Array(6))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    try {
+      const h = await hmacHex(nkey, `${code}|${t}|${nonce}`);
+      const body = JSON.stringify({ s: code, t, n: nonce, h });
+      let r;
+      try {
+        r = await fetch(index.relay, { method: "POST", body });
+      } catch (netErr) {
+        // Если канал не отдаёт CORS-заголовок, ответ прочитать нельзя, но сообщение всё равно доходит.
+        // Повтор с тем же телом бот отбросит как дубликат.
+        r = await fetch(index.relay, { method: "POST", body, mode: "no-cors" });
+      }
+      if (r.type !== "opaque" && !r.ok) throw new Error(String(r.status));
+      store.set("nlocal", JSON.stringify({ code, min: nstate.min, t, u: TG_USER }));
+      setNStatus("Сохранено ✓", "ok");
+      if (tg && tg.HapticFeedback && tgAtLeast("6.1")) { try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) { /* старый клиент */ } }
+    } catch (e) {
+      setNStatus(`Не удалось сохранить — нет связи. <button class="flink" data-act="notify-settings">Изменить в чате</button>`, "err");
+    }
+  }
+
+  async function renderSchedule(token) {
+    const isTeacher = view === "teacher";
+    const id = isTeacher ? target : "g";
+    if (!mem[id]) app.innerHTML = skeletonHTML();
+    let data;
+    try {
+      data = await load(id);
+      if (isTeacher && !index) index = await fetchJSON("data/index.json");
+    } catch (e) {
+      if (token === renderToken) app.innerHTML = errorHTML();
+      return;
+    }
+    if (token !== renderToken) return;
+    if (!data.weeks || !data.weeks.length) { app.innerHTML = errorHTML(); return; }
+    if (!pos[id]) pos[id] = pickDefault(data);
+    const p = pos[id];
+    p.w = Math.min(Math.max(0, p.w), data.weeks.length - 1);
+
+    const s = scheduleHTML(data, id, isTeacher);
+    let head;
+    const todayBtn = s.notToday ? `<button class="btn" data-act="today">Сегодня</button>` : "";
+    if (isTeacher) {
+      const name = teacherName(id) || data.name || "";
+      const subj = [...(groupTeacherSubjects().get(id) || [])];
+      const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
+      head = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div class="eyebrow">Преподаватель</div></div>
+          <div class="top-actions">${todayBtn}</div></div>
+        <div class="tcard"><div class="av big" style="--h:${hue(name)}" aria-hidden="true">${esc(initials(name))}</div>
+          <div style="min-width:0"><h1 class="nm" style="font-family:inherit">${esc(name)}</h1>
+          <div class="sub">${subj.length ? esc(subj.join(", ")) : "Расписание преподавателя"}</div></div></div>`;
+    } else {
+      const bell = `<button class="btn icon-btn bell" data-act="notif" aria-label="Изменения в расписании${hasUnseen() ? ", есть новые" : ""}">${I.bell}${hasUnseen() ? `<span class="badge"></span>` : ""}</button>`;
+      head = `<div class="top"><div><div class="eyebrow">ПривГУПС</div><h1>${esc((index && index.group) || data.name || "СОДП-55у")}</h1></div>
+        <div class="top-actions">${todayBtn}${bell}</div></div>`;
+    }
+    const off = data._offline ? `<div class="offline">Нет сети · показано сохранённое</div>` : "";
+    app.innerHTML = head + off + s.html;
+    enterNext = false;
+  }
+
+  function teacherRowsHTML(list, subjects) {
+    if (!list.length) return `<div class="nothing">Никого не нашлось</div>`;
+    return list.map((t) => {
+      const subj = subjects.get(t.id);
+      return `<button class="item" data-act="teacher" data-t="${esc(t.id)}">
+        <span class="av" style="--h:${hue(t.name)}" aria-hidden="true">${esc(initials(t.name))}</span>
+        <span class="body"><span class="nm">${esc(t.name)}</span>${subj && subj.size ? `<span class="sub">${esc([...subj].join(", "))}</span>` : ""}</span>
+        <span class="chev">${I.chev}</span></button>`;
+    }).join("");
+  }
+  function teacherListsHTML() {
+    const subjects = groupTeacherSubjects();
+    const q = query.trim().toLowerCase();
+    const all = index.teachers.filter((t) => !q || t.name.toLowerCase().includes(q));
+    const mine = all.filter((t) => subjects.has(t.id));
+    const others = all.filter((t) => !subjects.has(t.id));
+    let html = "";
+    if (mine.length || !q) html += `<h2 class="sec">Ведут занятия у группы</h2><div class="list">${teacherRowsHTML(mine, subjects)}</div>`;
+    if (others.length || (q && !mine.length)) html += `<h2 class="sec">Другие преподаватели</h2><div class="list">${teacherRowsHTML(others, subjects)}</div>`;
+    return html;
+  }
+  async function renderTeachers(token) {
+    if (!index) app.innerHTML = skeletonHTML();
+    try {
+      if (!index) index = await fetchJSON("data/index.json");
+      await load("g").catch(() => null);
+    } catch (e) {
+      if (token === renderToken) app.innerHTML = errorHTML();
+      return;
+    }
+    if (token !== renderToken) return;
+    app.innerHTML = `<div class="top"><div><div class="eyebrow">${esc(index.group || "СОДП-55у")}</div><h1>Преподаватели</h1></div></div>
+      <label class="search">${I.search}<input id="q" type="search" placeholder="Поиск по фамилии" aria-label="Поиск преподавателя" autocomplete="off" value="${esc(query)}"></label>
+      <div id="tlists">${teacherListsHTML()}</div>`;
+  }
+
+  function renderSettings() {
+    const pref = themePref();
+    const opts = [["auto", "Как в Telegram"], ["light", "Светлая"], ["dark", "Тёмная"]];
+    const upd = meta && meta.updated ? fmtUpdated(meta.updated) : "";
+    app.innerHTML = `<div class="top"><div><div class="eyebrow">@sodp55u_bot</div><h1>Настройки</h1></div></div>
+      <h2 class="sec">Оформление</h2>
+      <div class="list pad"><span class="lbl15">Тема</span>
+        <div class="seg3" role="group" aria-label="Тема">${opts.map(([v, l]) =>
+          `<button data-act="theme" data-v="${v}" aria-pressed="${pref === v}" class="${pref === v ? "on" : ""}">${l}</button>`).join("")}</div></div>
+      <h2 class="sec" id="nsec">Уведомления в чате</h2>
+      ${notifSettingsHTML()}
+      <p class="foot">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
+        ${upd ? `Данные от ${esc(upd)} · ` : ""}<button class="flink" data-act="refresh">Обновить</button></p>`;
+  }
+
+  function toast(text) {
+    const old = document.querySelector(".toast");
+    if (old) old.remove();
+    const el = document.createElement("div");
+    el.className = "toast";
+    el.setAttribute("role", "status");
+    el.textContent = text;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1800);
+  }
+
+  // ---------------- живое обновление ----------------
+  // Раз в 15 секунд: если статусы пар не поменялись — двигаем только шкалу и подписи,
+  // чтобы не перезапускать анимации; если поменялись — перерисовываем день целиком.
+  function tick() {
+    if (view !== "schedule" && view !== "teacher") return;
+    const id = view === "teacher" ? target : "g";
+    const data = mem[id];
+    if (!data || !pos[id] || !data.weeks[pos[id].w]) return;
+    const m = dayModel(data, pos[id].w, pos[id].d, view === "teacher");
+    if (m.sig !== liveSig) { render(); return; }
+    for (const it of m.items) {
+      if (it.type === "lesson" && it.st === "live") {
+        const row = app.querySelector(`[data-row="${it.i}"]`);
+        if (!row) continue;
+        const seg = row.querySelector(".seg");
+        if (seg) seg.style.setProperty("--p", it.p + "%");
+        const st = row.querySelector("[data-status]");
+        if (st) st.textContent = it.statusText;
+        const lbl = row.querySelector("[data-nowlbl]");
+        if (lbl) { lbl.textContent = it.nowLabel; lbl.hidden = !it.showNow; }
+      } else if (it.type === "lesson" && it.st === "next") {
+        const st = app.querySelector(`[data-row="${it.i}"] [data-status]`);
+        if (st) st.textContent = it.statusText;
+      } else if (it.type === "break" && it.active) {
+        const b = app.querySelector(`[data-brk="${it.i}"]`);
+        if (!b) continue;
+        b.style.setProperty("--p", it.p + "%");
+        const t = b.querySelector("[data-btext]");
+        if (t) t.textContent = `Перерыв · ${it.text}`;
+        const nl = b.querySelector("[data-bnow]");
+        if (nl) nl.textContent = it.nowLabel;
+      }
+    }
+  }
+
+  // ---------------- события ----------------
+  app.addEventListener("click", async (ev) => {
+    const el = ev.target.closest("[data-act]");
+    if (!el || !app.contains(el)) return;
+    const act = el.dataset.act;
+    const id = view === "teacher" ? target : "g";
+
+    if (act === "day") {
+      const d = +el.dataset.d;
+      if (pos[id] && pos[id].d !== d) { pos[id].d = d; opened.clear(); enterNext = true; haptic("select"); render(); }
+    } else if (act === "week") {
+      const data = mem[id];
+      const w = pos[id].w + (+el.dataset.dir);
+      if (data && w >= 0 && w < data.weeks.length) { pos[id].w = w; opened.clear(); enterNext = true; haptic("select"); render(); }
+    } else if (act === "today") {
+      if (mem[id]) { pos[id] = pickDefault(mem[id]); opened.clear(); enterNext = true; haptic("light"); render(); }
+    } else if (act === "teacher") {
+      haptic("light");
+      go("teacher", el.dataset.t, true);
+    } else if (act === "open") {
+      const key = el.dataset.key;
+      opened.has(key) ? opened.delete(key) : opened.add(key);
+      haptic("select");
+      render();
+    } else if (act === "back") {
+      back();
+    } else if (act === "notif") {
+      haptic("light");
+      go("notif", null, true);
+    } else if (act === "to-settings") {
+      haptic("light");
+      go("settings", null, true);
+      const sec = document.getElementById("nsec");
+      if (sec) requestAnimationFrame(() => sec.scrollIntoView({ block: "start", behavior: "smooth" }));
+    } else if (act === "notify-settings") {
+      openNotifySettings();
+    } else if (act === "ntoggle") {
+      if (!canEditNotify()) return;
+      const k = el.dataset.k;
+      nstate[k] = !nstate[k];
+      el.setAttribute("aria-checked", String(nstate[k]));
+      if (k === "on") { const row = document.getElementById("nminrow"); if (row) row.hidden = !nstate.on; }
+      haptic("select");
+      scheduleSave();
+    } else if (act === "jump") {
+      const date = el.dataset.date;
+      const g = mem.g;
+      if (g && date) {
+        const w = g.weeks.findIndex((x) => x.monday === mondayOf(date));
+        if (w >= 0) pos.g = { w, d: weekday(date) };
+      }
+      haptic("select");
+      go("schedule", "g", false);
+    } else if (act === "retry") {
+      delete mem[id];
+      render();
+    } else if (act === "theme") {
+      store.set("theme", el.dataset.v);
+      applyTheme();
+      haptic("select");
+      renderSettings();
+    } else if (act === "refresh") {
+      for (const k of Object.keys(mem)) delete mem[k];
+      try {
+        [index, meta, changes] = await Promise.all([fetchJSON("data/index.json"), fetchJSON("data/meta.json").catch(() => meta),
+          fetchJSON("data/changes.json").catch(() => changes)]);
+        await load("g");
+        toast("Расписание обновлено");
+        haptic("light");
+      } catch (e) {
+        toast("Нет связи — попробуй позже");
+      }
+      if (view === "settings") renderSettings();
+    } else if (act === "site") {
+      const g = mem.g;
+      const w = g && pos.g ? g.weeks[pos.g.w] : g && g.weeks[0];
+      const url = (w && w.url) || "https://www.samgups.ru/raspisanie_v2/";
+      if (inTG && tg.openLink) { try { tg.openLink(url); return; } catch (e) { /* ниже — обычное окно */ } }
+      window.open(url, "_blank", "noopener");
+    }
+  });
+
+  app.addEventListener("change", (ev) => {
+    if (ev.target.id !== "nmin" || !canEditNotify()) return;
+    nstate.min = +ev.target.value;
+    haptic("select");
+    scheduleSave();
+  });
+
+  app.addEventListener("input", (ev) => {
+    if (ev.target.id !== "q") return;
+    query = ev.target.value;
+    const box = document.getElementById("tlists");
+    if (box && index) box.innerHTML = teacherListsHTML();
+  });
+
+  tabs.forEach((b) => b.addEventListener("click", () => {
+    const t = b.dataset.tab;
+    haptic("select");
+    if (t === "schedule") go("schedule", "g", false);
+    else go(t, null, false);
+  }));
+
+  // ---------------- запуск ----------------
+  if (tg) {
+    try { tg.ready(); } catch (e) { /* вне Telegram */ }
+    try { tg.expand(); } catch (e) { /* вне Telegram */ }
+    if (tgAtLeast("7.7")) { try { tg.disableVerticalSwipes(); } catch (e) { /* старый клиент */ } }
+    if (tgAtLeast("6.1")) { try { tg.BackButton.onClick(back); } catch (e) { /* старый клиент */ } }
+    try { tg.onEvent("themeChanged", applyTheme); } catch (e) { /* старый клиент */ }
+  }
+  if (window.matchMedia) {
+    try { matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme); } catch (e) { /* старый браузер */ }
+  }
+  applyTheme();
+  syncTabs();
+
+  // Сначала скелет, потом всё нужное для первого экрана разом — чтобы анимация не обрывалась
+  app.innerHTML = skeletonHTML();
+  Promise.all([
+    fetchJSON("data/index.json").then((j) => { index = j; }).catch(() => {}),
+    fetchJSON("data/meta.json").then((j) => { meta = j; }).catch(() => {}),
+    fetchJSON("data/changes.json").then((j) => { changes = j; }).catch(() => { changes = { items: [] }; }),
+    load("g").catch(() => {}),
+  ]).then(() => render());
+
+  setInterval(tick, 15000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
+})();
+</script>
+</body>
+</html>
