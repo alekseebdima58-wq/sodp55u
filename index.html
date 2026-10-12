@@ -225,7 +225,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 /* Листание дней: соседние дни лежат слева и справа, вся лента едет за пальцем */
 :root { --pgap: 40px; }
 .track { position: relative; touch-action: pan-y; }
-.page { position: relative; z-index: 1; }
+.page { position: relative; z-index: 1; display: flow-root; }   /* отступы внутри дня одинаковые у текущего и соседних — без прыжка при подмене */
 .page.prev, .page.next { position: absolute; top: 0; left: 0; right: 0; max-height: 0; overflow: hidden; pointer-events: none; }
 /* Пока листаем, дни становятся «карточками»: всё чуть уменьшается (плавно, силами видеокарты),
    под каждым днём проявляется скруглённая рамка; отпустил — всё так же плавно возвращается */
@@ -1401,6 +1401,9 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     if (!it) { render(); return; }
     const oldBody = row.querySelector(".card, .cc");
     const h0 = oldBody.getBoundingClientRect().height;
+    const oldTitle = oldBody.querySelector("h3");
+    const t0 = oldTitle ? oldTitle.getBoundingClientRect() : null;
+    const f0 = oldTitle ? parseFloat(getComputedStyle(oldTitle).fontSize) : 0;
     const list = row.parentElement;
     if (list) list.classList.remove("enter");   // чтобы не проиграть заново анимацию появления
     const tmp = document.createElement("ol");
@@ -1410,11 +1413,20 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     liveSig = m.sig;
     const body = fresh.querySelector(".card, .cc");
     const h1 = body.getBoundingClientRect().height;
-    const ease = "cubic-bezier(.2, .8, .2, 1)";
-    body.animate([{ height: `${h0}px`, overflow: "hidden" }, { height: `${h1}px`, overflow: "hidden" }], { duration: 360, easing: ease });
-    [...body.children].forEach((c, i) => c.animate(
-      [{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }],
-      { duration: 300, delay: 50 + i * 35, easing: ease, fill: "backwards" }));
+    const ease = "cubic-bezier(.2, .8, .2, 1)", dur = 340;
+    body.animate([{ height: `${h0}px`, overflow: "hidden" }, { height: `${h1}px`, overflow: "hidden" }], { duration: dur, easing: ease });
+    const title = body.querySelector("h3");
+    if (title && t0) {
+      const t1 = title.getBoundingClientRect();
+      const k = f0 / (parseFloat(getComputedStyle(title).fontSize) || f0);
+      title.style.transformOrigin = "0 0";
+      title.animate([{ transform: `translate(${t0.left - t1.left}px, ${t0.top - t1.top}px) scale(${k})` }, { transform: "none" }],
+        { duration: dur, easing: ease });
+    }
+    for (const c of body.children) {
+      if (c === title) continue;
+      c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: 70, easing: "ease-out", fill: "backwards" });
+    }
   }
 
   // ---------------- свайпы между днями ----------------
@@ -1568,6 +1580,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
       base = liveX;
       lock = "x";
       lift(true);
+      if (!dragFrame) dragFrame = requestAnimationFrame(dragTick);
     } else if (t.clientX < 24 || t.clientX > window.innerWidth - 24) {
       return;   // у самых краёв экрана — системные жесты «назад», их не перехватываем
     }
@@ -1590,22 +1603,33 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const now = performance.now();
     const v = (t.clientX - swipe.lastX) / Math.max(8, now - swipe.lastT);
     swipe.v = swipe.v ? swipe.v * 0.35 + v * 0.65 : v;   // скорость, px/мс (сглаженная)
-    swipe.lastX = t.clientX; swipe.lastT = now;
-    swipe.x = rubber(swipe.base + (t.clientX - swipe.x0) / LIFT);   // лента уменьшена — палец ведёт её один в один
-    if (dragFrame) return;
-    dragFrame = requestAnimationFrame(() => {
-      dragFrame = 0;
-      const track = trackEl();
-      if (track && swipe) placeTrack(track, swipe.x);
-    });
+    swipe.lastX = t.clientX; swipe.lastT = now; swipe.ev = (swipe.ev || 0) + 1;
+    if (!dragFrame) dragFrame = requestAnimationFrame(dragTick);
   }, { passive: false });
+  // Каждый кадр, пока палец на экране: ставим ленту туда, где палец сейчас (с поправкой на скорость,
+  // если новое касание ещё не пришло) — движение ровное, без ступенек
+  function dragTick() {
+    dragFrame = 0;
+    if (!swipe || swipe.lock !== "x") return;
+    const track = trackEl();
+    if (!track) return;
+    const since = performance.now() - swipe.lastT;
+    let fx = swipe.lastX + swipe.v * Math.min(since, 24);   // где палец сейчас, если новое касание ещё не пришло
+    if (swipe.fx != null && swipe.seen === swipe.ev) {
+      fx = swipe.v < 0 ? Math.min(fx, swipe.fx) : Math.max(fx, swipe.fx);   // между касаниями — ни шага назад
+    }
+    swipe.fx = fx; swipe.seen = swipe.ev;
+    swipe.x = rubber(swipe.base + (fx - swipe.x0) / LIFT);   // лента уменьшена — палец ведёт её один в один
+    placeTrack(track, swipe.x);
+    dragFrame = requestAnimationFrame(dragTick);
+  }
   app.addEventListener("touchend", () => {
     const s = swipe;
     swipe = null;
     if (dragFrame) { cancelAnimationFrame(dragFrame); dragFrame = 0; }
     const track = trackEl();
     if (!s || s.lock !== "x") { if (track && !settling && track.classList.contains("moving")) stopMoving(track); return; }
-    if (track) placeTrack(track, s.x);   // догоняем последнее положение пальца
+    s.x = liveX;   // продолжаем ровно с того места, где лента на экране, — без отскока
     lift(false);
     const v = performance.now() - s.lastT < 90 ? s.v : 0;   // палец остановился — без броска
     const projected = s.x + v * 300;   // куда докатится за ~0,3 с
@@ -1616,7 +1640,8 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   app.addEventListener("touchcancel", () => {
     const s = swipe;
     swipe = null;
-    if (s && s.lock === "x") { lift(false); settle(0, s.x, 0); }
+    if (dragFrame) { cancelAnimationFrame(dragFrame); dragFrame = 0; }
+    if (s && s.lock === "x") { lift(false); settle(0, liveX, 0); }
     else { const track = trackEl(); if (track && !settling) stopMoving(track); }
   });
   // На компьютере — стрелками ← →
