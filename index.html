@@ -221,10 +221,16 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 @keyframes grow { from { height: 0; } }
 @keyframes slide { from { top: 0; } }
-/* Смена дня свайпом: новый день въезжает с той стороны, куда листали */
-.daybody { touch-action: pan-y; }
-.daybody.from-r { animation: inR .34s cubic-bezier(.22, 1, .36, 1) both; }
-.daybody.from-l { animation: inL .34s cubic-bezier(.22, 1, .36, 1) both; }
+/* Листание дней: соседние дни лежат слева и справа, вся лента едет за пальцем */
+:root { --pgap: 40px; }
+.track { position: relative; touch-action: pan-y; }
+.page.prev, .page.next { position: absolute; top: 0; left: 0; right: 0; max-height: 0; overflow: hidden; pointer-events: none; }
+.page.prev { transform: translate3d(calc(-100% - var(--pgap)), 0, 0); }
+.page.next { transform: translate3d(calc(100% + var(--pgap)), 0, 0); }
+.track.moving { will-change: transform; }
+.track.moving .page.prev, .track.moving .page.next { max-height: var(--nmax, 100vh); }
+.page.cur.from-r { animation: inR .34s cubic-bezier(.22, 1, .36, 1) both; }
+.page.cur.from-l { animation: inL .34s cubic-bezier(.22, 1, .36, 1) both; }
 @keyframes inR { from { opacity: 0; transform: translate3d(30%, 0, 0); } }
 @keyframes inL { from { opacity: 0; transform: translate3d(-30%, 0, 0); } }
 
@@ -332,8 +338,8 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .nempty .empty { padding: 0 16px; }
 .nempty .hint { max-width: 330px; margin: 24px auto 0; text-wrap: balance; }
 .nempty .empty .p { text-wrap: balance; }
-.nempty .btn.wide { max-width: 360px; margin-top: 16px; }
-.nfoot { text-align: center; margin-top: 8px; }
+.nempty .btn.wide { max-width: 360px; margin-top: 24px; }
+.nfoot { margin-top: 16px; }
 .btn.wide { width: 100%; margin-top: 12px; background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
 /* ---------- настройки ---------- */
@@ -366,6 +372,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 
 /* Узкие телефоны (360–380 px): чуть меньше полей, чтобы статус пары и подписи не обрезались */
 @media (max-width: 380px) {
+  :root { --pgap: 28px; }
   #app { padding-left: 14px; padding-right: 14px; }
   .row, .brk { column-gap: 10px; }
   .card { padding: 12px; }
@@ -872,6 +879,27 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
       <div class="blbl">${I.cup}<span data-btext>Перерыв · ${esc(it.text)}</span></div></li>`;
   }
 
+  function neighborPos(data, w, d, dir) {
+    let nw = w, nd = d + dir;
+    if (nd > 6) { if (nw >= data.weeks.length - 1) return null; nw += 1; nd = 0; }
+    if (nd < 0) { if (nw <= 0) return null; nw -= 1; nd = 6; }
+    return { w: nw, d: nd };
+  }
+  function dayBodyHTML(data, w, d, isTeacher, enter, model) {
+    const m = model || dayModel(data, w, d, isTeacher);
+    let html = `<div class="dayhead"><div class="t"><h2>${DAYS[d]}, ${fmtDate(m.date)}</h2>${m.isToday ? `<span class="tag">сегодня</span>` : ""}</div>
+      ${m.summary ? `<span class="summary" data-summary>${esc(m.summary)}</span>` : ""}</div>`;
+    if (m.n) {
+      let n = 0;
+      html += `<ol class="tl${enter ? " enter" : ""}">`;
+      for (const it of m.items) html += it.type === "break" ? breakHTML(it) : lessonHTML(it, n++, isTeacher);
+      html += `</ol>`;
+    } else {
+      html += `<div class="empty"><div class="ic">${I.moon}</div><div class="h">Пар нет</div>
+        <div class="p">${esc(emptyHint(data, w, d, m.isPastDay))}</div></div>`;
+    }
+    return html;
+  }
   function scheduleHTML(data, id, isTeacher) {
     const p = pos[id];
     const week = data.weeks[p.w];
@@ -899,19 +927,12 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     }
     html += `</nav>`;
 
-    html += `<div class="daybody${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-daybody>`;
-    html += `<div class="dayhead"><div class="t"><h2>${DAYS[p.d]}, ${fmtDate(m.date)}</h2>${m.isToday ? `<span class="tag">сегодня</span>` : ""}</div>
-      ${m.summary ? `<span class="summary" data-summary>${esc(m.summary)}</span>` : ""}</div>`;
-
-    if (m.n) {
-      let n = 0;
-      html += `<ol class="tl${enterNext ? " enter" : ""}">`;
-      for (const it of m.items) html += it.type === "break" ? breakHTML(it) : lessonHTML(it, n++, isTeacher);
-      html += `</ol>`;
-    } else {
-      html += `<div class="empty"><div class="ic">${I.moon}</div><div class="h">Пар нет</div>
-        <div class="p">${esc(emptyHint(data, p.w, p.d, m.isPastDay))}</div></div>`;
-    }
+    // Текущий день и соседние (для листания пальцем) — соседи лежат за краями экрана
+    const prev = neighborPos(data, p.w, p.d, -1), next = neighborPos(data, p.w, p.d, 1);
+    html += `<div class="track" data-track>`;
+    if (prev) html += `<div class="page prev" aria-hidden="true" inert>${dayBodyHTML(data, prev.w, prev.d, isTeacher, false)}</div>`;
+    html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
+    if (next) html += `<div class="page next" aria-hidden="true" inert>${dayBodyHTML(data, next.w, next.d, isTeacher, false)}</div>`;
     html += `</div>`;
     liveSig = m.sig;
     return { html, notToday: notToday && todayInData };
@@ -981,12 +1002,11 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     }
     const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
     let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div class="eyebrow">Уведомления</div></div></div>`;
-    const foot = `<p class="hint">Бот может присылать в чат напоминания перед парой, сводки на день и эти изменения.</p>
-      <button class="btn wide" data-act="to-settings">${I.bell}Настроить уведомления</button>`;
+    const foot = `<button class="btn wide" data-act="to-settings">${I.bell}Настроить уведомления</button>`;
     if (!items.length) {
       // Пусто: колокольчик, текст и кнопка — одним блоком посередине экрана
       html += `<div class="nempty"><div class="empty"><div class="ic">${I.bellBig}</div><div class="h">Уведомлений пока нет</div>
-        <div class="p">Бот сверяет расписание с сайтом каждые 6 часов. Отмены, замены и смену аудиторий покажем здесь.</div></div>${foot}</div>`;
+        <div class="p">Отмены, замены и смену аудиторий покажем здесь.</div></div>${foot}</div>`;
     } else {
       for (const [title, list] of groups) {
         if (!list.length) continue;
@@ -1184,6 +1204,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   // чтобы не перезапускать анимации; если поменялись — перерисовываем день целиком.
   function tick() {
     if (view !== "schedule" && view !== "teacher") return;
+    if (swipe || settling) return;   // не перерисовываем посреди листания
     const id = view === "teacher" ? target : "g";
     const data = mem[id];
     if (!data || !pos[id] || !data.weeks[pos[id].w]) return;
@@ -1191,7 +1212,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     if (m.sig !== liveSig) { render(); return; }
     for (const it of m.items) {
       if (it.type === "lesson" && it.st === "live") {
-        const row = app.querySelector(`[data-row="${it.i}"]`);
+        const row = app.querySelector(`[data-cur] [data-row="${it.i}"]`);
         if (!row) continue;
         const seg = row.querySelector(".seg");
         if (seg) seg.style.setProperty("--p", it.p + "%");
@@ -1200,10 +1221,10 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
         const lbl = row.querySelector("[data-nowlbl]");
         if (lbl) { lbl.textContent = it.nowLabel; lbl.hidden = !it.showNow; }
       } else if (it.type === "lesson" && it.st === "next") {
-        const st = app.querySelector(`[data-row="${it.i}"] [data-status]`);
+        const st = app.querySelector(`[data-cur] [data-row="${it.i}"] [data-status]`);
         if (st) st.textContent = it.statusText;
       } else if (it.type === "break" && it.active) {
-        const b = app.querySelector(`[data-brk="${it.i}"]`);
+        const b = app.querySelector(`[data-cur] [data-brk="${it.i}"]`);
         if (!b) continue;
         b.style.setProperty("--p", it.p + "%");
         const t = b.querySelector("[data-btext]");
@@ -1352,92 +1373,106 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   }
 
   // ---------------- свайпы между днями ----------------
-  // Влево — следующий день, вправо — предыдущий; на краю недели переходим на соседнюю неделю.
-  // День едет за пальцем; отпустил — старый день плавно уезжает, новый въезжает с другой стороны.
-  function shiftTarget(dir) {
+  // Как листание страниц: лента «вчера | сегодня | завтра» едет за пальцем один в один,
+  // отпустил — доезжает до соседнего дня с той же скоростью (или пружинит обратно).
+  let swipe = null, settling = false;
+  function trackEl() { return app.querySelector("[data-track]"); }
+  function curPos() {
     if (view !== "schedule" && view !== "teacher") return null;
     const id = view === "teacher" ? target : "g";
-    const data = mem[id], p = pos[id];
-    if (!data || !p) return null;
-    let w = p.w, d = p.d + dir;
-    if (d > 6) { if (w >= data.weeks.length - 1) return null; w += 1; d = 0; }
-    if (d < 0) { if (w <= 0) return null; w -= 1; d = 6; }
-    return { id, w, d };
+    return mem[id] && pos[id] ? { id, data: mem[id], p: pos[id] } : null;
   }
-  function shiftDay(dir) {
-    const t = shiftTarget(dir);
-    if (!t) return false;
-    pos[t.id] = { w: t.w, d: t.d };
+  function hasNeighbor(dir) {
+    const c = curPos();
+    return !!(c && neighborPos(c.data, c.p.w, c.p.d, dir));
+  }
+  function stepPx(track) {
+    return track.offsetWidth + (parseFloat(getComputedStyle(ROOT).getPropertyValue("--pgap")) || 40);
+  }
+  function startMoving(track) {
+    // соседние дни видны до низа экрана, но не удлиняют страницу, пока не листаем
+    const top = track.getBoundingClientRect().top;
+    track.style.setProperty("--nmax", `${Math.max(track.offsetHeight, window.innerHeight - top)}px`);
+    track.classList.add("moving");
+  }
+  function commitDay(dir) {
+    const c = curPos();
+    const np = c && neighborPos(c.data, c.p.w, c.p.d, dir);
+    if (!np) return;
+    pos[c.id] = np;
     opened.clear();
-    enterNext = false;   // без «каскада» карточек — новый день въезжает целиком
-    slideDir = dir;
-    haptic("select");
-    render();
-    return true;
+    enterNext = false;
+    slideDir = 0;
+    render();   // новый день уже стоит ровно на своём месте — подмена незаметна
   }
-  let swipe = null, leaving = false;
-  function swipeBody() { return app.querySelector("[data-daybody]"); }
-  // Старый день уезжает (с той скорости, с какой его тянули), потом показываем новый
-  function leaveAndShift(dir, fast) {
-    if (leaving || !shiftTarget(dir)) return false;
-    const body = swipeBody();
-    if (!body) return shiftDay(dir);
-    leaving = true;
-    const dur = fast ? 110 : 160;
-    body.style.willChange = "transform, opacity";
-    body.style.transition = `transform ${dur}ms cubic-bezier(.4, 0, 1, 1), opacity ${dur}ms ease-in`;
-    void body.offsetWidth;   // чтобы анимация пошла от текущего положения пальца
-    body.style.transform = `translate3d(${Math.round(window.innerWidth * 0.45) * (dir > 0 ? -1 : 1)}px, 0, 0)`;
-    body.style.opacity = "0";
-    setTimeout(() => { leaving = false; shiftDay(dir); }, dur);
-    return true;
+  // Доводка ленты: к соседнему дню (dir = ±1) или обратно (dir = 0), v — скорость пальца, px/мс
+  function settle(dir, x, v) {
+    const track = trackEl();
+    if (!track) return;
+    const to = dir ? -dir * stepPx(track) : 0;
+    const dist = Math.abs(to - x);
+    const speed = Math.max(Math.abs(v || 0), 0.9);
+    const dur = Math.round(Math.min(360, Math.max(170, (dist / speed) * 1.4)));
+    settling = true;
+    track.style.transition = `transform ${dur}ms cubic-bezier(.2, .85, .25, 1)`;
+    track.style.transform = `translate3d(${to}px, 0, 0)`;
+    if (dir) haptic("select");
+    setTimeout(() => {
+      settling = false;
+      if (dir) { commitDay(dir); return; }
+      track.style.transition = "";
+      track.style.transform = "";
+      track.classList.remove("moving");
+    }, dur + 16);
   }
-  function swipeReset() {
-    const body = swipeBody();
-    if (!body) return;
-    body.style.transition = "transform .32s cubic-bezier(.22, 1, .36, 1), opacity .32s ease";
-    body.style.transform = "";
-    body.style.opacity = "";
-    setTimeout(() => { body.style.willChange = ""; }, 340);
+  function shiftDay(dir) {   // для клавиатуры: та же анимация, что и пальцем
+    if (settling || !hasNeighbor(dir)) return false;
+    const track = trackEl();
+    if (!track) { commitDay(dir); return true; }
+    startMoving(track);
+    void track.offsetWidth;
+    settle(dir, 0, 2.2);
+    return true;
   }
   let dragFrame = 0;
   app.addEventListener("touchstart", (e) => {
     swipe = null;
-    if (leaving || (view !== "schedule" && view !== "teacher") || e.touches.length !== 1) return;
+    if (settling || (view !== "schedule" && view !== "teacher") || e.touches.length !== 1) return;
     const t = e.touches[0];
     // у самых краёв экрана — системные жесты «назад», их не перехватываем
     if (t.clientX < 24 || t.clientX > window.innerWidth - 24) return;
     if (e.target.closest("input, select, textarea")) return;
-    swipe = { x: t.clientX, y: t.clientY, t: Date.now(), dx: 0, lock: "", lastX: t.clientX, lastT: Date.now(), v: 0 };
+    swipe = { x0: t.clientX, y0: t.clientY, dx: 0, x: 0, lock: "", lastX: t.clientX, lastT: performance.now(), v: 0 };
   }, { passive: true });
   app.addEventListener("touchmove", (e) => {
     if (!swipe || e.touches.length !== 1) return;
     const t = e.touches[0];
-    const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+    const dx = t.clientX - swipe.x0, dy = t.clientY - swipe.y0;
     if (!swipe.lock) {
-      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-      swipe.lock = Math.abs(dx) > Math.abs(dy) * 1.3 ? "x" : "y";
-      if (swipe.lock === "x") swipe.x = t.clientX - Math.sign(dx) * 2;   // без рывка на старте
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      swipe.lock = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+      if (swipe.lock === "x") {
+        swipe.x0 = t.clientX;   // лента трогается с места без рывка
+        const track = trackEl();
+        if (track) startMoving(track);
+      }
     }
     if (swipe.lock !== "x") return;
     if (e.cancelable) e.preventDefault();   // пока листаем вбок — страница не прокручивается
-    const now = Date.now();
-    const v = (t.clientX - swipe.lastX) / Math.max(8, now - swipe.lastT);   // скорость, px/мс (сглаженная)
-    swipe.v = swipe.v ? swipe.v * 0.4 + v * 0.6 : v;
+    const now = performance.now();
+    const v = (t.clientX - swipe.lastX) / Math.max(8, now - swipe.lastT);
+    swipe.v = swipe.v ? swipe.v * 0.35 + v * 0.65 : v;   // скорость, px/мс (сглаженная)
     swipe.lastX = t.clientX; swipe.lastT = now;
-    swipe.dx = t.clientX - swipe.x;
+    swipe.dx = t.clientX - swipe.x0;
     if (dragFrame) return;
     dragFrame = requestAnimationFrame(() => {
       dragFrame = 0;
-      const body = swipeBody();
-      if (!body || !swipe) return;
+      const track = trackEl();
+      if (!track || !swipe) return;
       const d = swipe.dx;
-      const can = !!shiftTarget(d < 0 ? 1 : -1);
-      const x = can ? d : d * 0.25;   // дальше дней нет — тянется «резинкой»
-      body.style.willChange = "transform, opacity";
-      body.style.transition = "none";
-      body.style.transform = `translate3d(${Math.round(x)}px, 0, 0)`;
-      body.style.opacity = can ? String(1 - Math.min(Math.abs(d) / window.innerWidth, 0.55)) : "1";
+      swipe.x = hasNeighbor(d < 0 ? 1 : -1) ? d : d * 0.3;   // дальше дней нет — тянется «резинкой»
+      track.style.transition = "none";
+      track.style.transform = `translate3d(${swipe.x}px, 0, 0)`;
     });
   }, { passive: false });
   app.addEventListener("touchend", () => {
@@ -1445,18 +1480,29 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     swipe = null;
     if (dragFrame) { cancelAnimationFrame(dragFrame); dragFrame = 0; }
     if (!s || s.lock !== "x") return;
+    const track = trackEl();
+    if (track) {   // догоняем последнее положение пальца
+      s.x = hasNeighbor(s.dx < 0 ? 1 : -1) ? s.dx : s.dx * 0.3;
+      track.style.transition = "none";
+      track.style.transform = `translate3d(${s.x}px, 0, 0)`;
+    }
     const dir = s.dx < 0 ? 1 : -1;
-    // быстрый взмах листает даже на коротком расстоянии; если палец остановился — не считается
-    const flick = Math.abs(s.v) > 0.25 && Math.sign(s.v) === Math.sign(s.dx) && Math.abs(s.dx) > 24 && Date.now() - s.lastT < 90;
-    if ((Math.abs(s.dx) >= window.innerWidth * 0.22 || flick) && leaveAndShift(dir, flick)) return;
-    swipeReset();   // не дотянули или дальше дней нет — плавно возвращаем на место
+    const recent = performance.now() - s.lastT < 90;   // палец не остановился перед отпусканием
+    const flick = recent && Math.abs(s.v) > 0.25 && Math.sign(s.v) === Math.sign(s.dx) && Math.abs(s.dx) > 20;
+    const far = track && Math.abs(s.dx) > track.offsetWidth * 0.33;
+    if ((flick || far) && hasNeighbor(dir)) settle(dir, s.x, recent ? s.v : 0);
+    else settle(0, s.x, 0);
   });
-  app.addEventListener("touchcancel", () => { if (swipe && swipe.lock === "x") swipeReset(); swipe = null; });
+  app.addEventListener("touchcancel", () => {
+    const s = swipe;
+    swipe = null;
+    if (s && s.lock === "x") settle(0, s.x, 0);
+  });
   // На компьютере — стрелками ← →
   document.addEventListener("keydown", (e) => {
     if (e.altKey || e.ctrlKey || e.metaKey || e.target.closest("input, select, textarea")) return;
-    if (e.key === "ArrowRight" && leaveAndShift(1, true)) e.preventDefault();
-    else if (e.key === "ArrowLeft" && leaveAndShift(-1, true)) e.preventDefault();
+    if (e.key === "ArrowRight" && shiftDay(1)) e.preventDefault();
+    else if (e.key === "ArrowLeft" && shiftDay(-1)) e.preventDefault();
   });
 
   // ---------------- полноэкранный режим ----------------
