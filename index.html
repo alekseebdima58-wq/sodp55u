@@ -185,11 +185,10 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 }
 .kind::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--k-bar); }
 .card h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
-.meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--text2); min-width: 0; }
+.meta { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; font-size: 13px; color: var(--text2); min-width: 0; }
 .meta > span, .tlink { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
 .meta .x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tlink { border: 0; background: none; padding: 4px 0; margin: -4px 0; color: var(--accent); }
-.meta .ctl.exam { color: var(--text); font-weight: 600; }
 
 .cc {
   min-width: 0; width: 100%; margin: 3px 0; padding: 10px 14px; border-radius: 16px; text-align: left;
@@ -372,6 +371,12 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   animation: fade .2s ease both; z-index: 20;
 }
 
+/* Во весь экран сверху — часы телефона и кнопки Telegram «Закрыть» / «⋯». Под ними сплошная полоса
+   цвета фона (с мягким краем), чтобы прокрученный текст не залезал под них. */
+.topveil { display: none; }
+.fs .topveil { display: block; position: fixed; left: 0; right: 0; top: 0; height: var(--safe-top, 0px); z-index: 9; background: var(--bg); }
+.fs .topveil::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 12px; background: linear-gradient(var(--bg), rgba(0, 0, 0, 0)); pointer-events: none; }
+
 /* ---------- нижняя панель ---------- */
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
@@ -399,6 +404,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 </head>
 <body>
 <div id="app"></div>
+<div class="topveil" aria-hidden="true"></div>
 
 <nav class="tabs" aria-label="Разделы">
   <div class="in">
@@ -911,7 +917,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
       } else if (it.extra) {
         meta += `<span>${I.user}<span class="x">${esc(it.extra)}</span></span>`;
       }
-      if (it.ctl) meta += `<span class="ctl${it.ctl.exam ? " exam" : ""}">${I.cap}<span class="x">${esc(it.ctl.text)}</span></span>`;
+      if (it.ctl) meta += `<span class="ctl">${I.cap}<span class="x">${esc(it.ctl.text)}</span></span>`;
       const isOpened = opened.has(it.key);
       body = `<div class="card${isOpened ? " opened" : ""}"${isOpened ? ` data-act="open" data-key="${esc(it.key)}"` : ""}>
         <div class="hd"><span class="status" data-status>${esc(it.statusText)}</span><span class="kind">${esc(it.k.label)}</span></div>
