@@ -189,6 +189,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .meta > span, .tlink { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
 .meta .x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tlink { border: 0; background: none; padding: 4px 0; margin: -4px 0; color: var(--accent); }
+.meta .ctl.exam { color: var(--text); font-weight: 600; }
 
 .cc {
   min-width: 0; width: 100%; margin: 3px 0; padding: 10px 14px; border-radius: 16px; text-align: left;
@@ -441,6 +442,39 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   // Для проверки можно открыть страницу с ?now=2026-10-12T10:52 — время «застынет» на этом моменте
   const NOW_OVERRIDE = new URLSearchParams(location.search).get("now");
 
+  // ---------------- формы контроля в сессию ----------------
+  // Зимняя сессия 2026/27 — из личного кабинета («Индивидуальная образовательная траектория»).
+  // Показываются только у пар группы до конца семестра; к весеннему семестру список нужно заменить.
+  const SESSION = {
+    until: "2027-01-31",
+    list: {
+      "Рельсовые цепи": "exam kr",
+      "Основы теории надежности": "exam",
+      "Теоретические основы автоматики и телемеханики": "exam",
+      "Эксплуатационные основы систем и устройств автоматики и телемеханики": "exam",
+      "Электромагнитная совместимость и средства защиты": "exam",
+      "Теория дискретных устройств": "zo",
+      "Основы схемотехники устройств железнодорожной автоматики и телемеханики": "zo",
+      "Измерения в устройствах автоматики и телемеханики": "z",
+      "Математическое моделирование систем и процессов": "z",
+      "Теория передачи сигналов": "z",
+      "Технологии искусственного интеллекта": "z",
+    },
+  };
+  const normSubj = (x) => String(x || "").toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]+/g, " ").trim();
+  const SESSION_MAP = new Map(Object.entries(SESSION.list).map(([k, v]) => [normSubj(k), v.split(" ")]));
+  const CTL_TEXT = { exam: "экзамен", z: "зачёт", zo: "зачёт с оценкой", kr: "курсовая" };
+  function controlOf(subject, date, isTeacher, extra) {
+    if (date > SESSION.until) return null;
+    if (isTeacher) {   // у преподавателя — только пары нашей группы
+      const g = normSubj((index && index.group) || "СОДП-55у");
+      if (!String(extra || "").split(/[,;]/).some((x) => normSubj(x) === g)) return null;
+    }
+    const forms = SESSION_MAP.get(normSubj(subject));
+    if (!forms) return null;
+    return { exam: forms.includes("exam"), text: "Сессия: " + forms.map((x) => CTL_TEXT[x]).join(", ") };
+  }
+
   // ---------------- иконки ----------------
   const svg = (d, s = 16, w = 2) =>
     `<svg aria-hidden="true" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -463,6 +497,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     xc: svg('<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/>', 20),
     plus: svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>', 20),
     pinBig: svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>', 20),
+    cap: svg('<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>', 14),
     swap: svg('<path d="M7 4 3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/>', 20),
   };
 
@@ -797,6 +832,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
         subject: l.subject || "Занятие", room: roomText(l.room), extra: (l.extra || "").trim(), teacher,
         first: i === 0, last: i === n - 1, afterPast: i > 0 && status[i - 1] === "past" && isToday,
         showNow: st === "live", nowLabel: now.label,
+        ctl: controlOf(l.subject, date, isTeacher, l.extra),
       });
     });
 
@@ -875,6 +911,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
       } else if (it.extra) {
         meta += `<span>${I.user}<span class="x">${esc(it.extra)}</span></span>`;
       }
+      if (it.ctl) meta += `<span class="ctl${it.ctl.exam ? " exam" : ""}">${I.cap}<span class="x">${esc(it.ctl.text)}</span></span>`;
       const isOpened = opened.has(it.key);
       body = `<div class="card${isOpened ? " opened" : ""}"${isOpened ? ` data-act="open" data-key="${esc(it.key)}"` : ""}>
         <div class="hd"><span class="status" data-status>${esc(it.statusText)}</span><span class="kind">${esc(it.k.label)}</span></div>
