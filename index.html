@@ -1400,7 +1400,8 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const it = m.items.find((x) => x.type === "lesson" && x.key === key);
     if (!it) { render(); return; }
     const oldBody = row.querySelector(".card, .cc");
-    const h0 = oldBody.getBoundingClientRect().height;
+    const rb = row.getBoundingClientRect(), ob = oldBody.getBoundingClientRect();
+    const h0 = ob.height;
     const oldTitle = oldBody.querySelector("h3");
     const t0 = oldTitle ? oldTitle.getBoundingClientRect() : null;
     const f0 = oldTitle ? parseFloat(getComputedStyle(oldTitle).fontSize) : 0;
@@ -1414,12 +1415,36 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const body = fresh.querySelector(".card, .cc");
     const h1 = body.getBoundingClientRect().height;
     // день стал выше — сразу даём ленте место; ниже — подрезаем, когда карточка уже свернулась
-    if (h1 >= h0) fitPager(); else setTimeout(fitPager, 360);
-    const ease = "cubic-bezier(.2, .8, .2, 1)", dur = 340;
-    body.animate([{ height: `${h0}px`, overflow: "hidden" }, { height: `${h1}px`, overflow: "hidden" }], { duration: dur, easing: ease });
+    if (h1 >= h0) fitPager(); else setTimeout(fitPager, 340);
+
+    // Плавно и одновременно: карточка меняет высоту, название переезжает на новое место,
+    // старые строки тают, новые проявляются — без пустых кадров и резких исчезновений
+    const ease = "cubic-bezier(.4, 0, .2, 1)", dur = 320;
+    const clip = (a, b) => [{ height: `${a}px`, overflow: "hidden" }, { height: `${b}px`, overflow: "hidden" }];
+    body.animate(clip(h0, h1), { duration: dur, easing: ease });
+
+    // «призрак» старого содержимого поверх новой карточки (без названия — оно переезжает само)
+    const ghost = oldBody.cloneNode(true);
+    ghost.removeAttribute("data-act");
+    ghost.setAttribute("aria-hidden", "true");
+    Object.assign(ghost.style, {
+      position: "absolute", top: `${ob.top - rb.top}px`, left: `${ob.left - rb.left}px`, width: `${ob.width}px`,
+      height: `${h0}px`, margin: "0", background: "transparent", borderColor: "transparent", boxShadow: "none",
+      pointerEvents: "none", zIndex: "2",
+    });
+    const gt = ghost.querySelector("h3");
+    if (gt) gt.style.visibility = "hidden";
+    fresh.style.position = "relative";
+    fresh.appendChild(ghost);
+    ghost.animate(clip(h0, h1), { duration: dur, easing: ease });
+    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: "ease-out", fill: "forwards" })
+      .finished.then(() => { ghost.remove(); fresh.style.position = ""; }).catch(() => {});
+
     const title = body.querySelector("h3");
+    let span = null;   // полоса, по которой едет название: новые строки в ней появляются, когда оно уже проехало
     if (title && t0) {
       const t1 = title.getBoundingClientRect();
+      span = [Math.min(t0.top, t1.top), Math.max(t0.bottom, t1.bottom)];
       const k = f0 / (parseFloat(getComputedStyle(title).fontSize) || f0);
       title.style.transformOrigin = "0 0";
       title.animate([{ transform: `translate(${t0.left - t1.left}px, ${t0.top - t1.top}px) scale(${k})` }, { transform: "none" }],
@@ -1427,7 +1452,11 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     }
     for (const c of body.children) {
       if (c === title) continue;
-      c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: 70, easing: "ease-out", fill: "backwards" });
+      const r = c.getBoundingClientRect();
+      const late = span && r.bottom > span[0] && r.top < span[1];
+      c.animate([{ opacity: 0 }, { opacity: 1 }],
+        late ? { duration: 160, delay: 160, easing: "ease-out", fill: "backwards" }
+             : { duration: 220, delay: 30, easing: "ease-out", fill: "backwards" });
     }
   }
 
