@@ -2,6 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
+<meta name="app-build" content="2026-10-13 notif-noback">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0E1014">
 <title>Расписание СОДП-55у</title>
@@ -52,6 +53,8 @@ html[data-theme="light"] {
 * { box-sizing: border-box; }
 :root { --side: 20px; }   /* поля по бокам экрана */
 html, body { margin: 0; background: var(--bg); }
+/* Двойное касание на iPhone не должно ничего увеличивать и прокручивать — только два обычных нажатия */
+*, *::before, *::after { touch-action: manipulation; }
 body {
   color: var(--text); font-family: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
@@ -750,7 +753,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   }
   function back() {
     const prev = stack.pop();
-    if (!prev) return;
+    if (!prev) { if (view !== "schedule") go("schedule", "g", false); return; }   // открыли не из расписания — просто туда
     haptic("light");
     view = prev.view;
     target = prev.target;
@@ -1423,6 +1426,9 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     if (t === "schedule") {
       if (view === "schedule") goToday();
       else go("schedule", "g", false);
+    } else if (view === t) {
+      // уже открыта эта вкладка — не перерисовываем заново, просто наверх
+      window.scrollTo({ top: 0, behavior: REDUCED ? "auto" : "smooth" });
     } else go(t, null, false);
   }));
 
