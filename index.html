@@ -1400,11 +1400,17 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const it = m.items.find((x) => x.type === "lesson" && x.key === key);
     if (!it) { render(); return; }
     const oldBody = row.querySelector(".card, .cc");
-    const rb = row.getBoundingClientRect(), ob = oldBody.getBoundingClientRect();
+    const ob = oldBody.getBoundingClientRect(), rb = row.getBoundingClientRect();
     const h0 = ob.height;
+    const r0 = getComputedStyle(oldBody).borderTopLeftRadius;   // скругление старой карточки (пока она ещё на странице)
     const oldTitle = oldBody.querySelector("h3");
     const t0 = oldTitle ? oldTitle.getBoundingClientRect() : null;
     const f0 = oldTitle ? parseFloat(getComputedStyle(oldTitle).fontSize) : 0;
+    const oldSeg = row.querySelector(".seg");
+    const s0 = oldSeg ? oldSeg.getBoundingClientRect().height : 0;
+    // где стояли пары ниже — потом они плавно доедут до новых мест
+    const after = [];
+    for (let el = row.nextElementSibling; el; el = el.nextElementSibling) after.push([el, el.getBoundingClientRect().top]);
     const list = row.parentElement;
     if (list) list.classList.remove("enter");   // чтобы не проиграть заново анимацию появления
     const tmp = document.createElement("ol");
@@ -1414,32 +1420,56 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     liveSig = m.sig;
     const body = fresh.querySelector(".card, .cc");
     const h1 = body.getBoundingClientRect().height;
-    // день стал выше — сразу даём ленте место; ниже — подрезаем, когда карточка уже свернулась
-    if (h1 >= h0) fitPager(); else setTimeout(fitPager, 340);
+    const d = h1 - h0;   // > 0 — раскрываем, < 0 — сворачиваем
+    if (d >= 0) fitPager(); else setTimeout(fitPager, 340);
 
-    // Плавно и одновременно: карточка меняет высоту, название переезжает на новое место,
-    // старые строки тают, новые проявляются — без пустых кадров и резких исчезновений
-    const ease = "cubic-bezier(.4, 0, .2, 1)", dur = 320;
-    const clip = (a, b) => [{ height: `${a}px`, overflow: "hidden" }, { height: `${b}px`, overflow: "hidden" }];
-    body.animate(clip(h0, h1), { duration: dur, easing: ease });
+    // Всё движение — сдвигами и масками, которые телефон считает на видеокарте:
+    // страница под карточкой не перерисовывается каждый кадр, поэтому без рывков
+    const ease = "cubic-bezier(.4, 0, .2, 1)", dur = 320, opt = { duration: dur, easing: ease };
+    const radius = getComputedStyle(body).borderTopLeftRadius;
 
-    // «призрак» старого содержимого поверх новой карточки (без названия — оно переезжает само)
+    // 1) пары ниже съезжают со старого места на новое
+    for (const [el, top0] of after) {
+      const dy = top0 - el.getBoundingClientRect().top;
+      if (Math.abs(dy) > 0.5) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], opt);
+    }
+    // 2) линия слева растёт/укорачивается вместе с карточкой, кружок на конце остаётся круглым
+    const seg = fresh.querySelector(".seg");
+    if (seg && s0) {
+      const s1 = seg.getBoundingClientRect().height || 1, k = s0 / s1;
+      seg.style.transformOrigin = "50% 0";
+      seg.animate([{ transform: `scaleY(${k})` }, { transform: "none" }], opt);
+      const cap = seg.querySelector(".cap");
+      if (cap) { cap.style.transformOrigin = "50% 100%"; cap.animate([{ transform: `scaleY(${1 / k})` }, { transform: "none" }], opt); }
+    }
+    // 3) сама карточка: при раскрытии — открывается маской сверху вниз,
+    //    при сворачивании — старая карточка под ней поджимается той же маской
     const ghost = oldBody.cloneNode(true);
     ghost.removeAttribute("data-act");
     ghost.setAttribute("aria-hidden", "true");
     Object.assign(ghost.style, {
       position: "absolute", top: `${ob.top - rb.top}px`, left: `${ob.left - rb.left}px`, width: `${ob.width}px`,
-      height: `${h0}px`, margin: "0", background: "transparent", borderColor: "transparent", boxShadow: "none",
-      pointerEvents: "none", zIndex: "2",
+      height: `${h0}px`, margin: "0", pointerEvents: "none",
     });
     const gt = ghost.querySelector("h3");
     if (gt) gt.style.visibility = "hidden";
     fresh.style.position = "relative";
-    fresh.appendChild(ghost);
-    ghost.animate(clip(h0, h1), { duration: dur, easing: ease });
-    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: "ease-out", fill: "forwards" })
-      .finished.then(() => { ghost.remove(); fresh.style.position = ""; }).catch(() => {});
-
+    const cleanup = () => { ghost.remove(); fresh.style.position = ""; body.style.cssText = ""; };
+    if (d >= 0) {
+      Object.assign(ghost.style, { background: "transparent", borderColor: "transparent", boxShadow: "none", zIndex: "2" });
+      fresh.appendChild(ghost);
+      body.animate([{ clipPath: `inset(0px 0px ${d}px 0px round ${radius})` }, { clipPath: `inset(0px 0px 0px 0px round ${radius})` }], opt);
+      ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: "ease-out", fill: "forwards" })
+        .finished.then(cleanup).catch(cleanup);
+    } else {
+      ghost.style.zIndex = "0";
+      fresh.insertBefore(ghost, fresh.firstChild);
+      Object.assign(body.style, { position: "relative", zIndex: "1", background: "transparent", borderColor: "transparent" });
+      ghost.animate([{ clipPath: `inset(0px 0px 0px 0px round ${r0})` }, { clipPath: `inset(0px 0px ${-d}px 0px round ${radius})` }], { ...opt, fill: "forwards" })
+        .finished.then(cleanup).catch(cleanup);
+      for (const c of ghost.children) c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: "ease-out", fill: "forwards" });
+    }
+    // 4) название переезжает на новое место
     const title = body.querySelector("h3");
     let span = null;   // полоса, по которой едет название: новые строки в ней появляются, когда оно уже проехало
     if (title && t0) {
@@ -1447,9 +1477,9 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
       span = [Math.min(t0.top, t1.top), Math.max(t0.bottom, t1.bottom)];
       const k = f0 / (parseFloat(getComputedStyle(title).fontSize) || f0);
       title.style.transformOrigin = "0 0";
-      title.animate([{ transform: `translate(${t0.left - t1.left}px, ${t0.top - t1.top}px) scale(${k})` }, { transform: "none" }],
-        { duration: dur, easing: ease });
+      title.animate([{ transform: `translate(${t0.left - t1.left}px, ${t0.top - t1.top}px) scale(${k})` }, { transform: "none" }], opt);
     }
+    // 5) новые строки проявляются
     for (const c of body.children) {
       if (c === title) continue;
       const r = c.getBoundingClientRect();
