@@ -121,8 +121,11 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .tl { list-style: none; margin: 0; padding: 0; }
 .row, .brk { display: grid; grid-template-columns: 48px 14px minmax(0, 1fr); column-gap: 12px; }
 .time { position: relative; padding-top: 0; display: flex; flex-direction: column; gap: 2px; font-variant-numeric: tabular-nums; }
-.time .st { font-size: 15px; font-weight: 700; }
-.time .en { font-size: 13px; color: var(--muted); }
+.time .st { font-size: 15px; font-weight: 700; line-height: 19px; }
+.time .en { font-size: 13px; line-height: 16px; color: var(--muted); transition: opacity .3s ease; }
+/* текущее время встало на место «10:00» — конец пары прячем, пока подпись не уедет ниже */
+.row.en-off .time .en { opacity: 0; }
+.row.quiet .time .en { transition: none; }
 .row.live .time .st { color: var(--k-fg); }
 .row.past .time .st { color: var(--past-muted); }
 
@@ -152,7 +155,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
   border-radius: 50%; background: var(--k-bar); border: 2px solid var(--bg); transition: top .6s ease;
 }
 .nowlbl {
-  position: absolute; right: 14px; top: var(--p); margin-top: -8px; font-size: 12px; font-weight: 700;
+  position: absolute; right: 14px; top: max(var(--p), 14px); margin-top: -8px; font-size: 12px; font-weight: 700;
   line-height: 16px; color: var(--k-fg); white-space: nowrap; font-variant-numeric: tabular-nums; transition: top .6s ease;
 }
 .cap {
@@ -793,7 +796,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
         start: l.start || "", end: l.end || "", time: l.time || "",
         subject: l.subject || "Занятие", room: roomText(l.room), extra: (l.extra || "").trim(), teacher,
         first: i === 0, last: i === n - 1, afterPast: i > 0 && status[i - 1] === "past" && isToday,
-        showNow: st === "live" && p >= 30, nowLabel: now.label,
+        showNow: st === "live", nowLabel: now.label,
       });
     });
 
@@ -1142,6 +1145,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const off = data._offline ? `<div class="offline">Нет сети · показано сохранённое</div>` : "";
     app.innerHTML = head + off + s.html;
     setupPager();
+    placeNowLabels(false);
     enterNext = false;
     slideDir = 0;
   }
@@ -1212,6 +1216,27 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   }
 
   // ---------------- живое обновление ----------------
+  // Подпись «сейчас» у линии идущей пары видна с первой минуты. В начале пары она стоит
+  // сразу под временем начала (на месте времени конца) — время конца в это время прячется,
+  // а когда подпись уезжает ниже, плавно возвращается. Время начала не перекрывается никогда.
+  const NOW_MIN = 14;   // то же, что max(var(--p), 14px) у .nowlbl
+  function placeNowLabels(animate) {
+    for (const row of app.querySelectorAll(".row.live")) {
+      const seg = row.querySelector(".seg"), time = row.querySelector(".time");
+      const en = time && time.querySelector(".en"), lbl = row.querySelector("[data-nowlbl]");
+      if (!seg || !en || !lbl || lbl.hidden) continue;
+      const p = parseFloat(seg.style.getPropertyValue("--p")) || 0;
+      const segTop = seg.offsetParent === time.offsetParent ? seg.offsetTop - time.offsetTop
+        : seg.getBoundingClientRect().top - time.getBoundingClientRect().top;
+      const top = segTop + Math.max(p / 100 * seg.offsetHeight, NOW_MIN) - 8;
+      const hide = !!en.textContent && top < en.offsetTop + en.offsetHeight + 1 && top + 16 > en.offsetTop;
+      if (row.classList.contains("en-off") === hide) continue;
+      if (!animate) row.classList.add("quiet");
+      row.classList.toggle("en-off", hide);
+      if (!animate) { void en.offsetWidth; row.classList.remove("quiet"); }
+    }
+  }
+
   // Раз в 15 секунд: если статусы пар не поменялись — двигаем только шкалу и подписи,
   // чтобы не перезапускать анимации; если поменялись — перерисовываем день целиком.
   function tick() {
@@ -1232,6 +1257,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
         if (st) st.textContent = it.statusText;
         const lbl = row.querySelector("[data-nowlbl]");
         if (lbl) { lbl.textContent = it.nowLabel; lbl.hidden = !it.showNow; }
+        placeNowLabels(true);
       } else if (it.type === "lesson" && it.st === "next") {
         const st = app.querySelector(`[data-cur] [data-row="${it.i}"] [data-status]`);
         if (st) st.textContent = it.statusText;
