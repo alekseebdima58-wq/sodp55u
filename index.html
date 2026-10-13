@@ -50,6 +50,7 @@ html[data-theme="light"] {
 
 /* ---------- основа ---------- */
 * { box-sizing: border-box; }
+:root { --side: 20px; }   /* поля по бокам экрана */
 html, body { margin: 0; background: var(--bg); }
 body {
   color: var(--text); font-family: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -60,7 +61,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 svg { flex: none; }
 #app {
   max-width: 520px; margin: 0 auto; min-height: 100vh; overflow-x: clip;
-  padding: calc(16px + var(--safe-top, 0px)) 20px calc(92px + max(env(safe-area-inset-bottom), var(--safe-bottom, 0px)));
+  padding: calc(16px + var(--safe-top, 0px)) var(--side) calc(92px + max(env(safe-area-inset-bottom), var(--safe-bottom, 0px)));
 }
 .fade { animation: fade .25s ease both; }
 @keyframes fade { from { opacity: 0; } }
@@ -222,29 +223,23 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 @keyframes grow { from { height: 0; } }
 @keyframes slide { from { top: 0; } }
-/* Листание дней: соседние дни лежат слева и справа, вся лента едет за пальцем */
-:root { --pgap: 40px; }
-.track { position: relative; touch-action: pan-y; }
-.page { position: relative; z-index: 1; display: flow-root; }   /* отступы внутри дня одинаковые у текущего и соседних — без прыжка при подмене */
-.page.prev, .page.next { position: absolute; top: 0; left: 0; right: 0; max-height: 0; overflow: hidden; pointer-events: none; }
-/* Пока листаем, дни становятся «карточками»: всё чуть уменьшается (плавно, силами видеокарты),
-   под каждым днём проявляется скруглённая рамка; отпустил — всё так же плавно возвращается */
-.pager { position: relative; transition: transform .34s cubic-bezier(.2, .8, .2, 1); }
-.pager.moving { will-change: transform; }
-.pager.lift { transform: scale(.93); }
-.frame {
-  display: none; position: absolute; z-index: 0; left: -12px; right: -12px; top: -10px; height: 100vh;
-  border-radius: 30px; background: var(--bg); border: 1px solid var(--border);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .24); opacity: 0; pointer-events: none;
-  transition: opacity .3s ease; will-change: opacity;
+/* Листание дней: дни лежат в горизонтальной прокрутке с защёлкиванием по страницам —
+   двигает их сам телефон (как фото в «Фото»), поэтому плавно на любой скорости */
+.pager {
+  display: flex; margin: 0 calc(-1 * var(--side)); overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch;
 }
-.pager.lift .frame { opacity: 1; }
-.frame.prev { transform: translate3d(calc(-100% + 24px - var(--pgap)), 0, 0); }
-.frame.next { transform: translate3d(calc(100% - 24px + var(--pgap)), 0, 0); }
-.track.moving .frame { display: block; }
-.page.prev { transform: translate3d(calc(-100% - var(--pgap)), 0, 0); }
-.page.next { transform: translate3d(calc(100% + var(--pgap)), 0, 0); }
-.track.moving { will-change: transform; }
+.pager::-webkit-scrollbar { display: none; }
+.page {
+  position: relative; isolation: isolate; flex: 0 0 100%; min-width: 0; align-self: flex-start;
+  padding: 0 var(--side); display: flow-root; scroll-snap-align: center; scroll-snap-stop: always;
+}
+/* Пока листаем — под днями проявляются скруглённые «карточки», как при переключении приложений */
+.pframe {
+  position: absolute; z-index: -1; top: 4px; bottom: 0; left: 8px; right: 8px; border-radius: 26px;
+  background: var(--bg); border: 1px solid var(--border); box-shadow: 0 10px 28px rgba(0, 0, 0, .22);
+  opacity: 0; pointer-events: none; will-change: opacity;
+}
 .page.cur.from-r { animation: inR .34s cubic-bezier(.22, 1, .36, 1) both; }
 .page.cur.from-l { animation: inL .34s cubic-bezier(.22, 1, .36, 1) both; }
 @keyframes inR { from { opacity: 0; transform: translate3d(30%, 0, 0); } }
@@ -388,8 +383,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 
 /* Узкие телефоны (360–380 px): чуть меньше полей, чтобы статус пары и подписи не обрезались */
 @media (max-width: 380px) {
-  :root { --pgap: 28px; }
-  #app { padding-left: 14px; padding-right: 14px; }
+  :root { --side: 14px; }
   .row, .brk { column-gap: 10px; }
   .card { padding: 12px; }
   .seg3 button { font-size: 12px; }
@@ -945,11 +939,12 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 
     // Текущий день и соседние (для листания пальцем) — соседи лежат за краями экрана
     const prev = neighborPos(data, p.w, p.d, -1), next = neighborPos(data, p.w, p.d, 1);
-    html += `<div class="pager" data-pager><div class="track" data-track>${prev ? `<div class="frame prev"></div>` : ""}<div class="frame"></div>${next ? `<div class="frame next"></div>` : ""}`;
-    if (prev) html += `<div class="page prev" aria-hidden="true" inert>${dayBodyHTML(data, prev.w, prev.d, isTeacher, false)}</div>`;
-    html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
-    if (next) html += `<div class="page next" aria-hidden="true" inert>${dayBodyHTML(data, next.w, next.d, isTeacher, false)}</div>`;
-    html += `</div></div>`;
+    const fr = `<div class="pframe" aria-hidden="true"></div>`;
+    html += `<div class="pager" data-pager>`;
+    if (prev) html += `<div class="page prev" aria-hidden="true" inert>${fr}${dayBodyHTML(data, prev.w, prev.d, isTeacher, false)}</div>`;
+    html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${fr}${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
+    if (next) html += `<div class="page next" aria-hidden="true" inert>${fr}${dayBodyHTML(data, next.w, next.d, isTeacher, false)}</div>`;
+    html += `</div>`;
     liveSig = m.sig;
     return { html, notToday: notToday && todayInData };
   }
@@ -1146,6 +1141,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     }
     const off = data._offline ? `<div class="offline">Нет сети · показано сохранённое</div>` : "";
     app.innerHTML = head + off + s.html;
+    setupPager();
     enterNext = false;
     slideDir = 0;
   }
@@ -1220,7 +1216,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   // чтобы не перезапускать анимации; если поменялись — перерисовываем день целиком.
   function tick() {
     if (view !== "schedule" && view !== "teacher") return;
-    if (swipe || settling) return;   // не перерисовываем посреди листания
+    if (scrolling) return;   // не перерисовываем посреди листания
     const id = view === "teacher" ? target : "g";
     const data = mem[id];
     if (!data || !pos[id] || !data.weeks[pos[id].w]) return;
@@ -1342,6 +1338,10 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const def = pickDefault(data), p = pos.g;
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (p && p.w === def.w && p.d === def.d) return;   // уже сегодня — просто наверх
+    for (const dir of [1, -1]) {
+      const np = p && neighborPos(data, p.w, p.d, dir);
+      if (np && np.w === def.w && np.d === def.d && shiftDay(dir)) return;   // соседний день — листаем плавно
+    }
     slideDir = p && p.w * 7 + p.d > def.w * 7 + def.d ? -1 : 1;   // сегодня «левее» — едем влево
     pos.g = def;
     opened.clear();
@@ -1395,7 +1395,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const data = mem[id], p = pos[id];
     const btn = [...app.querySelectorAll("[data-cur] [data-key]")].find((x) => x.dataset.key === key);
     const row = btn && btn.closest(".row");
-    if (!data || !p || !row || REDUCED || settling) { render(); return; }
+    if (!data || !p || !row || REDUCED || scrolling) { render(); return; }
     const m = dayModel(data, p.w, p.d, isTeacher);
     const it = m.items.find((x) => x.type === "lesson" && x.key === key);
     if (!it) { render(); return; }
@@ -1413,6 +1413,8 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     liveSig = m.sig;
     const body = fresh.querySelector(".card, .cc");
     const h1 = body.getBoundingClientRect().height;
+    // день стал выше — сразу даём ленте место; ниже — подрезаем, когда карточка уже свернулась
+    if (h1 >= h0) fitPager(); else setTimeout(fitPager, 360);
     const ease = "cubic-bezier(.2, .8, .2, 1)", dur = 340;
     body.animate([{ height: `${h0}px`, overflow: "hidden" }, { height: `${h1}px`, overflow: "hidden" }], { duration: dur, easing: ease });
     const title = body.querySelector("h3");
@@ -1429,11 +1431,13 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     }
   }
 
-  // ---------------- свайпы между днями ----------------
-  // Как листание страниц: лента «вчера | сегодня | завтра» едет за пальцем один в один,
-  // отпустил — доезжает до соседнего дня с той же скоростью (или пружинит обратно).
-  let swipe = null, settling = false;
-  function trackEl() { return app.querySelector("[data-track]"); }
+  // ---------------- листание дней ----------------
+  // Вчера | сегодня | завтра лежат в горизонтальной прокрутке с защёлкиванием. Листает сам телефон,
+  // а когда лента остановилась на соседнем дне, делаем его текущим и незаметно перерисовываем ленту.
+  const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let scrolling = false, pagerTouch = false, settleTimer = 0, scrollFrame = 0;
+  function pagerEl() { return app.querySelector("[data-pager]"); }
+  function curIndex(pg) { return pg.querySelector(".page.prev") ? 1 : 0; }
   function curPos() {
     if (view !== "schedule" && view !== "teacher") return null;
     const id = view === "teacher" ? target : "g";
@@ -1443,57 +1447,70 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     const c = curPos();
     return !!(c && neighborPos(c.data, c.p.w, c.p.d, dir));
   }
-  function stepPx(track) {
-    return track.offsetWidth + (parseFloat(getComputedStyle(ROOT).getPropertyValue("--pgap")) || 40);
-  }
-  const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const LIFT = REDUCED ? 1 : 0.93;   // во сколько раз уменьшается лента, пока её держишь (как в .pager.lift)
-  let liftDropAt = 0;
-  function pagerEl() { return app.querySelector("[data-pager]"); }
-  function lift(on) {
+  // Высота ленты — как у текущего дня, но до низа экрана: соседние дни при листании видны целиком,
+  // а пустого места для прокрутки под коротким днём не появляется
+  function fitPager() {
     const pg = pagerEl();
-    if (!pg || REDUCED) return;
-    if (!on && pg.classList.contains("lift")) liftDropAt = performance.now();
-    pg.classList.toggle("lift", on);
+    const cur = pg && pg.querySelector("[data-cur]");
+    if (!cur) return;
+    const top = pg.getBoundingClientRect().top + window.scrollY;
+    const padBottom = parseFloat(getComputedStyle(app).paddingBottom) || 0;   // место под нижней панелью
+    const visible = window.innerHeight - top - padBottom;
+    pg.style.height = `${Math.max(cur.offsetHeight, Math.round(visible))}px`;
   }
-  let stepNow = 390;
-  let movingFrames = [];
-  function startMoving(track) {
-    if (track.classList.contains("moving")) return;
-    // соседние дни видны до низа экрана, но не удлиняют страницу, пока не листаем
-    const r = track.getBoundingClientRect();
-    const nmax = Math.max(track.offsetHeight, window.innerHeight - r.top);
-    track.querySelectorAll(".page.prev, .page.next").forEach((el) => { el.style.maxHeight = `${nmax}px`; });
-    movingFrames = [...track.querySelectorAll(".frame")];
-    movingFrames.forEach((el) => { el.style.height = `${nmax + 20}px`; });
-    // уменьшаемся к середине видимой части экрана — как карточки приложений
+  function setupPager() {
     const pg = pagerEl();
-    if (pg) { pg.style.transformOrigin = `50% ${Math.round(window.innerHeight / 2 - r.top)}px`; pg.classList.add("moving"); }
-    stepNow = stepPx(track);
-    track.classList.add("moving");
+    if (!pg) return;
+    fitPager();
+    pg.scrollLeft = curIndex(pg) * pg.clientWidth;
+    pg.addEventListener("scroll", onPagerScroll, { passive: true });
+    pg.addEventListener("touchstart", () => { pagerTouch = true; }, { passive: true });
+    const up = () => { pagerTouch = false; if (scrolling) armSettle(); };
+    pg.addEventListener("touchend", up, { passive: true });
+    pg.addEventListener("touchcancel", up, { passive: true });
   }
-  function stopMoving(track) {
-    track.style.transform = "";
-    track.querySelectorAll(".page.prev, .page.next").forEach((el) => { el.style.maxHeight = ""; });
-    movingFrames = [];
-    track.classList.remove("moving");
+  function onPagerScroll() {
+    scrolling = true;
+    if (!scrollFrame) scrollFrame = requestAnimationFrame(paintPaging);
+    armSettle();
+  }
+  function armSettle() {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(settlePager, 110);
+  }
+  // Пока лента едет: проявляем рамки-карточки и переносим подсветку дня в строке сверху
+  function paintPaging() {
+    scrollFrame = 0;
     const pg = pagerEl();
-    if (pg) pg.classList.remove("moving", "lift");
+    if (!pg) return;
+    const W = pg.clientWidth || 1;
+    const off = pg.scrollLeft / W - curIndex(pg);              // -1 … 1
+    const d = Math.abs(off - Math.round(off));                  // насколько далеко от «ровного» дня
+    const o = REDUCED ? "0" : Math.min(1, d * 5).toFixed(2);
+    pg.querySelectorAll(".pframe").forEach((el) => { el.style.opacity = o; });
+    previewChips(off > 0.5 ? 1 : off < -0.5 ? -1 : 0);
   }
-  // Каждый кадр двигаем только ленту — это самое дешёвое, что умеет браузер
-  let liveX = 0;
-  function placeTrack(track, x) {
-    liveX = x;
-    track.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
+  function settlePager() {
+    const pg = pagerEl();
+    if (!pg || pagerTouch) return;                              // палец ещё на экране — ждём
+    const W = pg.clientWidth || 1;
+    const k = Math.round(pg.scrollLeft / W);
+    if (Math.abs(pg.scrollLeft - k * W) > 1.5) { armSettle(); return; }   // ещё доезжает до места
+    scrolling = false;
+    pg.querySelectorAll(".pframe").forEach((el) => { el.style.opacity = "0"; });
+    const dir = k - curIndex(pg);
+    if (dir) commitDay(dir);
   }
-  // Подсветка дня в строке сверху переезжает сразу, как только понятно, куда листаем
+  // Подсветка дня в строке сверху — сразу, как только понятно, куда листаем
   function previewChips(dir) {
     const c = curPos();
-    const np = c && neighborPos(c.data, c.p.w, c.p.d, dir);
+    if (!c) return;
+    const np = dir ? neighborPos(c.data, c.p.w, c.p.d, dir) : c.p;
     if (!np || np.w !== c.p.w) return;
     const week = c.data.weeks[np.w], today = samaraNow().date;
     app.querySelectorAll(".days .day").forEach((b) => {
       const d = +b.dataset.d, on = d === np.d;
+      if (b.classList.contains("on") === on) return;
       b.classList.toggle("on", on);
       b.classList.toggle("dim", addDays(week.monday, d) < today && !on);
       b.setAttribute("aria-pressed", String(on));
@@ -1507,148 +1524,27 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
     opened.clear();
     enterNext = false;
     slideDir = 0;
-    render();   // новый день уже стоит ровно на своём месте — подмена незаметна
+    haptic("select");
+    render();   // новый день стоит ровно там же, где остановилась лента, — подмена незаметна
   }
-  // Доводка пружиной (как в iOS): к соседнему дню (dir = ±1) или обратно (dir = 0).
-  // x — где лента сейчас, v — скорость пальца в px/мс: лента продолжает движение с той же скоростью.
-  let springFrame = 0;
-  function settle(dir, x, v) {
-    const track = trackEl();
-    if (!track) return;
-    const to = dir ? -dir * stepNow : 0;
-    let pos_ = x, vel = (v || 0) * 1000;   // px/с
-    const K = 260, C = 2 * Math.sqrt(K) * 0.9;   // жёсткость и затухание: мягко, почти без перелёта
-    let last = performance.now();
-    settling = true;
-    if (dir) { haptic("select"); previewChips(dir); }
-    cancelAnimationFrame(springFrame);
-    const stepFn = (now) => {
-      let dt = Math.min(0.034, (now - last) / 1000);
-      last = now;
-      // несколько мелких шагов за кадр — устойчиво и на 60, и на 120 Гц
-      for (let i = 0; i < 4; i++) {
-        const h = dt / 4;
-        const a = -K * (pos_ - to) - C * vel;
-        vel += a * h;
-        pos_ += vel * h;
-      }
-      if (Math.abs(pos_ - to) < 0.6 && Math.abs(vel) < 25) {
-        placeTrack(track, to);
-        // ждём, пока лента полностью вернётся к обычному размеру, — тогда подмена дня незаметна
-        const wait = Math.max(0, 360 - (performance.now() - liftDropAt));
-        const finish = () => {
-          settling = false;
-          if (dir) commitDay(dir);
-          else stopMoving(track);
-        };
-        if (wait > 0) setTimeout(finish, wait); else finish();
-        return;
-      }
-      placeTrack(track, pos_);
-      springFrame = requestAnimationFrame(stepFn);
-    };
-    springFrame = requestAnimationFrame(stepFn);
-  }
-  function shiftDay(dir) {   // для клавиатуры: та же пружина, что и пальцем
-    if (settling || !hasNeighbor(dir)) return false;
-    const track = trackEl();
-    if (!track) { commitDay(dir); return true; }
-    startMoving(track);
-    settle(dir, 0, -dir * 1.2);
+  // Пролистать на соседний день кнопкой/клавишей — той же плавной прокруткой
+  function shiftDay(dir) {
+    const pg = pagerEl();
+    if (!pg || !hasNeighbor(dir)) return false;
+    pg.scrollTo({ left: (curIndex(pg) + dir) * pg.clientWidth, behavior: REDUCED ? "auto" : "smooth" });
     return true;
   }
-  let dragFrame = 0;
-  // Где окажется лента, если не мешать ей катиться (как «бросок» в iOS)
-  function rubber(raw) {
-    const step = stepNow;
-    if (raw < 0 && !hasNeighbor(1)) return raw * 0.3;    // дальше дней нет — тянется «резинкой»
-    if (raw > 0 && !hasNeighbor(-1)) return raw * 0.3;
-    if (raw < -step) return -step + (raw + step) * 0.3;
-    if (raw > step) return step + (raw - step) * 0.3;
-    return raw;
-  }
-  app.addEventListener("touchstart", (e) => {
-    swipe = null;
-    if ((view !== "schedule" && view !== "teacher") || e.touches.length !== 1) return;
-    const t = e.touches[0];
-    if (e.target.closest("input, select, textarea")) return;
-    let base = 0, lock = "";
-    if (settling) {
-      // поймали ленту на ходу — останавливаем пружину, дальше она снова под пальцем
-      cancelAnimationFrame(springFrame);
-      settling = false;
-      base = liveX;
-      lock = "x";
-      lift(true);
-      if (!dragFrame) dragFrame = requestAnimationFrame(dragTick);
-    } else if (t.clientX < 24 || t.clientX > window.innerWidth - 24) {
-      return;   // у самых краёв экрана — системные жесты «назад», их не перехватываем
-    }
-    swipe = { x0: t.clientX, y0: t.clientY, base, x: base, lock, lastX: t.clientX, lastT: performance.now(), v: 0 };
-    const track = trackEl();
-    if (track && !lock) startMoving(track);   // невидимо: карточки прозрачные, соседи за краями
-  }, { passive: true });
-  app.addEventListener("touchmove", (e) => {
-    if (!swipe || e.touches.length !== 1) return;
-    const t = e.touches[0];
-    const dx = t.clientX - swipe.x0, dy = t.clientY - swipe.y0;
-    if (!swipe.lock) {
-      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      swipe.lock = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
-      if (swipe.lock === "x") { swipe.x0 = t.clientX; lift(true); }   // лента трогается с места без рывка
-      else { const track = trackEl(); if (track) stopMoving(track); }   // это прокрутка, не листание
-    }
-    if (swipe.lock !== "x") return;
-    if (e.cancelable) e.preventDefault();   // пока листаем вбок — страница не прокручивается
-    const now = performance.now();
-    const v = (t.clientX - swipe.lastX) / Math.max(8, now - swipe.lastT);
-    swipe.v = swipe.v ? swipe.v * 0.35 + v * 0.65 : v;   // скорость, px/мс (сглаженная)
-    swipe.lastX = t.clientX; swipe.lastT = now; swipe.ev = (swipe.ev || 0) + 1;
-    if (!dragFrame) dragFrame = requestAnimationFrame(dragTick);
-  }, { passive: false });
-  // Каждый кадр, пока палец на экране: ставим ленту туда, где палец сейчас (с поправкой на скорость,
-  // если новое касание ещё не пришло) — движение ровное, без ступенек
-  function dragTick() {
-    dragFrame = 0;
-    if (!swipe || swipe.lock !== "x") return;
-    const track = trackEl();
-    if (!track) return;
-    const since = performance.now() - swipe.lastT;
-    let fx = swipe.lastX + swipe.v * Math.min(since, 24);   // где палец сейчас, если новое касание ещё не пришло
-    if (swipe.fx != null && swipe.seen === swipe.ev) {
-      fx = swipe.v < 0 ? Math.min(fx, swipe.fx) : Math.max(fx, swipe.fx);   // между касаниями — ни шага назад
-    }
-    swipe.fx = fx; swipe.seen = swipe.ev;
-    swipe.x = rubber(swipe.base + (fx - swipe.x0) / LIFT);   // лента уменьшена — палец ведёт её один в один
-    placeTrack(track, swipe.x);
-    dragFrame = requestAnimationFrame(dragTick);
-  }
-  app.addEventListener("touchend", () => {
-    const s = swipe;
-    swipe = null;
-    if (dragFrame) { cancelAnimationFrame(dragFrame); dragFrame = 0; }
-    const track = trackEl();
-    if (!s || s.lock !== "x") { if (track && !settling && track.classList.contains("moving")) stopMoving(track); return; }
-    s.x = liveX;   // продолжаем ровно с того места, где лента на экране, — без отскока
-    lift(false);
-    const v = performance.now() - s.lastT < 90 ? s.v : 0;   // палец остановился — без броска
-    const projected = s.x + v * 300;   // куда докатится за ~0,3 с
-    let dir = projected < -stepNow * 0.3 ? 1 : projected > stepNow * 0.3 ? -1 : 0;
-    if (dir && !hasNeighbor(dir)) dir = 0;
-    settle(dir, s.x, v);
-  });
-  app.addEventListener("touchcancel", () => {
-    const s = swipe;
-    swipe = null;
-    if (dragFrame) { cancelAnimationFrame(dragFrame); dragFrame = 0; }
-    if (s && s.lock === "x") { lift(false); settle(0, liveX, 0); }
-    else { const track = trackEl(); if (track && !settling) stopMoving(track); }
-  });
   // На компьютере — стрелками ← →
   document.addEventListener("keydown", (e) => {
     if (e.altKey || e.ctrlKey || e.metaKey || e.target.closest("input, select, textarea")) return;
     if (e.key === "ArrowRight" && shiftDay(1)) e.preventDefault();
     else if (e.key === "ArrowLeft" && shiftDay(-1)) e.preventDefault();
+  });
+  // Поворот экрана и т. п. — пересобираем ленту под новую ширину
+  let resizeTimer = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if ((view === "schedule" || view === "teacher") && !scrolling) render(); }, 150);
   });
 
   // ---------------- полноэкранный режим ----------------
