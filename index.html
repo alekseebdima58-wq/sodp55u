@@ -3,7 +3,7 @@
 <head>
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head">
+<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
@@ -744,6 +744,18 @@ button.offline u { text-underline-offset: 2px; }
 @keyframes fadeIn { from { opacity: 0; } }
 @supports (corner-shape: squircle) { .isheet { corner-shape: squircle; border-radius: 40px; } .iprev { corner-shape: squircle; border-radius: 26px; } }
 
+/* --- видео-инструкция --- */
+.vwrap { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, .8); display: flex; align-items: center; justify-content: center;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px)); animation: fadeIn .2s ease both; }
+.vbox { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 420px; max-height: 100%; animation: rise .45s var(--ease-spring) both; }
+.vtop { display: flex; align-items: center; gap: 10px; }
+.vseg { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(255, 255, 255, .1); }
+.vseg button { height: 36px; border: 0; border-radius: 10px; background: transparent; color: rgba(255, 255, 255, .7); font-size: 14px; font-weight: 600; }
+.vseg button.on { background: rgba(255, 255, 255, .18); color: #fff; }
+.vtop .ix { color: #fff; background: rgba(255, 255, 255, .1); }
+.vbox video { display: block; width: 100%; height: auto; max-height: calc(100vh - 120px); object-fit: contain; border-radius: 22px; background: #000; }
+.ibig svg { vertical-align: -3px; margin-right: 4px; }
+
 /* --- выбор иконки --- */
 .icpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .icpick button { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 4px 10px; border-radius: 18px;
@@ -909,6 +921,7 @@ window.__appStart = () => {
     plus: svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>', 20),
     pinBig: svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>', 20),
     cap: svg('<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>', 14),
+    play: svg('<path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="none"/>', 18),
     home: svg('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>', 20),
     x: svg('<path d="M18 6 6 18M6 6l12 12"/>', 18),
     swap: svg('<path d="M7 4 3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/>', 20),
@@ -1758,6 +1771,14 @@ window.__appStart = () => {
   });
   window.addEventListener("appinstalled", () => { installEvt = null; hideInstallBar(true); if (view === "settings") renderSettings(); });
   function installHTML() {
+    const main = installRowHTML();
+    if (STANDALONE) return main;
+    return main + `<div class="list" style="margin-top:10px"><button class="item" data-act="install-video">
+      <span class="tile t-room" aria-hidden="true">${I.play}</span>
+      <span class="body"><span class="nm">Видео: как установить</span><span class="sub wrap">${IOS ? "iPhone" : ANDROID ? "Android" : "iPhone и Android"} · 10 секунд</span></span>
+      <span class="chev">${I.chev}</span></button></div>`;
+  }
+  function installRowHTML() {
     const row = (title, sub, act) => act
       ? `<div class="list"><button class="item" data-act="${act}"><span class="tile t-room" aria-hidden="true">${I.home}</span>
           <span class="body"><span class="nm">${title}</span><span class="sub wrap">${sub}</span></span><span class="chev">${I.chev}</span></button></div>`
@@ -1855,7 +1876,8 @@ window.__appStart = () => {
       <img class="iprev" src="icons/icon-512${suf}.png" alt="" width="84" height="84">
       <h3>Установка на главный экран</h3>
       <p class="isub">Своя иконка, открывается без браузера и Telegram, работает без сети</p>
-      <div class="ipick">${pick}</div>${body}</div>${IOS ? `<div class="iarrow" aria-hidden="true">↓</div>` : ""}`;
+      <div class="ipick">${pick}</div>${body}
+      <button class="ibig ghost" data-is="video">${I.play} Смотреть видео</button></div>${IOS ? `<div class="iarrow" aria-hidden="true">↓</div>` : ""}`;
   }
   function showInstallSheet() {
     if (STANDALONE) return;
@@ -1871,6 +1893,7 @@ window.__appStart = () => {
         if (a === "close") closeInstallSheet();
         else if (a === "icon") { store.set("iconStyle", b.dataset.v); try { window.applyIconStyle(b.dataset.v); } catch (e) { /* старая страница */ } haptic("select"); wrap.innerHTML = installSheetHTML(); }
         else if (a === "install") { await promptInstall(); closeInstallSheet(); }
+        else if (a === "video") showInstallVideo();
         else if (a === "copy") {
           try { await navigator.clipboard.writeText(siteURL()); toast("Ссылка скопирована — вставь её в Chrome"); } catch (e) { toast(siteURL()); }
         }
@@ -1878,6 +1901,30 @@ window.__appStart = () => {
       document.body.appendChild(wrap);
     }
     wrap.innerHTML = installSheetHTML();
+  }
+  // ---- видео-инструкция: свой ролик для iPhone и Android, можно переключить ----
+  function showInstallVideo(os) {
+    os = os || (IOS ? "ios" : "android");
+    let w = document.querySelector(".vwrap");
+    if (!w) {
+      w = document.createElement("div");
+      w.className = "vwrap";
+      w.addEventListener("click", (ev) => {
+        const b = ev.target.closest("[data-vs]");
+        if (b && b.dataset.vs === "close") { w.remove(); return; }
+        if (b && b.dataset.vs !== os) { haptic("select"); showInstallVideo(b.dataset.vs); return; }
+        if (ev.target === w) w.remove();
+      });
+      document.body.appendChild(w);
+    }
+    w.innerHTML = `<div class="vbox" role="dialog" aria-label="Видео: как установить">
+      <div class="vtop"><div class="vseg">${[["ios", "iPhone"], ["android", "Android"]].map(([v, l]) =>
+        `<button data-vs="${v}" class="${v === os ? "on" : ""}" aria-pressed="${v === os}">${l}</button>`).join("")}</div>
+        <button class="ix" data-vs="close" aria-label="Закрыть">${I.x}</button></div>
+      <video src="media/install-${os}.mp4?v=2" poster="media/install-${os}.jpg?v=2" autoplay muted loop playsinline controls
+        width="540" height="960" aria-label="Как установить расписание на главный экран"></video></div>`;
+    const v = w.querySelector("video");
+    try { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* автозапуск запрещён — есть кнопка ▶ */ }
   }
   function closeInstallSheet() { const w = document.querySelector(".iwrap"); if (w) w.remove(); }
 
@@ -2060,6 +2107,9 @@ window.__appStart = () => {
     } else if (act === "install") {
       haptic("light");
       promptInstall();
+    } else if (act === "install-video") {
+      haptic("light");
+      showInstallVideo();
     } else if (act === "install-open") {
       haptic("light");
       openInstallPage();

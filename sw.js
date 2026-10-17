@@ -1,7 +1,7 @@
 // Service worker расписания: приложение открывается с главного экрана даже без сети.
 // Страницу берём из сети (не дольше 4 с), иначе — сохранённую копию. Иконки и шрифты — из кэша
 // с тихим обновлением. Расписание (data/*.json) не трогаем: офлайн-копию держит сама страница.
-const CACHE = "shell-v3";
+const CACHE = "shell-v5";
 const ICONS = ["icon-192", "icon-512", "maskable-512", "apple-touch-icon", "favicon-64"];
 const SHELL = [
   "./",
@@ -31,6 +31,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;   // telegram.org, Google Fonts — напрямую
   if (url.pathname.includes("/data/")) return;        // расписание — без кэша service worker
+  if (url.pathname.includes("/media/")) return;       // видео — напрямую (iPhone качает его кусками)
   if (req.mode === "navigate") {
     event.respondWith(pageFirstFromNetwork(event));
   } else {
