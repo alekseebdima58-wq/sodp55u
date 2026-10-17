@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="56762dd2e51a">
+<meta name="app-ver" content="fa7846a70b46">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -13,20 +13,21 @@
 <link rel="icon" id="lnkFav" type="image/png" href="icons/favicon-64.png">
 <link rel="apple-touch-icon" id="lnkTouch" href="icons/apple-touch-icon.png">
 <script>
-  // Вид иконки на рабочем столе (выбирается в настройках): blue | light | dark.
+  // Вид иконки на рабочем столе (выбирается в настройках): light | dark. Не выбран — по теме телефона.
   // iPhone и Android берут иконку в момент установки — поэтому подставляем нужную сразу.
+  window.iconAuto = function () { return window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; };
   window.applyIconStyle = function (st) {
-    var suf = st === "light" ? "-light" : st === "dark" ? "-dark" : "";
+    if (st !== "light" && st !== "dark") st = window.iconAuto();
+    var suf = st === "light" ? "-light" : "-dark";
     document.getElementById("lnkManifest").href = "manifest" + suf + ".webmanifest";
     document.getElementById("lnkFav").href = "icons/favicon-64" + suf + ".png";
     document.getElementById("lnkTouch").href = "icons/apple-touch-icon" + suf + ".png";
   };
   try {
     var fromUrl = new URLSearchParams(location.search).get("icon");   // выбор, сделанный внутри Telegram
-    if (/^(blue|light|dark)$/.test(fromUrl || "")) localStorage.setItem("iconStyle", fromUrl);
-    var st0 = localStorage.getItem("iconStyle") || fromUrl;
-    if (st0) applyIconStyle(st0);
-  } catch (e) { /* хранилище недоступно */ }
+    if (/^(light|dark)$/.test(fromUrl || "")) localStorage.setItem("iconStyle", fromUrl);
+    applyIconStyle(localStorage.getItem("iconStyle") || fromUrl);
+  } catch (e) { applyIconStyle(""); }
 </script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -484,7 +485,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 #splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--bg); transition: opacity .3s ease; }
 #splash[hidden] { display: none; }
 #splash img { width: 112px; height: 112px; border-radius: 25px; margin-top: -48px;
-  box-shadow: 0 18px 50px -12px rgba(40, 110, 255, .55); animation: splashIn .5s cubic-bezier(.25, .9, .3, 1) both; }
+  box-shadow: 0 14px 40px -14px rgba(0, 0, 0, .45); animation: splashIn .5s cubic-bezier(.25, .9, .3, 1) both; }
 #splash.out { opacity: 0; pointer-events: none; }
 #splash.out img { transform: scale(1.08); transition: transform .3s ease; }
 @keyframes splashIn { from { opacity: 0; transform: scale(.88); } }
@@ -810,7 +811,7 @@ button.offline u { text-underline-offset: 2px; }
 .iprev { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 10px 26px rgba(0, 0, 0, .35); }
 .isheet h3 { margin: 14px 0 4px; font-size: 20px; font-weight: 700; }
 .isub { margin: 0 0 14px; font-size: 13.5px; line-height: 1.4; color: var(--muted); }
-.ipick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+.ipick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
 .ipick button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px 8px; border-radius: 16px;
   border: 1.5px solid transparent; background: var(--bg); color: var(--muted); font-size: 12.5px; font-weight: 600; }
 .ipick button img { width: 44px; height: 44px; border-radius: 11px; }
@@ -894,7 +895,7 @@ button.offline u { text-underline-offset: 2px; }
 .vsteps li.on b { background: var(--accent); color: var(--on-accent); }
 
 /* --- выбор иконки --- */
-.icpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.icpick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .icpick button { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 4px 10px; border-radius: 18px;
   border: 1.5px solid transparent; background: var(--bg); color: var(--muted); font-size: 13px; font-weight: 600; }
 .icpick button img { width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); }
@@ -968,7 +969,8 @@ button.offline u { text-underline-offset: 2px; }
     if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     document.documentElement.dataset.theme = t;   // сразу нужная тема — без вспышки тёмного в светлой
     var el = document.getElementById("splash");
-    el.querySelector("img").src = "icons/icon-192" + (st === "light" ? "-light" : st === "dark" ? "-dark" : "") + ".png";
+    if (st !== "light" && st !== "dark") st = window.iconAuto ? window.iconAuto() : "dark";
+    el.querySelector("img").src = "icons/icon-192-" + st + ".png";
     el.hidden = false;
     window.__splashAt = Date.now();
     setTimeout(function () { if (window.hideSplash) window.hideSplash(); else el.remove(); }, 5000);   // на всякий случай
@@ -1619,7 +1621,7 @@ window.__appStart = () => {
       <div class="blbl">${I.cup}<span data-btext>Перерыв · ${esc(it.text)}</span></div></li>`;
   }
 
-  const PAGER_SPAN = 3;
+  const PAGER_SPAN = 1;   // соседи по одному дню с каждой стороны — строятся сразу, во время свайпа ничего не вставляется
   // Сосед через n дней (dir = ±n): шагаем по одному, пока не кончатся недели
   function stepPos(data, p, dir) {
     let q = p;
@@ -1680,15 +1682,14 @@ window.__appStart = () => {
     // Запас нужен для быстрых свайпов подряд: лента успевает уехать на 2–3 дня, пока не «переложилась».
     const fr = `<div class="pframe" aria-hidden="true"></div>`;
     const side = (dir) => { const out = []; let q = p; for (let k = 0; k < PAGER_SPAN && (q = neighborPos(data, q.w, q.d, dir)); k++) out.push(q); return out; };
-    // Сразу строим только выбранный день — так переход лёгкий. Соседей для свайпа достраиваем
-    // чуть позже или в момент касания ленты (fillNeighbors).
+    // Выбранный день и по одному соседу с каждой стороны — сразу, одним куском. Достраивать ленту
+    // во время касания нельзя: iPhone в этот момент не даёт поправить прокрутку, и дни накладываются.
+    const page = (q, cls) => `<div class="page ${cls}" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
     let html = `<div class="pager" data-pager>`;
+    html += side(-1).reverse().map((q) => page(q, "prev")).join("");
     html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${fr}${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
+    html += side(1).map((q) => page(q, "next")).join("");
     html += `</div>`;
-    pendingNeighbors = () => {
-      const page = (q, cls) => `<div class="page ${cls}" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
-      return { prev: side(-1).reverse().map((q) => page(q, "prev")).join(""), next: side(1).map((q) => page(q, "next")).join("") };
-    };
     liveSig = m.sig;
     return { html, bar, notToday: notToday && todayInData, wl, wr, prevW, nextW, isCur: label === "Эта неделя" };
   }
@@ -1696,6 +1697,7 @@ window.__appStart = () => {
   // ---------------- экраны ----------------
   function render() {
     const token = ++renderToken;
+    if (app.style.transform && window.resetEdgeSwipe) window.resetEdgeSwipe();   // экран не должен остаться сдвинутым
     app.classList.remove("fill");
     if (view === "settings") return renderSettings();
     if (view === "teachers") return renderTeachers(token);
@@ -2550,8 +2552,8 @@ window.__appStart = () => {
   }
 
   // ---- выбор иконки для рабочего стола ----
-  const ICON_STYLES = [["blue", "Синяя", ""], ["light", "Светлая", "-light"], ["dark", "Тёмная", "-dark"]];
-  function iconStyle() { const v = store.get("iconStyle"); return ICON_STYLES.some((x) => x[0] === v) ? v : "blue"; }
+  const ICON_STYLES = [["light", "Светлая", "-light"], ["dark", "Тёмная", "-dark"]];
+  function iconStyle() { const v = store.get("iconStyle"); return ICON_STYLES.some((x) => x[0] === v) ? v : window.iconAuto(); }
   function iconPickHTML() {
     const cur = iconStyle();
     const note = STANDALONE
@@ -3103,31 +3105,15 @@ window.__appStart = () => {
     fitPager();
     pg.scrollLeft = curIndex(pg) * pg.clientWidth;
     pg.addEventListener("scroll", onPagerScroll, { passive: true });
-    pg.addEventListener("touchstart", () => { fillNeighbors(); pagerTouch = true; }, { passive: true });
-    pg.addEventListener("wheel", fillNeighbors, { passive: true });
-    clearTimeout(fillTimer);
-    fillTimer = setTimeout(fillNeighbors, slideDir || enterNext ? 450 : 150);   // после анимации появления
+    pg.addEventListener("touchstart", () => { pagerTouch = true; }, { passive: true });
   }
-  // Достроить соседние дни слева и справа, не сдвигая текущий (скролл компенсируем в том же кадре)
-  let pendingNeighbors = null, fillTimer = 0, suppressScroll = false;
-  function fillNeighbors() {
-    clearTimeout(fillTimer);
-    const pg = pagerEl();
-    if (!pendingNeighbors || !pg) return;
-    const nb = pendingNeighbors();
-    pendingNeighbors = null;
-    if (nb.prev) pg.insertAdjacentHTML("afterbegin", nb.prev);
-    if (nb.next) pg.insertAdjacentHTML("beforeend", nb.next);
-    suppressScroll = true;
-    pg.scrollLeft = curIndex(pg) * pg.clientWidth;
-  }
+
   {
     const up = (e) => { if (e.touches && e.touches.length) return; if (pagerTouch) { pagerTouch = false; if (scrolling) armSettle(); } };
     document.addEventListener("touchend", up, { passive: true, capture: true });
     document.addEventListener("touchcancel", up, { passive: true, capture: true });
   }
   function onPagerScroll() {
-    if (suppressScroll) { suppressScroll = false; return; }   // это мы сами поправили позицию после достройки
     scrolling = true;
     if (!scrollFrame) scrollFrame = requestAnimationFrame(paintPaging);
     armSettle();
@@ -3190,7 +3176,6 @@ window.__appStart = () => {
   function shiftDay(dir) {
     const pg = pagerEl();
     if (!pg || !hasNeighbor(dir)) return false;
-    fillNeighbors();
     pg.scrollTo({ left: (curIndex(pg) + dir) * pg.clientWidth, behavior: REDUCED ? "auto" : "smooth" });
     return true;
   }
@@ -3332,6 +3317,14 @@ window.__appStart = () => {
       try { tried = sessionStorage.getItem("verTried") || ""; sessionStorage.setItem("verTried", j.v); } catch (e) { /* без хранилища */ }
       if (tried === j.v) return false;
       try { sessionStorage.setItem("verView", JSON.stringify({ view, target })); } catch (e) { /* без хранилища */ }
+      // сохранённая страница устарела — убираем её, чтобы перезагрузка взяла новую из сети
+      try {
+        if (window.caches) for (const k of await caches.keys()) {
+          if (!k.startsWith("shell-")) continue;
+          const c = await caches.open(k);
+          await c.delete("./"); await c.delete("index.html", { ignoreSearch: true });
+        }
+      } catch (e) { /* без кэша — просто перезагрузка */ }
       location.reload();
       return true;
     } catch (e) { return false; }
@@ -3401,46 +3394,80 @@ window.__appStart = () => {
     const shade = document.createElement("div");
     shade.className = "edgeshade";
     document.body.appendChild(shade);
-    let sx = null, sy = 0, dx = 0, mode = 0;   // mode: 0 — ещё не решили, 1 — свайп назад
+    // Состояние жеста: sx — откуда начали (null — жеста нет), mode: 0 — ещё не решили, 1 — свайп назад.
+    // Любое «странное» событие (второй палец, отмена, сворачивание) не бросает жест на полпути,
+    // а возвращает экран на место — иначе он так и остаётся сдвинутым.
+    let sx = null, sy = 0, dx = 0, mode = 0, lockedPager = null;
+    const unlockPager = () => { if (lockedPager) { lockedPager.style.overflowX = ""; lockedPager = null; } };
+    const snapBack = (animate) => {
+      shade.style.opacity = "0";
+      const cur = app.style.transform;
+      app.style.transform = "";
+      if (animate && cur && cur !== "none") {
+        app.animate([{ transform: cur }, { transform: "none" }], { duration: 220, easing: "cubic-bezier(.25, .9, .3, 1)" });
+      }
+    };
+    const abort = () => {   // жест прерван — экран на место
+      const was = sx !== null && mode === 1;
+      sx = null; mode = 0; unlockPager();
+      if (was || app.style.transform) snapBack(true);
+    };
+    window.resetEdgeSwipe = () => { sx = null; mode = 0; unlockPager(); snapBack(false); };
     document.addEventListener("touchstart", (e) => {
-      sx = null;
+      if (sx !== null) { abort(); return; }   // второй палец посреди жеста
       const t = e.touches[0];
       if (e.touches.length !== 1 || !stack.length || t.clientX > 22) return;
       sx = t.clientX; sy = t.clientY; dx = 0; mode = 0;
+      // у самого края листание дней не начинаем — этот жест для «назад»
+      const pg = e.target.closest && e.target.closest("[data-pager]");
+      if (pg) { lockedPager = pg; pg.style.overflowX = "hidden"; }
     }, { passive: true });
     document.addEventListener("touchmove", (e) => {
       if (sx === null) return;
       const t = e.touches[0];
+      if (!t) return;
       dx = t.clientX - sx;
       const dy = t.clientY - sy;
       if (mode === 0) {
-        // решаем по первому движению: вбок — наш свайп (листание дней не трогаем), вверх-вниз — обычная прокрутка
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;   // ещё не понятно, куда тянут
+        // вбок вправо — наш свайп, вверх-вниз — обычная прокрутка
         if (dx > 0 && dx >= Math.abs(dy)) mode = 1;
-        else { sx = null; return; }
+        else { sx = null; unlockPager(); return; }
       }
       if (e.cancelable) e.preventDefault();
       app.style.transform = `translateX(${Math.max(0, dx)}px)`;
       shade.style.opacity = String(Math.min(1, dx / 120));
     }, { passive: false });
-    const end = () => {
-      if (sx === null) return;
-      sx = null;
-      if (mode !== 1) return;
+    const end = (e) => {
+      if (e && e.touches && e.touches.length) return;   // ещё есть пальцы на экране
+      if (sx === null) { if (app.style.transform) snapBack(true); return; }   // подстраховка
+      const go = mode === 1 && dx > Math.min(110, innerWidth * 0.28);
+      const was = mode === 1;
+      sx = null; mode = 0; unlockPager();
+      if (!was) return;
       shade.style.opacity = "0";
       const from = `translateX(${Math.max(0, dx)}px)`;
       app.style.transform = "";
-      if (dx > Math.min(110, innerWidth * 0.28)) {
-        app.animate([{ transform: from, opacity: 1 }, { transform: `translateX(${Math.round(innerWidth * 0.45)}px)`, opacity: 0 }],
-          { duration: 160, easing: "ease-in" }).finished.then(() => {
+      if (go) {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
           back();
           app.animate([{ transform: "translateX(-28px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 240, easing: "cubic-bezier(.25, .9, .3, 1)" });
-        }).catch(() => back());
+        };
+        const anim = app.animate([{ transform: from, opacity: 1 }, { transform: `translateX(${Math.round(innerWidth * 0.45)}px)`, opacity: 0 }],
+          { duration: 160, easing: "ease-in" });
+        anim.finished.then(finish).catch(finish);
+        setTimeout(finish, 400);   // если анимацию прервали — всё равно уходим назад
       } else {
         app.animate([{ transform: from }, { transform: "none" }], { duration: 220, easing: "cubic-bezier(.25, .9, .3, 1)" });
       }
     };
     document.addEventListener("touchend", end, { passive: true });
-    document.addEventListener("touchcancel", end, { passive: true });
+    document.addEventListener("touchcancel", () => abort(), { passive: true });
+    document.addEventListener("visibilitychange", () => { if (document.hidden) abort(); });
+    window.addEventListener("pageshow", () => window.resetEdgeSwipe());
   }
 
   // --- уведомление нажали, когда приложение уже открыто ---

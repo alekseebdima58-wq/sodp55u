@@ -1,7 +1,7 @@
 // Service worker расписания: приложение открывается с главного экрана даже без сети.
-// Страницу берём из сети (не дольше 4 с), иначе — сохранённую копию. Иконки и шрифты — из кэша
+// Страницу отдаём сразу из сохранённой копии и тихо обновляем её из сети. Иконки и шрифты — из кэша
 // с тихим обновлением. Расписание (data/*.json) не трогаем: офлайн-копию держит сама страница.
-const CACHE = "shell-v7";
+const CACHE = "shell-v8";
 const ICONS = ["icon-192", "icon-512", "maskable-512", "apple-touch-icon", "favicon-64"];
 const SHELL = [
   "./",
@@ -43,17 +43,22 @@ self.addEventListener("fetch", (event) => {
 });
 
 async function pageFirstFromNetwork(event) {
+  // Сохранённая страница есть — отдаём её сразу (запуск без чёрного экрана), а свежую тихо кладём
+  // в кэш на следующий раз. Вышла новая версия — страница сама заметит (version.json) и перезагрузится.
   const cache = await caches.open(CACHE);
+  const saved = (await cache.match("./")) || (await cache.match(event.request, { ignoreSearch: true }));
   const net = fetch(event.request).then((res) => {
-    if (res && res.ok) cache.put("./", res.clone());
+    if (res && res.ok) return cache.put("./", res.clone()).then(() => res);
     return res;
   });
-  event.waitUntil(net.catch(() => {}));
+  if (saved) {
+    event.waitUntil(net.catch(() => {}));
+    return saved;
+  }
   try {
-    return await Promise.race([net, new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 4000))]);
+    return await net;   // первый запуск — без вариантов, из сети
   } catch (e) {
-    const saved = (await cache.match("./")) || (await cache.match(event.request, { ignoreSearch: true }));
-    return saved || net.catch(() => Response.error());
+    return Response.error();
   }
 }
 
