@@ -1,8 +1,9 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
+<meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut">
+<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
@@ -617,11 +618,10 @@ html[data-theme="light"] .tabs {
   margin: -10px calc(-1 * var(--side)) -10px; padding: 10px var(--side);
   transition: background-color .25s ease, box-shadow .25s ease;
 }
-.sbar.stuck {
-  background: color-mix(in srgb, var(--bg) 90%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 1px 0 var(--hair);
-}
+/* фон шапки — сплошной: при прокрутке текст ленты не должен просвечивать под «СОДП-55у» и днями */
+.sbar { background: var(--bg); }
+.sbar.stuck { box-shadow: 0 1px 0 var(--hair); }
+.sbar.stuck .days { background: var(--surface); }
 .sbar .eyebrow { max-height: 18px; transition: max-height .25s ease, opacity .2s ease; }
 .sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day { transition: font-size .25s ease, width .25s ease, height .25s ease; }
 .sbar.small .whead .eyebrow { max-height: 0; opacity: 0; }
@@ -634,7 +634,6 @@ html[data-theme="light"] .tabs {
 .sbar .week + .days { margin-top: 12px; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .tabs { background: var(--glass); }
-  .sbar.stuck { background: var(--bg); }
 }
 
 /* --- блок «Сейчас», как Live Activity: кольцо, сколько осталось, куда идти --- */
@@ -1051,18 +1050,23 @@ window.__appStart = () => {
   let changes = null;   // лента изменений расписания из data/changes.json
 
   // ---------------- загрузка данных ----------------
-  // Два источника: сам сайт (github.io) и запасной — raw.githubusercontent.com (тот же репозиторий,
-  // другой адрес). Если github.io у оператора тормозит или режется, данные берём оттуда.
+  // Источники: сам сайт и запасные адреса из <meta name="data-mirrors"> (их подставляет бот:
+  // Яндекс, GitHub Pages, raw.githubusercontent.com). На github.io без списка — raw того же репозитория.
   // На каждый источник — не дольше 8 секунд; удачный запоминаем и пробуем первым в следующий раз.
-  const GH = (() => {
+  const HERE = location.origin + location.pathname.replace(/[^/]*$/, "");
+  const MIRRORS = (() => {
+    const meta = document.querySelector('meta[name="data-mirrors"]');
+    let list = meta ? meta.content.split(",").map((x) => x.trim()).filter(Boolean) : [];
     const m = /^([a-z0-9-]+)\.github\.io$/i.exec(location.hostname);
-    if (!m) return null;
-    const seg = location.pathname.split("/").filter(Boolean)[0];
-    const repo = seg && !/\.html?$/i.test(seg) ? seg : `${m[1]}.github.io`;
-    const branch = (document.querySelector('meta[name="gh-branch"]') || {}).content || "main";
-    return `https://raw.githubusercontent.com/${m[1]}/${repo}/${branch}/`;
+    if (!list.length && m) {
+      const seg = location.pathname.split("/").filter(Boolean)[0];
+      const repo = seg && !/\.html?$/i.test(seg) ? seg : `${m[1]}.github.io`;
+      list = [`https://raw.githubusercontent.com/${m[1]}/${repo}/main/`];
+    }
+    const norm = (u) => u.replace(/\/?$/, "/").toLowerCase();
+    return list.map(norm).filter((u, i, arr) => u !== norm(HERE) && arr.indexOf(u) === i);
   })();
-  let preferRaw = store.get("src") === "raw";
+  let preferSrc = store.get("src") || "";
   let lastNetError = "";
   async function fetchFrom(url, ms) {
     const ctl = typeof AbortController === "function" ? new AbortController() : null;
@@ -1079,19 +1083,19 @@ window.__appStart = () => {
   }
   async function fetchJSON(path) {
     const key = "cache:" + path;
-    const site = { name: "site", url: `${path}?t=${Date.now()}` };
-    const raw = GH ? { name: "raw", url: `${GH}${path}?t=${Date.now()}` } : null;
-    const order = raw ? (preferRaw ? [raw, site] : [site, raw]) : [site];
+    const srcs = [{ base: "", name: "сайт" }, ...MIRRORS.map((u) => ({ base: u, name: new URL(u).hostname.replace(/\..*$/, "") }))];
+    const i = srcs.findIndex((x) => x.base === preferSrc);
+    if (i > 0) srcs.unshift(srcs.splice(i, 1)[0]);
     const errs = [];
-    for (const src of order) {
+    for (const src of srcs) {
       try {
-        const j = await fetchFrom(src.url, 8000);
-        if (preferRaw !== (src.name === "raw")) { preferRaw = src.name === "raw"; store.set("src", src.name); }
+        const j = await fetchFrom(`${src.base}${path}?t=${Date.now()}`, 8000);
+        if (preferSrc !== src.base) { preferSrc = src.base; store.set("src", src.base); }
         store.set(key, JSON.stringify(j));
         lastNetError = "";
         return j;
       } catch (e) {
-        errs.push(`${src.name === "raw" ? "запасной" : "сайт"}: ${e.message}`);
+        errs.push(`${src.name}: ${e.message}`);
       }
     }
     lastNetError = errs.join(" · ");
