@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="9a0565a61dee">
+<meta name="app-ver" content="84e72d0a9df3">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -910,6 +910,9 @@ button.offline u { text-underline-offset: 2px; }
 .days .pill { position: absolute; z-index: 0; left: 0; top: 4px; bottom: 4px; width: 0; border-radius: 18px; pointer-events: none;
   background: var(--accent); box-shadow: 0 6px 18px -6px rgba(var(--acc-rgb), .75); opacity: 0; will-change: transform, width; }
 .days .pill.ready { opacity: 1; }
+/* каскад при «открытии дня»: строки соседних дней — отдельными слоями, чтобы двигались без перерисовки */
+.page.prev > :is(.dayhead, .hero, .empty), .page.prev > .tl > li > :is(.card, .cc, .blbl),
+.page.next > :is(.dayhead, .hero, .empty), .page.next > .tl > li > :is(.card, .cc, .blbl) { will-change: transform, opacity; }
 .days:has(.pill.ready) .day.on { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
 .day { transition: color .18s ease, opacity .18s ease; }
 @supports (corner-shape: squircle) { .days .pill { corner-shape: squircle; border-radius: 26px; } }
@@ -2708,7 +2711,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v17 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v17.2 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -2806,10 +2809,22 @@ window.__appStart = () => {
     if (!c || !np) return;
     const k = (np.w - c.p.w) * 7 + (np.d - c.p.d);
     if (!k) return;
-    // Соседний день — тем же движением, что и при листании; дальний — новый день появляется коротким
-    // сдвигом (без пролёта через промежуточные), а таблетка плавно переезжает.
+    // Любой переход (соседний или дальний день, «Сегодня», другая неделя) — тем же движением, что и
+    // при листании: нужный день кладём в соседний слот ленты, лента уезжает целиком, таблетка едет к нему.
     const pg = pagerEl();
-    if (Math.abs(k) === 1 && pg && hasNeighbor(k) && !pgAnim) { quietCommit = true; slideTo(pg, k, 0); return; }
+    if (pg && !pgAnim && !REDUCED) {
+      const dir = Math.sign(k);
+      if (Math.abs(k) === 1 && hasNeighbor(k)) { quietCommit = true; slideTo(pg, k, 0); return; }
+      const slot = pg.querySelector(dir > 0 ? ":scope > .page.next" : ":scope > .page.prev");
+      if (slot) {
+        slot.innerHTML = `<div class="pframe" aria-hidden="true"></div>` + dayBodyHTML(c.data, np.w, np.d, view === "teacher", false);
+        slot._ci = null;
+        pillGoal = np.w === c.p.w ? np.d : null;   // таблетка едет прямо к нужному дню (в той же неделе)
+        haptic("select");
+        slideTo(pg, dir, 0, np);
+        return;
+      }
+    }
     rememberPill();
     pos[c.id] = np;
     opened.clear();
@@ -3164,6 +3179,39 @@ window.__appStart = () => {
   // главный поток не нагружается, поэтому без подёргиваний. Таблетка в полосе дней едет вместе с пальцем.
   let pgDrag = null, pgAnim = 0, pgX = 0;
   function pagerPages(pg) { return pg.querySelectorAll(":scope > .page"); }
+  // ---- «открытие дня» каскадом ----
+  // Въезжающий день: заголовок, блок «Сейчас» и пары чуть отстают от ленты — каждая следующая сильнее —
+  // и догоняют её к концу движения. Уходящий день слегка гаснет. Только трансформ и прозрачность.
+  const CASCADE_SEL = ":scope > .dayhead, :scope > .hero, :scope > .tl > li > .card, :scope > .tl > li > .cc, :scope > .tl > li > .blbl, :scope > .empty";
+  function cascadeItems(page) {
+    if (!page) return [];
+    if (!page._ci) page._ci = [...page.querySelectorAll(CASCADE_SEL)].slice(0, 14);
+    return page._ci;
+  }
+  let cascadeSide = 0;
+  function cascadeReset(page) {
+    if (!page) return;
+    page.style.opacity = "";
+    cascadeItems(page).forEach((el) => { el.style.transform = ""; el.style.opacity = ""; });
+  }
+  function cascade(pg, off) {
+    if (REDUCED) return;
+    const dir = Math.sign(off), p = Math.min(1, Math.abs(off));
+    const cur = pg.querySelector(":scope > [data-cur]");
+    const inc = dir > 0 ? pg.querySelector(":scope > .page.next") : dir < 0 ? pg.querySelector(":scope > .page.prev") : null;
+    if (cascadeSide && cascadeSide !== dir) {   // сменили направление — прошлый въезжающий день вернуть как был
+      cascadeReset(pg.querySelector(cascadeSide > 0 ? ":scope > .page.next" : ":scope > .page.prev"));
+    }
+    cascadeSide = dir;
+    if (cur) cur.style.opacity = p ? (1 - 0.35 * p).toFixed(3) : "";
+    if (!inc) return;
+    const lag = 1 - p;   // 1 — день только показался, 0 — встал на место
+    cascadeItems(inc).forEach((el, i) => {
+      const tx = dir * lag * (18 + i * 14);   // каждая следующая строка отстаёт сильнее
+      el.style.transform = lag > 0.001 ? `translate3d(${tx.toFixed(1)}px,0,0)` : "";
+      el.style.opacity = lag > 0.001 ? (1 - lag * Math.min(0.75, 0.25 + i * 0.08)).toFixed(3) : "";
+    });
+  }
   function setPagerX(pg, x) {
     pgX = x;
     const t = x ? `translate3d(${x.toFixed(2)}px,0,0)` : "";
@@ -3171,6 +3219,7 @@ window.__appStart = () => {
     const W = pg.clientWidth || 1, off = -x / W;            // -1 … 1, плюс — к следующему дню
     const o = REDUCED ? 0 : Math.min(1, Math.abs(off) * 5);
     pg.querySelectorAll(".pframe").forEach((el) => { el.style.opacity = o ? o.toFixed(2) : ""; });
+    cascade(pg, off);
     pillFollow(off);
     // пока таблетка в пути — цифры обычного цвета (тёмные «выбранные» цифры вне таблетки не читаются)
     if (Math.abs(off) > 0.02) chipsMoving(true); else { chipsMoving(false); previewChips(0); }
@@ -3192,9 +3241,23 @@ window.__appStart = () => {
     pgAnim = requestAnimationFrame(step);
   }
   // уехать на соседний день (dir = ±1) и сменить его (новый день встаёт ровно туда же — подмена незаметна)
-  function slideTo(pg, dir, v) {
+  function slideTo(pg, dir, v, np) {
     const W = pg.clientWidth || 1;
-    pagerAnim(pg, -dir * W, v, () => { if (dir) commitDay(dir); else setPagerX(pg, 0); });
+    pagerAnim(pg, -dir * W, v, () => {
+      pillGoal = null;
+      if (np) commitTo(np); else if (dir) commitDay(dir); else setPagerX(pg, 0);
+    });
+  }
+  // дальний переход: лента уже стоит на нужном дне — фиксируем его без вибро и анимаций
+  function commitTo(np) {
+    const c = curPos();
+    if (!c) return;
+    pos[c.id] = np;
+    opened.clear();
+    enterNext = false;
+    slideDir = 0;
+    pgX = 0;
+    render();
   }
   function pagerDown(e) {
     const t = e.touches[0];
@@ -3280,9 +3343,11 @@ window.__appStart = () => {
   }
   let pillPrev = null;   // где стояла таблетка до перерисовки
   function rememberPill(f) { const c = curPos(); if (c) pillPrev = { week: c.data.weeks[c.p.w].monday, d: c.p.d, f: f == null ? c.p.d : f }; }
+  let pillGoal = null;   // дальний переход: к какому дню едет таблетка
   function pillFollow(off) {
     const c = curPos();
     if (!c || !pillPos.length) return;
+    if (pillGoal != null) { putPill(c.p.d + (pillGoal - c.p.d) * Math.min(1, Math.abs(off))); return; }
     const np = off ? stepPos(c.data, c.p, Math.sign(off)) : c.p;
     if (np && np.w !== c.p.w) { putPill(c.p.d); return; }   // соседний день — в другой неделе: таблетка стоит
     putPill(c.p.d + off);
