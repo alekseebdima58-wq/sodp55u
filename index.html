@@ -2,14 +2,25 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days">
+<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days tg-home icon-pick net-fallback">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
 <!-- PWA: можно установить на главный экран, работает без сети -->
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="icons/favicon-64.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" id="lnkManifest" href="manifest.webmanifest">
+<link rel="icon" id="lnkFav" type="image/png" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" id="lnkTouch" href="icons/apple-touch-icon.png">
+<script>
+  // Вид иконки на рабочем столе (выбирается в настройках): blue | light | dark.
+  // iPhone и Android берут иконку в момент установки — поэтому подставляем нужную сразу.
+  window.applyIconStyle = function (st) {
+    var suf = st === "light" ? "-light" : st === "dark" ? "-dark" : "";
+    document.getElementById("lnkManifest").href = "manifest" + suf + ".webmanifest";
+    document.getElementById("lnkFav").href = "icons/favicon-64" + suf + ".png";
+    document.getElementById("lnkTouch").href = "icons/apple-touch-icon" + suf + ".png";
+  };
+  try { var st0 = localStorage.getItem("iconStyle"); if (st0) applyIconStyle(st0); } catch (e) { /* хранилище недоступно */ }
+</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Расписание">
@@ -697,6 +708,18 @@ html[data-theme="light"] .ibar { background: rgba(255, 255, 255, .8); }
 @keyframes dayInR { from { opacity: 0; transform: translate3d(24px, 0, 0); } }
 @keyframes dayInL { from { opacity: 0; transform: translate3d(-24px, 0, 0); } }
 
+button.offline { border: 0; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; }
+button.offline u { text-underline-offset: 2px; }
+
+/* --- выбор иконки --- */
+.icpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.icpick button { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 4px 10px; border-radius: 18px;
+  border: 1.5px solid transparent; background: var(--bg); color: var(--muted); font-size: 13px; font-weight: 600; }
+.icpick button img { width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); }
+.icpick button.on { border-color: var(--accent); color: var(--text); background: rgba(var(--acc-rgb), .1); }
+.icnote { margin: 10px 2px 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+@supports (corner-shape: squircle) { .icpick button { corner-shape: squircle; border-radius: 24px; } .icpick button img { corner-shape: squircle; border-radius: 18px; } }
+
 /* ================= Пружины и сквиркл ================= */
 
 /* --- пружинные кривые: рассчитаны из затухающей пружины (перелёт ~4% и ~16%) --- */
@@ -993,19 +1016,54 @@ window.__appStart = () => {
   let meta = null;
   let changes = null;   // лента изменений расписания из data/changes.json
 
+  // ---------------- загрузка данных ----------------
+  // Два источника: сам сайт (github.io) и запасной — raw.githubusercontent.com (тот же репозиторий,
+  // другой адрес). Если github.io у оператора тормозит или режется, данные берём оттуда.
+  // На каждый источник — не дольше 8 секунд; удачный запоминаем и пробуем первым в следующий раз.
+  const GH = (() => {
+    const m = /^([a-z0-9-]+)\.github\.io$/i.exec(location.hostname);
+    if (!m) return null;
+    const seg = location.pathname.split("/").filter(Boolean)[0];
+    const repo = seg && !/\.html?$/i.test(seg) ? seg : `${m[1]}.github.io`;
+    const branch = (document.querySelector('meta[name="gh-branch"]') || {}).content || "main";
+    return `https://raw.githubusercontent.com/${m[1]}/${repo}/${branch}/`;
+  })();
+  let preferRaw = store.get("src") === "raw";
+  let lastNetError = "";
+  async function fetchFrom(url, ms) {
+    const ctl = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = setTimeout(() => { if (ctl) ctl.abort(); }, ms);
+    try {
+      const r = await fetch(url, { cache: "no-store", signal: ctl ? ctl.signal : undefined });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch (e) {
+      throw new Error(e && e.name === "AbortError" ? "нет ответа 8 с" : (e && e.message) || "ошибка сети");
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   async function fetchJSON(path) {
     const key = "cache:" + path;
-    try {
-      const r = await fetch(`${path}?t=${Date.now()}`, { cache: "no-store" });
-      if (!r.ok) throw new Error(String(r.status));
-      const j = await r.json();
-      store.set(key, JSON.stringify(j));
-      return j;
-    } catch (err) {
-      const s = store.get(key);
-      if (s) { try { const j = JSON.parse(s); j._offline = true; return j; } catch (e) { /* битый кэш */ } }
-      throw err;
+    const site = { name: "site", url: `${path}?t=${Date.now()}` };
+    const raw = GH ? { name: "raw", url: `${GH}${path}?t=${Date.now()}` } : null;
+    const order = raw ? (preferRaw ? [raw, site] : [site, raw]) : [site];
+    const errs = [];
+    for (const src of order) {
+      try {
+        const j = await fetchFrom(src.url, 8000);
+        if (preferRaw !== (src.name === "raw")) { preferRaw = src.name === "raw"; store.set("src", src.name); }
+        store.set(key, JSON.stringify(j));
+        lastNetError = "";
+        return j;
+      } catch (e) {
+        errs.push(`${src.name === "raw" ? "запасной" : "сайт"}: ${e.message}`);
+      }
     }
+    lastNetError = errs.join(" · ");
+    const s = store.get(key);
+    if (s) { try { const j = JSON.parse(s); j._offline = true; return j; } catch (e) { /* битый кэш */ } }
+    throw new Error(lastNetError);
   }
   const pending = {};
   function load(id) {
@@ -1600,7 +1658,9 @@ window.__appStart = () => {
       head = `<div class="top week whead"><div class="ht"><div class="eyebrow">${s.isCur ? `<span class="grp">${esc((index && index.group) || "СОДП-55у")} · </span>` : ""}${s.wl}</div><h1 class="wr" aria-live="polite">${s.wr}</h1></div>
         <div class="top-actions">${s.prevW}${s.nextW}${bell}</div></div>`;
     }
-    const off = data._offline ? `<div class="offline">Нет сети · показано сохранённое</div>` : "";
+    const off = data._offline
+      ? `<button class="offline" data-act="retry-net" title="${esc(lastNetError)}">${navigator.onLine === false ? "Нет сети" : "Не удалось обновить"} · показано сохранённое · <u>Повторить</u></button>`
+      : "";
     // Липкая полоса: у группы — шапка недели + дни, у преподавателя — строка недели + дни
     app.innerHTML = isTeacher
       ? head + off + `<div class="sbar">${s.bar}</div>` + s.html
@@ -1666,12 +1726,49 @@ window.__appStart = () => {
       : `<div class="list"><div class="item"><span class="tile t-room" aria-hidden="true">${I.home}</span>
           <span class="body"><span class="nm">${title}</span><span class="sub wrap">${sub}</span></span></div></div>`;
     if (STANDALONE) return row("Установлено на главный экран", "Открывается с иконки и показывает расписание даже без сети");
-    if (inTG) return row("Установить на главный экран", "Откроется в браузере. Если страница откроется внутри Telegram — выбери «Открыть в браузере»", "install-open");
+    if (inTG) {
+      // Telegram 8.0+: ярлык на рабочий стол прямо из приложения, без перехода в браузер
+      if (homeStatus === "added") return row("Добавлено на рабочий стол", "Иконка открывает расписание в одно касание");
+      if (homeStatus === "missed" || homeStatus === "unknown") return row("Добавить на рабочий стол", "Иконка расписания на главном экране телефона — открывается в одно касание", "tg-home");
+      if (homeStatus === "checking") return row("Добавить на рабочий стол", "Проверяю, поддерживает ли Telegram на этом телефоне…");
+      return row("Установить на главный экран", "Этот Telegram не умеет добавлять ярлыки — откроется в браузере, там можно установить", "install-open");
+    }
     if (installEvt) return row("Установить приложение", "Иконка на главном экране, работает без сети и без Telegram", "install");
     if (IOS) return row("Добавить на экран «Домой»", "Нажми «Поделиться» в Safari и выбери «На экран „Домой“». Работает без сети и без Telegram");
     return row("Установить приложение", "В меню браузера выбери «Установить приложение» или «Добавить на главный экран»");
   }
+  // ---- ярлык Telegram на рабочий стол (Bot API 8.0+) ----
+  const tgHomeOK = () => inTG && tgAtLeast("8.0") && typeof tg.addToHomeScreen === "function";
+  let homeStatus = tgHomeOK() ? "checking" : "unsupported";   // checking → unsupported | unknown | missed | added
+  function setHomeStatus(st) {
+    homeStatus = st || "unsupported";
+    if (view === "settings") renderSettings();
+    if (homeStatus === "added" || homeStatus === "unsupported") hideInstallBar(false);
+  }
+  function addToHome() {
+    if (!tgHomeOK()) return;
+    try { tg.addToHomeScreen(); } catch (e) { toast("Не получилось — обнови Telegram"); }
+  }
+  if (tgHomeOK()) {
+    try {
+      tg.onEvent("homeScreenAdded", () => {
+        setHomeStatus("added");
+        store.set("installBar", "0");
+        toast("Иконка добавлена на рабочий стол");
+        if (tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) { /* старый клиент */ } }
+      });
+      tg.onEvent("homeScreenChecked", (ev) => setHomeStatus(ev && ev.status));
+      tg.checkHomeScreenStatus((st) => setHomeStatus(st));
+    } catch (e) { homeStatus = "unsupported"; }
+    setTimeout(() => { if (homeStatus === "checking") setHomeStatus("unsupported"); }, 3000);
+  }
+
   async function promptInstall() {
+    if (inTG) {
+      if (homeStatus === "missed" || homeStatus === "unknown") addToHome();
+      hideInstallBar(true);   // «unknown» не сообщает, добавили ли иконку, — больше не предлагаем
+      return;
+    }
     if (!installEvt) { go("settings", null, false); requestAnimationFrame(() => { const s = document.getElementById("asec"); if (s) s.scrollIntoView({ block: "start", behavior: "smooth" }); }); return; }
     const e = installEvt;
     installEvt = null;
@@ -1681,12 +1778,14 @@ window.__appStart = () => {
   }
   // Ненавязчивая плашка над нижней панелью — только в обычном браузере и пока её не закрыли
   function showInstallBar() {
-    if (STANDALONE || inTG || store.get("installBar") === "0" || document.querySelector(".ibar")) return;
+    if (STANDALONE || store.get("installBar") === "0" || document.querySelector(".ibar")) return;
+    // В Telegram плашку показываем, только если ярлык точно можно добавить и его ещё нет
+    if (inTG && homeStatus !== "missed" && homeStatus !== "unknown") return;
     const el = document.createElement("div");
     el.className = "ibar";
     el.innerHTML = `<span class="tile t-room" aria-hidden="true">${I.home}</span>
-      <span class="ib">Установи расписание на главный экран<small>Откроется с иконки, работает без сети</small></span>
-      <button class="ibtn" data-ib="go">${installEvt ? "Установить" : "Как?"}</button>
+      <span class="ib">${inTG ? "Добавь расписание на рабочий стол" : "Установи расписание на главный экран"}<small>${inTG ? "Иконка на главном экране, открывается в одно касание" : "Откроется с иконки, работает без сети"}</small></span>
+      <button class="ibtn" data-ib="go">${inTG ? "Добавить" : installEvt ? "Установить" : "Как?"}</button>
       <button class="ix" data-ib="x" aria-label="Закрыть">${I.x}</button>`;
     el.addEventListener("click", (ev) => {
       const b = ev.target.closest("[data-ib]");
@@ -1699,6 +1798,22 @@ window.__appStart = () => {
     const el = document.querySelector(".ibar");
     if (el) el.remove();
     if (forever) store.set("installBar", "0");
+  }
+
+  // ---- выбор иконки для рабочего стола ----
+  const ICON_STYLES = [["blue", "Синяя", ""], ["light", "Светлая", "-light"], ["dark", "Тёмная", "-dark"]];
+  function iconStyle() { const v = store.get("iconStyle"); return ICON_STYLES.some((x) => x[0] === v) ? v : "blue"; }
+  function iconPickHTML() {
+    if (inTG) return "";   // ярлык из Telegram рисует сам Telegram — свою иконку туда не передать
+    const cur = iconStyle();
+    const note = STANDALONE
+      ? "Иконка уже на рабочем столе. Чтобы сменить её вид — удали иконку и установи приложение заново."
+      : "Выбери до установки — эта иконка появится на рабочем столе.";
+    return `<div class="list pad" style="margin-top:10px"><span class="lbl15">Иконка на рабочем столе</span>
+      <div class="icpick" role="radiogroup" aria-label="Иконка на рабочем столе">${ICON_STYLES.map(([v, l, suf]) =>
+        `<button data-act="icon-style" data-v="${v}" role="radio" aria-checked="${cur === v}" class="${cur === v ? "on" : ""}">
+          <img src="icons/icon-192${suf}.png" alt="" width="56" height="56"><span>${l}</span></button>`).join("")}</div>
+      <p class="icnote">${note}</p></div>`;
   }
 
   function renderSettings() {
@@ -1715,6 +1830,7 @@ window.__appStart = () => {
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
       <h2 class="sec" id="asec">Приложение</h2>
       ${installHTML()}
+      ${iconPickHTML()}
       <h2 class="sec" id="nsec">Уведомления в чате</h2>
       ${notifSettingsHTML()}
       <p class="foot">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
@@ -1880,6 +1996,9 @@ window.__appStart = () => {
     } else if (act === "install") {
       haptic("light");
       promptInstall();
+    } else if (act === "tg-home") {
+      haptic("light");
+      addToHome();
     } else if (act === "install-open") {
       const url = location.origin + location.pathname;
       haptic("light");
@@ -1906,6 +2025,15 @@ window.__appStart = () => {
     } else if (act === "retry") {
       delete mem[id];
       render();
+    } else if (act === "retry-net") {
+      haptic("light");
+      el.textContent = "Обновляю…";
+      refreshNow();
+    } else if (act === "icon-style") {
+      store.set("iconStyle", el.dataset.v);
+      try { window.applyIconStyle(el.dataset.v); } catch (e) { /* старая страница */ }
+      haptic("select");
+      renderSettings();
     } else if (act === "theme") {
       store.set("theme", el.dataset.v);
       applyTheme();
@@ -1959,13 +2087,17 @@ window.__appStart = () => {
   // ---------------- свежие данные при возвращении ----------------
   // Если приложение долго висело свёрнутым — тихо подтягиваем то, что бот выложил за это время.
   let loadedAt = Date.now(), loadedDate = samaraNow().date, reloading = false;
-  async function reloadIfStale() {
-    if (reloading || document.hidden || Date.now() - loadedAt < 10 * 60 * 1000) return;
+  // Принудительно: по кнопке «Повторить», при появлении сети и раз в минуту, пока показано сохранённое
+  function refreshNow() { loadedAt = 0; reloadIfStale(true); }
+  window.addEventListener("online", () => { if (mem.g && mem.g._offline) refreshNow(); });
+  setInterval(() => { if (mem.g && mem.g._offline && !document.hidden) refreshNow(); }, 60 * 1000);
+  async function reloadIfStale(force) {
+    if (reloading || (document.hidden && !force) || Date.now() - loadedAt < 10 * 60 * 1000) return;
     reloading = true;
     try {
       const [i, mt, ch, g] = await Promise.all([fetchJSON("data/index.json"), fetchJSON("data/meta.json"),
         fetchJSON("data/changes.json"), fetchJSON("data/g.json")]);
-      if (g._offline) return;   // сети нет — оставляем как было, попробуем в следующий раз
+      if (g._offline) { if (force) { render(); toast(lastNetError ? `Не отвечает — ${lastNetError}` : "Нет сети"); } return; }
       const newDay = samaraNow().date !== loadedDate;
       for (const id of Object.keys(pos)) {
         const w = mem[id] && mem[id].weeks[pos[id].w];

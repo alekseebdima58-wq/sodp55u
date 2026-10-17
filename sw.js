@@ -1,16 +1,12 @@
 // Service worker расписания: приложение открывается с главного экрана даже без сети.
 // Страницу берём из сети (не дольше 4 с), иначе — сохранённую копию. Иконки и шрифты — из кэша
 // с тихим обновлением. Расписание (data/*.json) не трогаем: офлайн-копию держит сама страница.
-const CACHE = "shell-v1";
+const CACHE = "shell-v2";
+const ICONS = ["icon-192", "icon-512", "maskable-512", "apple-touch-icon", "favicon-64"];
 const SHELL = [
   "./",
-  "manifest.webmanifest",
   "fonts/fonts.css",
-  "icons/icon-192.png",
-  "icons/icon-512.png",
-  "icons/maskable-512.png",
-  "icons/apple-touch-icon.png",
-  "icons/favicon-64.png",
+  ...["", "-light", "-dark"].flatMap((s) => [`manifest${s}.webmanifest`, ...ICONS.map((n) => `icons/${n}${s}.png`)]),
 ];
 
 self.addEventListener("install", (event) => {

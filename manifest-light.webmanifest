@@ -1,0 +1,33 @@
+{
+  "id": "./",
+  "name": "Расписание СОДП-55у",
+  "short_name": "Расписание",
+  "description": "Расписание пар группы СОДП-55у и преподавателей",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F7FF",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "icons/icon-192-light.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-light.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512-light.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
