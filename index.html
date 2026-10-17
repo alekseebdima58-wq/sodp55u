@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-13 notif-noback">
+<meta name="app-build" content="2026-10-17 design-2">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0E1014">
 <title>Расписание СОДП-55у</title>
@@ -27,6 +27,8 @@ html[data-theme="dark"] {
   --lab-fg: #B39BFF; --lab-bar: #8B5CF6; --lab-rgb: 139,92,246;
   --oth-fg: #7CC8E8; --oth-bar: #4DB3DE; --oth-rgb: 77,179,222;
   --av-s: 30%; --av-l: 19%; --avf-s: 85%; --avf-l: 76%;
+  --hair: rgba(255, 255, 255, .055); --elev: none; --acc-rgb: 110, 168, 255;
+  --glass: rgba(22, 25, 31, .94); --glass-border: rgba(255, 255, 255, .07); --glass-shadow: 0 12px 32px rgba(0, 0, 0, .45);
 }
 html[data-theme="light"] {
   color-scheme: light;
@@ -43,6 +45,8 @@ html[data-theme="light"] {
   --lab-fg: #6B46D6; --lab-bar: #8B5CF6; --lab-rgb: 139,92,246;
   --oth-fg: #1F6F99; --oth-bar: #3A9FD0; --oth-rgb: 58,159,208;
   --av-s: 80%; --av-l: 94%; --avf-s: 55%; --avf-l: 38%;
+  --hair: rgba(20, 23, 28, .04); --elev: 0 1px 2px rgba(20, 23, 28, .04), 0 6px 20px rgba(20, 23, 28, .05); --acc-rgb: 37, 99, 217;
+  --glass: rgba(255, 255, 255, .94); --glass-border: rgba(20, 23, 28, .06); --glass-shadow: 0 10px 30px rgba(20, 23, 28, .12);
 }
 .k-lec  { --k-fg: var(--lec-fg);  --k-bar: var(--lec-bar);  --k-rgb: var(--lec-rgb); }
 .k-prac { --k-fg: var(--prac-fg); --k-bar: var(--prac-bar); --k-rgb: var(--prac-rgb); }
@@ -392,6 +396,74 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
 }
 .tab.on { color: var(--accent); font-weight: 600; }
+
+
+/* ================= Оформление 2.0 =================
+   Меньше рамок: блоки отделяются тоном фона и мягкой тенью. Крупнее заголовки и номер аудитории,
+   дни недели — единой «дорожкой», нижняя панель — плавающая полупрозрачная, как в iOS. */
+.btn { border-color: var(--hair); box-shadow: var(--elev); }
+.icon-btn { border-radius: 50%; }
+.btn.wide { border-radius: 16px; box-shadow: 0 8px 22px -10px rgba(var(--acc-rgb), .8); }
+
+/* неделя: заголовок слева, стрелки — круглые кнопки справа */
+.week { margin-top: 18px; padding: 0; gap: 8px; background: transparent; border: 0; }
+.week .mid { order: -1; align-items: flex-start; gap: 1px; }
+.week button { width: 40px; height: 40px; border-radius: 50%; background: var(--surface); box-shadow: var(--elev); }
+.wl { font-size: 12px; letter-spacing: .04em; }
+.wr { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
+
+/* дни — одна дорожка, выбранный день — плотная капсула */
+.days { gap: 2px; margin-top: 12px; padding: 4px; border-radius: 22px; background: var(--surface); box-shadow: var(--elev); border: 1px solid var(--hair); }
+.day { height: 56px; border-radius: 18px; border-color: transparent; background: transparent; }
+.day .s { font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; opacity: .65; }
+.day .n { font-size: 18px; }
+.day.today { border-color: transparent; }
+.day.today:not(.on) .n, .day.today:not(.on) .s { color: var(--accent); opacity: 1; }
+.day.on { box-shadow: 0 6px 18px -6px rgba(var(--acc-rgb), .75); }
+.day.on .s { opacity: .85; }
+.dayhead { margin: 20px 2px 10px; gap: 3px; }
+.dayhead h2 { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
+.tag { background: rgba(var(--acc-rgb), .14); color: var(--accent); }
+
+/* карточки пар */
+.card { padding: 14px 16px; border-radius: 22px; border-color: var(--hair); box-shadow: var(--elev); gap: 9px; }
+.card h3 { font-size: 17px; letter-spacing: -.005em; }
+.row.live .card { border-color: rgba(var(--k-rgb), .38); box-shadow: 0 14px 34px -18px rgba(var(--k-rgb), .7), var(--elev); }
+.row.next .card { border-color: rgba(var(--k-rgb), .22); }
+.row.past .card, .row.past .cc { border-color: transparent; box-shadow: none; }
+.kind { border-radius: 999px; padding: 4px 10px 4px 7px; }
+.kind::before { width: 6px; height: 6px; border-radius: 50%; }
+.meta { gap: 5px; font-size: 13.5px; }
+.meta > span:first-child { color: var(--text); font-weight: 600; }   /* аудитория — то, куда идти */
+.cc { border-radius: 18px; border-color: var(--hair); box-shadow: var(--elev); padding: 11px 14px; }
+.blbl { font-size: 12.5px; }
+
+/* списки и поиск */
+.search { height: 50px; border-radius: 16px; border-color: var(--hair); box-shadow: var(--elev); }
+.list { border-radius: 22px; border-color: var(--hair); box-shadow: var(--elev); }
+.item { position: relative; border-top: 0; }
+.list > .item + .item::before { content: ""; position: absolute; top: 0; left: 66px; right: 0; height: 1px; background: var(--sep); }
+.av { border-radius: 50%; }
+.av.big { border-radius: 50%; }
+.tcard { border-radius: 24px; border-color: var(--hair); box-shadow: var(--elev); }
+.empty .ic { border-radius: 22px; border-color: var(--hair); box-shadow: var(--elev); }
+.seg3 { border-radius: 16px; }
+.seg3 button { border-radius: 12px; }
+.sec { margin: 24px 6px 8px; }
+
+/* нижняя панель — плавающая «стеклянная» капсула над полоской «домой» */
+.tabs {
+  left: 12px; right: 12px; bottom: max(10px, env(safe-area-inset-bottom), var(--safe-bottom, 0px));
+  max-width: 496px; margin: 0 auto; padding: 6px; border-radius: 28px;
+  background: var(--glass); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6);
+}
+.tab { min-height: 52px; border-radius: 22px; transition: background .2s, color .2s; }
+.tab.on { background: rgba(var(--acc-rgb), .14); }
+html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст подписи ≥ 4.5:1 на подсветке */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tabs { background: var(--tab-bg); }
+}
 
 /* Узкие телефоны (360–380 px): чуть меньше полей, чтобы статус пары и подписи не обрезались */
 @media (max-width: 380px) {
