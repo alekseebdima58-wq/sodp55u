@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 design-2 swipes-span3 compact-all">
+<meta name="app-build" content="2026-10-17 design-2 swipes-span3 compact-all header-v2">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0E1014">
 <title>Расписание СОДП-55у</title>
@@ -461,8 +461,30 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 .tab.on { background: rgba(var(--acc-rgb), .14); }
 html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст подписи ≥ 4.5:1 на подсветке */
 
+
+/* шапка: над заголовком везде название группы; у расписания заголовок — неделя, рядом стрелки и колокольчик */
+h1 { font-size: 24px; margin-top: 4px; }
+.whead { margin-top: 0; align-items: center; gap: 10px; }
+.whead .ht { flex: 1; min-width: 0; }
+.whead .eyebrow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.whead .eyebrow .wl { font-size: inherit; letter-spacing: inherit; }
+h1.wr { font-family: inherit; font-size: clamp(18px, 5.6vw, 22px); font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
+.whead .top-actions { gap: 6px; flex: none; }
+.whead .top-actions .wbtn, .whead .top-actions .icon-btn { width: 40px; height: 40px; }
+.wbtn { flex: none; border: 1px solid var(--hair); border-radius: 50%; background: var(--surface); box-shadow: var(--elev); color: var(--text); display: grid; place-items: center; padding: 0; }
+.wbtn:disabled { opacity: .3; cursor: default; }
+.whead + .days, .whead + .offline + .days { margin-top: 14px; }
+
+/* свёрнутая карточка: тип — цветной точкой, как в раскрытой; аудитория — жирная, как в раскрытой */
+.cc .ln .bar { width: 6px; height: 6px; border-radius: 50%; }
+.cc .rm { font-weight: 600; color: var(--text); }
+.row.past .cc .rm, .row.past .meta > span:first-child { color: var(--past-title); }
+
 /* Узкие телефоны (360–380 px): чуть меньше полей, чтобы статус пары и подписи не обрезались */
 @media (max-width: 380px) {
+  .whead .grp { display: none; }
+  .whead .eyebrow { font-size: 11px; letter-spacing: .03em; }
+  .whead .top-actions { gap: 4px; }   /* в шапке остаётся «Эта неделя» — длинное «Следующая неделя» иначе обрезается */
   :root { --side: 14px; }
   .row, .brk { column-gap: 10px; }
   .card { padding: 12px; }
@@ -953,8 +975,8 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
 
   // ---------------- разметка ----------------
   function skeletonHTML() {
-    return `<div class="top"><div><div class="eyebrow">ПривГУПС</div><h1>${esc((index && index.group) || "СОДП-55у")}</h1></div></div>
-      <div class="sk" style="height:50px"></div><div class="sk" style="height:58px"></div>
+    return `<div class="top"><div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Расписание</h1></div></div>
+      <div class="sk" style="height:66px"></div>
       <div class="sk" style="height:120px;margin-top:22px"></div><div class="sk"></div><div class="sk"></div>`;
   }
   function errorHTML() {
@@ -977,9 +999,10 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
     if (it.compact) {
       const lead = it.st === "past" ? I.check : `<span class="bar"></span>`;
       const who = isTeacher ? it.extra : (it.teacher ? shortName(it.teacher.name) : it.extra);
-      const parts = it.st === "past" ? ["Прошла", it.k.label, it.room] : [it.k.label, it.room, who];
+      const room = it.room ? `<b class="rm">${esc(it.room)}</b>` : "";
+      const parts = it.st === "past" ? [esc("Прошла"), esc(it.k.label), room] : [esc(it.k.label), room, esc(who || "")];
       body = `<button class="cc" data-act="open" data-key="${esc(it.key)}" aria-expanded="false">
-        <h3>${esc(it.subject)}</h3><span class="ln">${lead}<span class="x">${esc(parts.filter(Boolean).join(" · "))}</span></span></button>`;
+        <h3>${esc(it.subject)}</h3><span class="ln">${lead}<span class="x">${parts.filter(Boolean).join(" · ")}</span></span></button>`;
     } else {
       let meta = it.room ? `<span>${I.pin}<span class="x">${esc(it.room)}</span></span>` : "";
       if (isTeacher) {
@@ -1045,10 +1068,11 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
     const todayInData = data.weeks.some((x) => x.monday === mondayOf(now.date));
 
     const label = weekLabel(week.monday);
-    let html = `<div class="week">
-      <button data-act="week" data-dir="-1" aria-label="Предыдущая неделя"${p.w <= 0 ? " disabled" : ""}>${I.left}</button>
-      <div class="mid" aria-live="polite"><span class="wl${label === "Эта неделя" ? " cur" : ""}">${esc(label)}</span><span class="wr">${esc(weekRange(week.monday))}</span></div>
-      <button data-act="week" data-dir="1" aria-label="Следующая неделя"${p.w >= data.weeks.length - 1 ? " disabled" : ""}>${I.right}</button></div>`;
+    const prevW = `<button class="wbtn" data-act="week" data-dir="-1" aria-label="Предыдущая неделя"${p.w <= 0 ? " disabled" : ""}>${I.left}</button>`;
+    const nextW = `<button class="wbtn" data-act="week" data-dir="1" aria-label="Следующая неделя"${p.w >= data.weeks.length - 1 ? " disabled" : ""}>${I.right}</button>`;
+    const wl = `<span class="wl${label === "Эта неделя" ? " cur" : ""}">${esc(label)}</span>`, wr = esc(weekRange(week.monday));
+    // У преподавателя неделя — отдельной строкой под его карточкой; у группы она в шапке (см. renderSchedule)
+    let html = isTeacher ? `<div class="week"><div class="mid" aria-live="polite">${wl}<span class="wr">${wr}</span></div>${prevW}${nextW}</div>` : "";
 
     html += `<nav class="days" aria-label="Дни недели">`;
     for (let d = 0; d < 7; d++) {
@@ -1073,7 +1097,7 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
     for (const q of nexts) html += `<div class="page next" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
     html += `</div>`;
     liveSig = m.sig;
-    return { html, notToday: notToday && todayInData };
+    return { html, notToday: notToday && todayInData, wl, wr, prevW, nextW, isCur: label === "Эта неделя" };
   }
 
   // ---------------- экраны ----------------
@@ -1139,7 +1163,7 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
       groups[d === today ? 0 : d === yesterday ? 1 : 2][1].push(c);
     }
     const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
-    let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div class="eyebrow">Уведомления</div></div></div>`;
+    let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Уведомления</h1></div></div></div>`;
     const foot = `<button class="btn wide" data-act="to-settings">${I.bell}Настроить уведомления</button>`;
     if (!items.length) {
       // Пусто: колокольчик, текст и кнопка — одним блоком посередине экрана
@@ -1256,15 +1280,15 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
       const name = teacherName(id) || data.name || "";
       const subj = [...(groupTeacherSubjects().get(id) || [])];
       const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
-      head = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div class="eyebrow">Преподаватель</div></div>
+      head = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div></div>
           <div class="top-actions">${todayBtn}</div></div>
         <div class="tcard"><div class="av big" style="--h:${hue(name)}" aria-hidden="true">${esc(initials(name))}</div>
           <div style="min-width:0"><h1 class="nm" style="font-family:inherit">${esc(name)}</h1>
           <div class="sub">${subj.length ? esc(subj.join(", ")) : "Расписание преподавателя"}</div></div></div>`;
     } else {
       const bell = `<button class="btn icon-btn bell" data-act="notif" aria-label="Изменения в расписании${hasUnseen() ? ", есть новые" : ""}">${I.bell}${hasUnseen() ? `<span class="badge"></span>` : ""}</button>`;
-      head = `<div class="top"><div><div class="eyebrow">ПривГУПС</div><h1>${esc((index && index.group) || data.name || "СОДП-55у")}</h1></div>
-        <div class="top-actions">${bell}</div></div>`;
+      head = `<div class="top week whead"><div class="ht"><div class="eyebrow">${s.isCur ? `<span class="grp">${esc((index && index.group) || "СОДП-55у")} · </span>` : ""}${s.wl}</div><h1 class="wr" aria-live="polite">${s.wr}</h1></div>
+        <div class="top-actions">${s.prevW}${s.nextW}${bell}</div></div>`;
     }
     const off = data._offline ? `<div class="offline">Нет сети · показано сохранённое</div>` : "";
     app.innerHTML = head + off + s.html;
@@ -1305,7 +1329,7 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
       return;
     }
     if (token !== renderToken) return;
-    app.innerHTML = `<div class="top"><div><div class="eyebrow">${esc(index.group || "СОДП-55у")}</div><h1>Преподаватели</h1></div></div>
+    app.innerHTML = `<div class="top"><div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Преподаватели</h1></div></div>
       <label class="search">${I.search}<input id="q" type="search" placeholder="Поиск по фамилии" aria-label="Поиск преподавателя" autocomplete="off" value="${esc(query)}"></label>
       <div id="tlists">${teacherListsHTML()}</div>`;
   }
@@ -1314,7 +1338,7 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
     const pref = themePref();
     const opts = [["auto", "Как в Telegram"], ["light", "Светлая"], ["dark", "Тёмная"]];
     const upd = meta && meta.updated ? fmtUpdated(meta.updated) : "";
-    app.innerHTML = `<div class="top"><div><div class="eyebrow">@sodp55u_bot</div><h1>Настройки</h1></div></div>
+    app.innerHTML = `<div class="top"><div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Настройки</h1></div></div>
       <h2 class="sec">Оформление</h2>
       <div class="list pad"><span class="lbl15">Тема</span>
         <div class="seg3" role="group" aria-label="Тема">${opts.map(([v, l]) =>
