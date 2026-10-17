@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="fb001697ff36">
+<meta name="app-ver" content="9a0565a61dee">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -304,7 +304,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
    короткий быстрый бросок перелистывает день, медленный короткий — возвращает. Вертикальная прокрутка — родная. */
 .pager {
   display: flex; margin: 0 calc(-1 * var(--side)); overflow: hidden;
-  touch-action: pan-y; overscroll-behavior-x: contain; scrollbar-width: none;
+  touch-action: pan-y; overscroll-behavior-x: contain; overflow-anchor: none; scrollbar-width: none;
 }
 .pager::-webkit-scrollbar { display: none; }
 .page {
@@ -753,13 +753,14 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
   grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; min-width: 0;
   padding-top: 12px; border-top: 1px solid rgba(var(--k-rgb), .18); font-size: 13px; color: var(--text2);
 }
+.hn + .hn { border-top: 0; padding-top: 0; margin-top: -4px; }
 .hn i { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--k-bar); }
 .hn .x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hn b { color: var(--text); font-variant-numeric: tabular-nums; }
 .row.live .cc, .row.next .cc { border-color: rgba(var(--k-rgb), .35); }
 .row.live .cc .ln, .row.next .cc .ln { color: var(--k-fg); }
 /* --- форма контроля в сессии: тихий чип в шапке карточки вместо отдельной строки --- */
-.meta .mrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; align-self: stretch; min-width: 0; }
+.meta .mrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; align-self: stretch; min-width: 0; }
 .meta .mrow > :first-child:not(.ctlchip) { min-width: 0; }
 .meta .mrow .ctlchip { margin-left: auto; }
 .ctlchip {
@@ -902,6 +903,20 @@ button.offline u { text-underline-offset: 2px; }
 .vsteps li.on b { background: var(--accent); color: var(--on-accent); }
 
 .foot .ver { font-size: 11px; opacity: .55; font-variant-numeric: tabular-nums; }
+
+/* --- таблетка выбранного дня: отдельный слой, едет плавно (видеокарта) --- */
+.days { position: relative; }
+.days .day { position: relative; z-index: 1; }
+.days .pill { position: absolute; z-index: 0; left: 0; top: 4px; bottom: 4px; width: 0; border-radius: 18px; pointer-events: none;
+  background: var(--accent); box-shadow: 0 6px 18px -6px rgba(var(--acc-rgb), .75); opacity: 0; will-change: transform, width; }
+.days .pill.ready { opacity: 1; }
+.days:has(.pill.ready) .day.on { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.day { transition: color .18s ease, opacity .18s ease; }
+@supports (corner-shape: squircle) { .days .pill { corner-shape: squircle; border-radius: 26px; } }
+.sbar .days .day { transition: height .45s var(--ease-spring), color .18s ease, opacity .18s ease; }
+.days.moving .day.on { color: var(--text) !important; }
+.days.moving .day.on .dots i { background: var(--k-bar) !important; }
+.days.moving .day.on .s, .days.moving .day.on .n { color: inherit !important; }
 
 /* --- выбор иконки --- */
 .icpick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
@@ -1511,12 +1526,14 @@ window.__appStart = () => {
       const up = ls.filter((x) => { const s = toSec(x.start); return s != null && s > now.sec; });
       const brk = items.find((x) => x.type === "break" && x.active);
       if (live && toSec(live.end) != null) {
-        hero = { mode: "live", main: live, left: toSec(live.end) - now.sec, p: live.p, next: up[0] || null, from: live.start, to: live.end };
+        hero = { mode: "live", main: live, left: toSec(live.end) - now.sec, p: live.p, next: up.find((x) => x.start !== live.start) || null, from: live.start, to: live.end };
       } else if (up.length) {
         const prev = brk ? ls.find((x) => x.i === brk.i - 1) : null;
-        hero = { mode: brk ? "break" : "before", main: up[0], left: toSec(up[0].start) - now.sec, p: brk ? brk.p : 0, next: up[1] || null,
+        hero = { mode: brk ? "break" : "before", main: up[0], left: toSec(up[0].start) - now.sec, p: brk ? brk.p : 0, next: up.find((x) => x.start !== up[0].start) || null,
           from: prev ? prev.end : "", to: up[0].start };
       }
+      // в то же время у другой подгруппы — тоже покажем в блоке
+      if (hero) hero.same = ls.filter((x) => x !== hero.main && x.start && x.start === hero.main.start);
       // Пара из блока «Сейчас» в ленте сворачивается, чтобы не дублировать её (раскрывается нажатием)
       if (hero && !opened.has(hero.main.key)) hero.main.compact = true;
     }
@@ -1547,7 +1564,10 @@ window.__appStart = () => {
     const tail = h.mode === "live" ? `до ${h.main.end}` : `начало в ${h.main.start}`;
     const sub = [roomRest.join(" · "), tail].filter(Boolean).join(" · ");
     const nx = h.next;
-    const next = nx ? `<div class="hn ${nx.col}"><i></i><span class="x">Дальше <b>${esc(nx.start)}</b> · ${esc(nx.subject)}${nx.room ? " · " + esc(nx.room.split(" · ")[0]) : ""}</span></div>` : "";
+    // аудитория — раньше названия: длинное название срезается многоточием, а номер аудитории остаётся
+    const rm = (o) => (o.room ? `<b>${esc(o.room.split(" · ")[0])}</b> · ` : "");
+    const same = (h.same || []).map((o) => `<div class="hn ${o.col}"><i></i><span class="x">Одновременно · ${rm(o)}${esc(o.subject)}</span></div>`).join("");
+    const next = same + (nx ? `<div class="hn ${nx.col}"><i></i><span class="x">Дальше <b>${esc(nx.start)}</b> · ${rm(nx)}${esc(nx.subject)}</span></div>` : "");
     const info = `<div class="hb"><span class="hl">${esc(label)}</span><h3>${esc(h.main.subject)}</h3>
         <div class="hr"><b>${esc(roomMain || "аудитория не указана")}</b><span>${esc(sub)}</span></div></div>`;
     // ring: ровная дуга без свечения, pathLength=100 — дуга ровно p%
@@ -1608,10 +1628,11 @@ window.__appStart = () => {
       const lead = it.st === "past" ? I.check : `<span class="bar"></span>`;
       const who = isTeacher ? it.extra : (it.teacher ? shortName(it.teacher.name) : it.extra);
       const room = it.room ? `<b class="rm">${esc(it.room)}</b>` : "";
-      const parts = it.st === "past" ? [esc(it.k.label), room]
-        : it.st === "live" ? [esc("Идёт"), esc(it.k.label), room]
-        : it.st === "next" ? [esc("Следующая"), esc(it.k.label), room]
-        : [esc(it.k.label), room, esc(who || "")];
+      // аудитория — первой: на узком экране хвост строки срезается многоточием, а она нужнее всего
+      const parts = it.st === "past" ? [room, esc(it.k.label)]
+        : it.st === "live" ? [room, esc("Идёт"), esc(it.k.label)]
+        : it.st === "next" ? [room, esc("Следующая"), esc(it.k.label)]
+        : [room, esc(it.k.label), esc(who || "")];
       body = `<button class="cc" data-act="open" data-key="${esc(it.key)}" aria-expanded="false">
         <h3>${esc(it.subject)}</h3><span class="ln">${lead}<span class="x">${parts.filter(Boolean).join(" · ")}</span></span></button>`;
     } else {
@@ -1689,7 +1710,7 @@ window.__appStart = () => {
     // У преподавателя неделя — отдельной строкой под его карточкой; у группы она в шапке (см. renderSchedule)
     let bar = isTeacher ? `<div class="week"><div class="mid" aria-live="polite">${wl}<span class="wr">${wr}</span></div>${prevW}${nextW}</div>` : "";
 
-    bar += `<nav class="days" aria-label="Дни недели">`;
+    bar += `<nav class="days" aria-label="Дни недели"><span class="pill" aria-hidden="true"></span>`;
     for (let d = 0; d < 7; d++) {
       const date = addDays(week.monday, d);
       const ls = lessonsOf(week, d);
@@ -2687,7 +2708,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v16y · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v17 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -2785,8 +2806,11 @@ window.__appStart = () => {
     if (!c || !np) return;
     const k = (np.w - c.p.w) * 7 + (np.d - c.p.d);
     if (!k) return;
-    // Нажатие на день: выделение сразу встаёт на нужный день, а новый день появляется коротким
-    // сдвигом — без пролёта через промежуточные дни.
+    // Соседний день — тем же движением, что и при листании; дальний — новый день появляется коротким
+    // сдвигом (без пролёта через промежуточные), а таблетка плавно переезжает.
+    const pg = pagerEl();
+    if (Math.abs(k) === 1 && pg && hasNeighbor(k) && !pgAnim) { quietCommit = true; slideTo(pg, k, 0); return; }
+    rememberPill();
     pos[c.id] = np;
     opened.clear();
     enterNext = false;
@@ -3100,7 +3124,7 @@ window.__appStart = () => {
   // Вчера | сегодня | завтра лежат в горизонтальной прокрутке с защёлкиванием. Листает сам телефон,
   // а когда лента остановилась на соседнем дне, делаем его текущим и незаметно перерисовываем ленту.
   const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let scrolling = false, pagerTouch = false, settleTimer = 0, scrollFrame = 0;
+  let scrolling = false, pagerTouch = false;
   function pagerEl() { return app.querySelector("[data-pager]"); }
   function curIndex(pg) { return pg.querySelectorAll(":scope > .page.prev").length; }
   function curPos() {
@@ -3127,38 +3151,58 @@ window.__appStart = () => {
     const pg = pagerEl();
     if (!pg) return;
     fitPager();
-    pg.scrollLeft = curIndex(pg) * pg.clientWidth;
-    pg.addEventListener("scroll", onPagerScroll, { passive: true });
+    pg.scrollLeft = curIndex(pg) * pg.clientWidth;   // лента сама не прокручивается — двигаем дни трансформом
     pg.addEventListener("touchstart", pagerDown, { passive: true });
     pg.addEventListener("touchmove", pagerMove, { passive: false });
     pg.addEventListener("touchend", pagerUp, { passive: true });
     pg.addEventListener("touchcancel", pagerUp, { passive: true });
+    setupPill();
   }
 
-  // ---- свой жест листания дней ----
-  let pgDrag = null, pgAnim = 0;
-  function pagerAnimTo(pg, left, v) {
+  // ---- листание дней: как в iOS, через видеокарту ----
+  // Дни (текущий и по соседу с каждой стороны) сдвигаются трансформом — это делает видеокарта,
+  // главный поток не нагружается, поэтому без подёргиваний. Таблетка в полосе дней едет вместе с пальцем.
+  let pgDrag = null, pgAnim = 0, pgX = 0;
+  function pagerPages(pg) { return pg.querySelectorAll(":scope > .page"); }
+  function setPagerX(pg, x) {
+    pgX = x;
+    const t = x ? `translate3d(${x.toFixed(2)}px,0,0)` : "";
+    pagerPages(pg).forEach((el) => { el.style.transform = t; });
+    const W = pg.clientWidth || 1, off = -x / W;            // -1 … 1, плюс — к следующему дню
+    const o = REDUCED ? 0 : Math.min(1, Math.abs(off) * 5);
+    pg.querySelectorAll(".pframe").forEach((el) => { el.style.opacity = o ? o.toFixed(2) : ""; });
+    pillFollow(off);
+    // пока таблетка в пути — цифры обычного цвета (тёмные «выбранные» цифры вне таблетки не читаются)
+    if (Math.abs(off) > 0.02) chipsMoving(true); else { chipsMoving(false); previewChips(0); }
+  }
+  function pagerAnim(pg, to, v, done) {
     cancelAnimationFrame(pgAnim);
-    const from = pg.scrollLeft, dist = left - from;
-    if (Math.abs(dist) < 0.5 || REDUCED) { pg.scrollLeft = left; return; }
-    // быстрее бросили — быстрее доезжает (но не резче 0,16 с и не дольше 0,34 с)
-    const dur = Math.max(160, Math.min(340, Math.abs(dist) / Math.max(Math.abs(v || 0), 1.1)));
+    const from = pgX, dist = to - from;
+    scrolling = true;
+    const finish = () => { pgAnim = 0; scrolling = false; done && done(); };
+    if (Math.abs(dist) < 0.5 || REDUCED) { setPagerX(pg, to); finish(); return; }
+    // быстрее бросили — быстрее доезжает (но не резче 0,18 с и не дольше 0,36 с)
+    const dur = Math.max(180, Math.min(360, Math.abs(dist) / Math.max(Math.abs(v || 0), 1.05)));
     const t0 = performance.now();
     const step = (now) => {
       const k = Math.min(1, (now - t0) / dur);
-      pg.scrollLeft = from + dist * (1 - Math.pow(1 - k, 3));
-      if (k < 1) pgAnim = requestAnimationFrame(step);
-      else { pg.scrollLeft = left; pgAnim = 0; }
+      setPagerX(pg, from + dist * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) pgAnim = requestAnimationFrame(step); else finish();
     };
     pgAnim = requestAnimationFrame(step);
+  }
+  // уехать на соседний день (dir = ±1) и сменить его (новый день встаёт ровно туда же — подмена незаметна)
+  function slideTo(pg, dir, v) {
+    const W = pg.clientWidth || 1;
+    pagerAnim(pg, -dir * W, v, () => { if (dir) commitDay(dir); else setPagerX(pg, 0); });
   }
   function pagerDown(e) {
     const t = e.touches[0];
     if (e.touches.length !== 1 || (stack.length && t.clientX <= 24 && !inTG)) { pgDrag = null; return; }   // у края — свайп «назад»
     const pg = e.currentTarget;
-    cancelAnimationFrame(pgAnim); pgAnim = 0;
+    if (pgAnim) { cancelAnimationFrame(pgAnim); pgAnim = 0; }   // подхватили на лету
     pagerTouch = true;
-    pgDrag = { pg, x: t.clientX, y: t.clientY, base: pg.scrollLeft, mode: 0, vx: 0, lx: t.clientX, lt: performance.now() };
+    pgDrag = { pg, x: t.clientX, y: t.clientY, base: pgX, mode: 0, vx: 0, lx: t.clientX, lt: performance.now() };
   }
   function pagerMove(e) {
     const d = pgDrag;
@@ -3168,17 +3212,18 @@ window.__appStart = () => {
     if (d.mode === 0) {
       if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
       d.mode = Math.abs(dx) > Math.abs(dy) * 1.15 ? 1 : 2;   // 1 — листаем дни, 2 — прокрутка вверх-вниз
-      d.x = t.clientX; d.base = d.pg.scrollLeft;              // без рывка на величину «мёртвой зоны»
+      d.x = t.clientX; d.base = pgX;                         // без рывка на величину «мёртвой зоны»
+      if (d.mode === 1) scrolling = true;
     }
     if (d.mode !== 1) return;
     if (e.cancelable) e.preventDefault();
-    const W = d.pg.clientWidth || 1, idx = curIndex(d.pg);
-    let x = d.base - (t.clientX - d.x);
-    // у края (дальше дней нет) — тянется туго, как резинка
-    const min = hasNeighbor(-1) ? (idx - 1) * W : idx * W, max = hasNeighbor(1) ? (idx + 1) * W : idx * W;
-    if (x < min) x = min - (min - x) / 3;
-    if (x > max) x = max + (x - max) / 3;
-    d.pg.scrollLeft = x;
+    const W = d.pg.clientWidth || 1;
+    let x = d.base + (t.clientX - d.x);
+    // дальше дней нет — тянется туго, как резинка
+    const minX = hasNeighbor(1) ? -W : 0, maxX = hasNeighbor(-1) ? W : 0;
+    if (x < minX) x = minX - (minX - x) / 3;
+    if (x > maxX) x = maxX + (x - maxX) / 3;
+    setPagerX(d.pg, x);
     const now = performance.now(), dt = Math.max(1, now - d.lt);
     d.vx = 0.7 * ((t.clientX - d.lx) / dt) + 0.3 * d.vx;   // px/мс, плюс — палец вправо
     d.lx = t.clientX; d.lt = now;
@@ -3188,55 +3233,71 @@ window.__appStart = () => {
     if (!d || (e.touches && e.touches.length)) return;
     pgDrag = null;
     pagerTouch = false;
-    if (d.mode !== 1) return;
-    const pg = d.pg, W = pg.clientWidth || 1, idx = curIndex(pg);
+    if (d.mode !== 1) { if (pgX && !pgAnim) slideTo(d.pg, 0, 0); return; }
+    const W = d.pg.clientWidth || 1;
     if (performance.now() - d.lt > 90) d.vx = 0;          // палец остановился — броска нет
-    const off = (pg.scrollLeft - idx * W) / W;             // -1 … 1, плюс — тянем к следующему дню
+    const off = -pgX / W;                                   // плюс — тянем к следующему дню
     let dir = 0;
     if (d.vx < -0.3 || (off > 0.35 && d.vx < 0.25)) dir = 1;
     else if (d.vx > 0.3 || (off < -0.35 && d.vx > -0.25)) dir = -1;
     if (dir && !hasNeighbor(dir)) dir = 0;
-    pagerAnimTo(pg, (idx + dir) * W, d.vx);   // вибро — когда день сменится (commitDay)
+    slideTo(d.pg, dir, d.vx);
+  }
+
+  // ---- таблетка выбранного дня: плавно едет за листанием и к нажатому дню ----
+  let pillPos = [];
+  function pillEl() { return app.querySelector(".days .pill"); }
+  function measurePill() {
+    const days = app.querySelectorAll(".days .day");
+    pillPos = [...days].map((b) => [b.offsetLeft, b.offsetWidth]);
+  }
+  function pillAt(f) {   // f — дробный номер дня 0…6
+    if (!pillPos.length) return null;
+    const a = Math.max(0, Math.min(6, Math.floor(f))), b = Math.max(0, Math.min(6, a + 1)), k = Math.max(0, Math.min(1, f - a));
+    const [la, wa] = pillPos[a], [lb, wb] = pillPos[b];
+    return { x: la + (lb - la) * k, w: wa + (wb - wa) * k };
+  }
+  function putPill(f) {
+    const el = pillEl(), r = pillAt(f);
+    if (!el || !r) return;
+    el.style.width = `${r.w}px`;
+    el.style.transform = `translate3d(${r.x.toFixed(2)}px,0,0)`;
+  }
+  function setupPill() {
+    const el = pillEl(), c = curPos();
+    if (!el || !c) return;
+    measurePill();
+    putPill(c.p.d);
+    el.classList.add("ready");
+    // день сменили нажатием / кнопкой «Сегодня» в той же неделе — таблетка переезжает, а не прыгает
+    const wk = c.data.weeks[c.p.w].monday;
+    if (pillPrev && pillPrev.week === wk && pillPrev.d !== c.p.d && !REDUCED) {
+      const to = pillAt(c.p.d), fr = pillAt(pillPrev.f);
+      if (to && fr) el.animate([{ transform: `translate3d(${fr.x}px,0,0)`, width: `${fr.w}px` }, { transform: `translate3d(${to.x}px,0,0)`, width: `${to.w}px` }],
+        { duration: 380, easing: typeof springEase === "function" ? springEase() : "cubic-bezier(.22, 1, .36, 1)" });
+    }
+    pillPrev = null;
+  }
+  let pillPrev = null;   // где стояла таблетка до перерисовки
+  function rememberPill(f) { const c = curPos(); if (c) pillPrev = { week: c.data.weeks[c.p.w].monday, d: c.p.d, f: f == null ? c.p.d : f }; }
+  function pillFollow(off) {
+    const c = curPos();
+    if (!c || !pillPos.length) return;
+    const np = off ? stepPos(c.data, c.p, Math.sign(off)) : c.p;
+    if (np && np.w !== c.p.w) { putPill(c.p.d); return; }   // соседний день — в другой неделе: таблетка стоит
+    putPill(c.p.d + off);
   }
 
   {
-    const up = (e) => { if (e.touches && e.touches.length) return; if (pagerTouch) { pagerTouch = false; if (scrolling) armSettle(); } };
+    const up = (e) => { if (e.touches && e.touches.length) return; if (pagerTouch) pagerTouch = false; };
     document.addEventListener("touchend", up, { passive: true, capture: true });
     document.addEventListener("touchcancel", up, { passive: true, capture: true });
   }
-  function onPagerScroll() {
-    scrolling = true;
-    if (!scrollFrame) scrollFrame = requestAnimationFrame(paintPaging);
-    armSettle();
+  function chipsMoving(on) {
+    const d = app.querySelector(".days");
+    if (d && d.classList.contains("moving") !== on) d.classList.toggle("moving", on);
   }
-  function armSettle() {
-    clearTimeout(settleTimer);
-    settleTimer = setTimeout(settlePager, 110);
-  }
-  // Пока лента едет: проявляем рамки-карточки и переносим подсветку дня в строке сверху
-  function paintPaging() {
-    scrollFrame = 0;
-    const pg = pagerEl();
-    if (!pg) return;
-    const W = pg.clientWidth || 1;
-    const off = pg.scrollLeft / W - curIndex(pg);              // -1 … 1
-    const d = Math.abs(off - Math.round(off));                  // насколько далеко от «ровного» дня
-    const o = REDUCED ? "0" : Math.min(1, d * 5).toFixed(2);
-    pg.querySelectorAll(".pframe").forEach((el) => { el.style.opacity = o; });
-    previewChips(Math.round(off));
-  }
-  function settlePager() {
-    const pg = pagerEl();
-    if (!pg || pagerTouch) return;                              // палец ещё на экране — ждём
-    const W = pg.clientWidth || 1;
-    const k = Math.round(pg.scrollLeft / W);
-    if (Math.abs(pg.scrollLeft - k * W) > 1.5) { armSettle(); return; }   // ещё доезжает до места
-    scrolling = false;
-    pg.querySelectorAll(".pframe").forEach((el) => { el.style.opacity = "0"; });
-    const dir = k - curIndex(pg);
-    if (dir) commitDay(dir);
-  }
-  // Подсветка дня в строке сверху — сразу, как только понятно, куда листаем
+  // Подсветка (цвет цифр) дня в строке сверху — как только понятно, куда листаем
   function previewChips(dir) {
     const c = curPos();
     if (!c) return;
@@ -3261,13 +3322,14 @@ window.__appStart = () => {
     slideDir = 0;
     if (!quietCommit) haptic("select");
     quietCommit = false;
+    pgX = 0;
     render();   // новый день стоит ровно там же, где остановилась лента, — подмена незаметна
   }
-  // Пролистать на соседний день кнопкой/клавишей — той же плавной прокруткой
+  // Пролистать на соседний день кнопкой/клавишей — тем же движением, что и пальцем
   function shiftDay(dir) {
     const pg = pagerEl();
-    if (!pg || !hasNeighbor(dir)) return false;
-    pagerAnimTo(pg, (curIndex(pg) + dir) * pg.clientWidth, 0);
+    if (!pg || !hasNeighbor(dir) || pgAnim) return false;
+    slideTo(pg, dir, 0);
     return true;
   }
   // На компьютере — стрелками ← →
