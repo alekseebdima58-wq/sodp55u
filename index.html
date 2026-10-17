@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 modern-2026 spring-squircle quiet-ctl">
+<meta name="app-build" content="2026-10-17 modern-2026 smooth-days">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
@@ -671,27 +671,6 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
 .cc:active, .item:active { transform: scale(.98); transition-duration: .2s, .2s, .2s, .2s, .2s, .08s; }
 .sw .kn { transition: transform .5s var(--ease-bounce); }
 
-/* --- смена дня и недели через View Transitions: лента уезжает вбок, выбранный день перетекает --- */
-html[data-vt] .page.cur { view-transition-name: daypage; }
-html[data-vt] .day.on { view-transition-name: daypill; }
-html[data-vt] .sbar .wr { view-transition-name: weekrange; }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; }
-::view-transition-group(daypill), ::view-transition-group(daypage) { animation-duration: .55s; animation-timing-function: var(--ease-spring); }
-::view-transition-group(daypill) { z-index: 5; }
-::view-transition-old(daypill), ::view-transition-new(daypill) { height: 100%; animation-duration: .2s; }
-html[data-vt="next"]::view-transition-old(daypage) { animation: vtOutL .28s ease both; }
-html[data-vt="next"]::view-transition-new(daypage) { animation: vtInR .55s var(--ease-spring) both; }
-html[data-vt="prev"]::view-transition-old(daypage) { animation: vtOutR .28s ease both; }
-html[data-vt="prev"]::view-transition-new(daypage) { animation: vtInL .55s var(--ease-spring) both; }
-html[data-vt="next"]::view-transition-new(weekrange) { animation: vtInR .45s var(--ease-spring) both; }
-html[data-vt="prev"]::view-transition-new(weekrange) { animation: vtInL .45s var(--ease-spring) both; }
-::view-transition-old(weekrange) { animation: vtFade .15s ease both; }
-@keyframes vtOutL { to { opacity: 0; transform: translateX(-18%); } }
-@keyframes vtOutR { to { opacity: 0; transform: translateX(18%); } }
-@keyframes vtInR { from { opacity: 0; transform: translateX(22%); } }
-@keyframes vtInL { from { opacity: 0; transform: translateX(-22%); } }
-@keyframes vtFade { to { opacity: 0; } }
-
 /* --- сквиркл: плавные углы как у иконок iOS; радиусы крупнее, потому что сквиркл «съедает» скругление --- */
 @supports (corner-shape: squircle) {
   .card, .cc, .hero, .days, .day, .tabs, .tab, .list, .tcard, .search, .kind, .seg3, .seg3 button, .nsel,
@@ -716,7 +695,6 @@ html[data-vt="prev"]::view-transition-new(weekrange) { animation: vtInL .45s var
 }
 
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 </style>
@@ -1720,23 +1698,29 @@ html[data-vt="prev"]::view-transition-new(weekrange) { animation: vtInL .45s var
     catch (e) { springCache = "cubic-bezier(.4, 0, .2, 1)"; }
     return springCache;
   }
-  // Смена дня/недели: через View Transitions лента уезжает вбок, выбранный день перетекает на новое место.
-  // Где переходов нет (старые клиенты) — как раньше: появление с анимацией.
-  function swapDay(dir, apply, fallback = { enter: true, slide: false }) {
-    opened.clear();
-    if (!document.startViewTransition || REDUCED) {
-      apply();
-      enterNext = fallback.enter;
-      slideDir = fallback.slide ? dir : 0;
-      render();
-      return;
+  // Переход на другой день/неделю. Если нужный день уже отрисован рядом (±PAGER_SPAN) — просто
+  // плавно прокручиваем ленту к нему, как при свайпе: это идёт силами видеокарты и не тормозит.
+  // Дальние переходы (другая неделя) — один лёгкий сдвиг текущей страницы.
+  let quietCommit = false;
+  function moveTo(np) {
+    const c = curPos();
+    if (!c || !np) return;
+    const k = (np.w - c.p.w) * 7 + (np.d - c.p.d);
+    if (!k) return;
+    const pg = pagerEl();
+    if (pg && Math.abs(k) <= PAGER_SPAN) {
+      const q = stepPos(c.data, c.p, k);
+      if (q && q.w === np.w && q.d === np.d) {
+        quietCommit = true;   // вибро уже было при нажатии — второй раз в конце не нужно
+        pg.scrollTo({ left: (curIndex(pg) + k) * pg.clientWidth, behavior: REDUCED ? "auto" : "smooth" });
+        return;
+      }
     }
+    pos[c.id] = np;
+    opened.clear();
     enterNext = false;
-    slideDir = 0;
-    ROOT.dataset.vt = dir > 0 ? "next" : dir < 0 ? "prev" : "same";
-    const t = document.startViewTransition(() => { apply(); return render(); });
-    t.ready.catch(() => {});
-    t.finished.catch(() => {}).finally(() => { delete ROOT.dataset.vt; });
+    slideDir = Math.sign(k);
+    render();
   }
 
   // ---------------- липкая шапка ----------------
@@ -1763,16 +1747,15 @@ html[data-vt="prev"]::view-transition-new(weekrange) { animation: vtInL .45s var
 
     if (act === "day") {
       const d = +el.dataset.d;
-      if (pos[id] && pos[id].d !== d) { const dir = Math.sign(d - pos[id].d); haptic("select"); swapDay(dir, () => { pos[id].d = d; }); }
+      if (pos[id] && pos[id].d !== d) { haptic("select"); moveTo({ w: pos[id].w, d }); }
     } else if (act === "week") {
       const data = mem[id];
       const w = pos[id].w + (+el.dataset.dir);
-      if (data && w >= 0 && w < data.weeks.length) { haptic("select"); swapDay(+el.dataset.dir, () => { pos[id].w = w; }); }
+      if (data && w >= 0 && w < data.weeks.length) { haptic("select"); moveTo({ w, d: pos[id].d }); }
     } else if (act === "today") {
       if (mem[id]) {
-        const def = pickDefault(mem[id]), p = pos[id];
         haptic("light");
-        swapDay(p && p.w * 7 + p.d > def.w * 7 + def.d ? -1 : 1, () => { pos[id] = def; });
+        moveTo(pickDefault(mem[id]));
       }
     } else if (act === "teacher") {
       haptic("light");
@@ -1849,12 +1832,8 @@ html[data-vt="prev"]::view-transition-new(weekrange) { animation: vtInL .45s var
     const def = pickDefault(data), p = pos.g;
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (p && p.w === def.w && p.d === def.d) return;   // уже сегодня — просто наверх
-    for (const dir of [1, -1]) {
-      const np = p && neighborPos(data, p.w, p.d, dir);
-      if (np && np.w === def.w && np.d === def.d && shiftDay(dir)) return;   // соседний день — листаем плавно
-    }
-    const dir = p && p.w * 7 + p.d > def.w * 7 + def.d ? -1 : 1;   // сегодня «левее» — едем влево
-    swapDay(dir, () => { pos.g = def; }, { enter: false, slide: true });
+    if (!p) { pos.g = def; render(); return; }
+    moveTo(def);   // рядом — плавная прокрутка ленты, далеко — сдвиг страницы
   }
   tabs.forEach((b) => b.addEventListener("click", () => {
     const t = b.dataset.tab;
@@ -2096,7 +2075,8 @@ html[data-vt="prev"]::view-transition-new(weekrange) { animation: vtInL .45s var
     opened.clear();
     enterNext = false;
     slideDir = 0;
-    haptic("select");
+    if (!quietCommit) haptic("select");
+    quietCommit = false;
     render();   // новый день стоит ровно там же, где остановилась лента, — подмена незаметна
   }
   // Пролистать на соседний день кнопкой/клавишей — той же плавной прокруткой
