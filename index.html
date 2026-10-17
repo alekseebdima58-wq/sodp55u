@@ -390,6 +390,29 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
   background: var(--surface2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600;
 }
 .nstatus { margin: 8px 4px 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+/* Раскрывающаяся карточка уведомлений: шапка со сводкой, внутри — тумблеры */
+.ncard .nhead { min-height: 64px; }
+.ncard .nhead .sub { white-space: normal; line-height: 1.35; }
+.ncard .nhead .sub.off { color: var(--faint); }
+.ncard .nhead .chev svg { transform: rotate(90deg); transition: transform .32s var(--ease-spring, ease); }
+.ncard.open .nhead .chev svg { transform: rotate(-90deg); }
+.nfold { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s var(--ease-spring, ease); }
+.ncard.open .nfold { grid-template-rows: 1fr; }
+.nfold > .nin { min-height: 0; overflow: hidden; }
+.nfold .srow:first-child { border-top: 1px solid var(--sep); }
+.nfold .nstatus { margin: 0; padding: 4px 16px 14px; }
+.nfold .selrow + .srow, .nfold .srow + .srow { border-top: 1px solid var(--sep); }
+.nlink { padding: 14px 16px 16px; border-top: 1px solid var(--sep); }
+.nlink p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--text2); }
+.nlink ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.nlink li { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--muted); }
+.nlink li::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); transform: translateY(-1px); }
+.nlink .btn.wide { margin-top: 14px; }
+.nlink .btn.wide[disabled] { opacity: .7; }
+.nlink .nstatus:empty { display: none; }
+.nlink .alt { margin-top: 10px; text-align: center; font-size: 13px; color: var(--muted); }
+.nlink .alt .flink { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .nfold, .ncard .nhead .chev svg { transition: none; } }
 .nstatus.ok { color: var(--tag-fg); }
 .nstatus.err { color: var(--red-fg); }
 .hint { margin: 12px 4px 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
@@ -1009,7 +1032,7 @@ window.__appStart = () => {
     return { on: min > 0, min: [5, 10, 15, 30].includes(min) ? min : 15, morning: m[2] === "1", evening: m[3] === "1", changes: m[4] === "1" };
   }
   const nCode = (s) => `${s.on ? s.min : 0}.${+s.morning}.${+s.evening}.${+s.changes}`;
-  const nkey = (() => {
+  let nkey = (() => {
     const k = QS.get("k");
     if (k && /^[0-9a-f]{32}$/.test(k)) { store.set("nkey", JSON.stringify({ k, u: TG_USER })); return k; }
     try {
@@ -1680,11 +1703,17 @@ window.__appStart = () => {
   function canEditNotify() {
     return !!(nstate && nkey && index && index.relay && window.crypto && crypto.subtle);
   }
-  function notifSettingsHTML() {
-    if (!nstate) {
-      return `<div class="list"><button class="item" data-act="notify-settings"><span class="body"><span class="nm" style="font-weight:500">Настроить в чате с ботом</span>
-        <span class="sub">Напоминания о парах, сводки и изменения</span></span><span class="chev">${I.chev}</span></button></div>`;
-    }
+  let nOpen = store.get("nOpen") === "1";
+  function nSummary() {
+    if (!nstate) return "Не подключены";
+    const on = [];
+    if (nstate.on) on.push(`за ${nstate.min} мин до пары`);
+    if (nstate.morning) on.push("утром");
+    if (nstate.evening) on.push("вечером");
+    if (nstate.changes) on.push("об изменениях");
+    return on.length ? "Присылать " + on.join(", ") : "Все выключены";
+  }
+  function nSwitchesHTML() {
     const dis = canEditNotify() ? "" : " disabled";
     const sw = (key, title, sub) => `<div class="srow"><div class="body"><span class="nm">${title}</span><span class="sub">${sub}</span></div>
       <button class="sw" role="switch" data-act="ntoggle" data-k="${key}" aria-checked="${!!nstate[key]}" aria-label="${title}"${dis}>
@@ -1692,15 +1721,174 @@ window.__appStart = () => {
     const opts = [5, 10, 15, 30].map((m) => `<option value="${m}"${m === nstate.min ? " selected" : ""}>${m} мин</option>`).join("");
     const status = canEditNotify()
       ? `Изменения сохраняются сами`
-      : `Чтобы менять здесь, открой приложение кнопкой «Расписание» в чате с ботом. <button class="flink" data-act="notify-settings">Настроить в чате</button>`;
-    return `<div class="list">
-      ${sw("on", "Напоминание о паре", "С аудиторией и преподавателем")}
+      : canLinkNotify()
+        ? `Чтобы менять здесь, <button class="flink" data-act="nlink">подключи приложение</button> — один раз`
+        : `Менять можно в чате с ботом. <button class="flink" data-act="notify-settings">Настроить в чате</button>`;
+    return `${sw("on", "Напоминание о паре", "С аудиторией и преподавателем")}
       <label class="selrow" id="nminrow"${nstate.on ? "" : " hidden"}><span>Напоминать за</span>
         <select class="nsel" id="nmin" aria-label="За сколько минут напоминать"${dis}>${opts}</select></label>
       ${sw("morning", "Утренняя сводка", "Пары на день в 7:30")}
       ${sw("evening", "Пары на завтра", "Вечером в 20:00")}
       ${sw("changes", "Изменения в расписании", "Отмена, замена, другая аудитория")}
-      </div><p class="nstatus" id="nstatus" aria-live="polite">${status}</p>`;
+      <p class="nstatus" id="nstatus" aria-live="polite">${status}</p>`;
+  }
+  function nLinkHTML() {
+    const can = canLinkNotify();
+    const label = linkBusy ? "Жду ответ бота…" : inTG && tg.initData ? "Подключить" : "Подключить через Telegram";
+    return `<div class="nlink"><p>${can ? "Свяжи приложение с ботом — один раз, и тумблеры заработают прямо здесь." : "Уведомления включаются в чате с ботом."}</p>
+      <ul><li>Напоминание о паре за 5–30 минут</li><li>Утренняя сводка в 7:30</li><li>Пары на завтра в 20:00</li><li>Отмены, замены, другая аудитория</li></ul>
+      ${can ? `<button class="btn wide" data-act="nlink"${linkBusy ? " disabled" : ""}>${I.bell}${label}</button>
+        <p class="nstatus" id="nstatus" aria-live="polite" style="text-align:center">${linkBusy ? linkNote : ""}</p>
+        <div class="alt">или <button class="flink" data-act="notify-settings">настроить в чате с ботом</button></div>`
+        : `<button class="btn wide" data-act="notify-settings">${I.bell}Настроить в чате с ботом</button>`}</div>`;
+  }
+  function notifSettingsHTML() {
+    const sum = nSummary();
+    const off = !nstate || sum === "Все выключены";
+    return `<div class="list ncard${nOpen ? " open" : ""}" id="ncard">
+      <button class="item nhead" data-act="nfold" aria-expanded="${nOpen}" aria-controls="nfold">
+        <span class="tile t-room" aria-hidden="true">${I.bell}</span>
+        <span class="body"><span class="nm">Уведомления в Telegram</span><span class="sub${off ? " off" : ""}" id="nsum">${sum}</span></span>
+        <span class="chev" aria-hidden="true">${I.chev}</span></button>
+      <div class="nfold" id="nfold"${nOpen ? "" : " inert"}><div class="nin">${nstate ? nSwitchesHTML() : nLinkHTML()}</div></div></div>`;
+  }
+  function setNotifOpen(open) {
+    nOpen = open;
+    store.set("nOpen", open ? "1" : "0");
+    const card = document.getElementById("ncard");
+    if (!card) return;
+    card.classList.toggle("open", open);
+    card.querySelector(".nhead").setAttribute("aria-expanded", String(open));
+    const fold = document.getElementById("nfold");
+    if (open) fold.removeAttribute("inert"); else fold.setAttribute("inert", "");
+  }
+  function refreshNSummary() {
+    const el = document.getElementById("nsum");
+    if (!el) return;
+    el.textContent = nSummary();
+    el.classList.toggle("off", !nstate || el.textContent === "Все выключены");
+  }
+
+  // ---------- подключение приложения к боту ----------
+  // Нужно, когда приложение открыто без личного ключа в адресе: из профиля бота, общей кнопкой меню
+  // или ярлыком на рабочем столе. Пара ключей P-256 (ECDH) + открытый ключ бота из index.json дают
+  // общий секрет; им зашифрован initData (в Telegram) и ответ бота с личным ключом.
+  let linkBusy = false, linkNote = "";
+  function canLinkNotify() {
+    return !!(index && index.pub && index.relay && window.crypto && crypto.subtle);
+  }
+  const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64u = (t) => Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((t.length + 3) % 4)), (c) => c.charCodeAt(0));
+  const hex = (u8) => [...u8].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const utf8 = (t) => new TextEncoder().encode(t);
+  const cat = (...a) => { const out = new Uint8Array(a.reduce((n, x) => n + x.length, 0)); let o = 0; for (const x of a) { out.set(x, o); o += x.length; } return out; };
+  const sha = async (u8) => new Uint8Array(await crypto.subtle.digest("SHA-256", u8));
+  const kdf = (secret, label) => sha(cat(secret, utf8(label)));
+  async function hmacRaw(keyBytes, msgBytes) {
+    const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    return hex(new Uint8Array(await crypto.subtle.sign("HMAC", key, msgBytes)));
+  }
+  async function streamXor(secret, data) {
+    const key = await kdf(secret, "enc");
+    const out = new Uint8Array(data.length);
+    for (let i = 0; i * 32 < data.length; i++) {
+      const block = await sha(cat(key, new Uint8Array([i >>> 24, (i >>> 16) & 255, (i >>> 8) & 255, i & 255])));
+      for (let j = 0; j < 32 && i * 32 + j < data.length; j++) out[i * 32 + j] = data[i * 32 + j] ^ block[j];
+    }
+    return out;
+  }
+  async function linkSecret(priv) {
+    const bot = await crypto.subtle.importKey("raw", unb64u(index.pub), { name: "ECDH", namedCurve: "P-256" }, false, []);
+    return new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: bot }, priv, 256));
+  }
+  const relayBase = () => index.relay.replace(/\/[^/]+$/, "");
+  async function linkPollOnce(secret) {
+    const topic = "sodp55u-r" + hex(await kdf(secret, "topic")).slice(0, 24);
+    const r = await fetch(`${relayBase()}/${topic}/json?poll=1&since=15m`, { cache: "no-store" });
+    if (!r.ok) return null;
+    const mk = await kdf(secret, "mac");
+    for (const line of (await r.text()).split("\n")) {
+      try {
+        const ev = JSON.parse(line);
+        if (ev.event !== "message") continue;
+        const m = JSON.parse(ev.message);
+        if (!/^[0-9a-f]{32}$/.test(m.k) || !parseCode(m.n)) continue;
+        if (await hmacRaw(mk, utf8(`reply|${m.k}|${m.n}|${m.ts}`)) !== m.h) continue;
+        const pad = (await kdf(secret, "key")).slice(0, 16);
+        const key = hex(m.k.match(/../g).map((h, i) => parseInt(h, 16) ^ pad[i]));
+        return { key, n: m.n, ts: +m.ts || 0 };
+      } catch (e) { /* не наша строка */ }
+    }
+    return null;
+  }
+  function linkDone(res) {
+    linkBusy = false;
+    nkey = res.key;
+    store.set("nkey", JSON.stringify({ k: res.key, u: TG_USER }));
+    nstate = parseCode(res.n);
+    store.set("nlocal", JSON.stringify({ code: res.n, min: nstate.min, t: res.ts * 1000, u: TG_USER }));
+    store.set("nlinkPending", "");
+    if (tg && tg.HapticFeedback && tgAtLeast("6.1")) { try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) { /* старый клиент */ } }
+    toast("Уведомления подключены ✓");
+    if (view === "settings") { nOpen = true; renderSettings(); }
+  }
+  function linkFail(text) {
+    linkBusy = false;
+    linkNote = "";
+    store.set("nlinkPending", "");
+    if (view === "settings") { renderSettings(); setNStatus(text, "err"); }
+  }
+  async function linkWait(secret, until) {
+    while (Date.now() < until && linkBusy) {
+      if (!document.hidden) {
+        try { const res = await linkPollOnce(secret); if (res) return linkDone(res); } catch (e) { /* нет сети — ещё раз */ }
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    if (linkBusy) linkFail(`Бот не ответил. Попробуй ещё раз или <button class="flink" data-act="notify-settings">настрой в чате</button>`);
+  }
+  async function linkStart() {
+    if (linkBusy || !canLinkNotify()) return;
+    linkBusy = true;
+    const viaTG = !!(inTG && tg.initData);
+    linkNote = viaTG ? "Обычно это пара секунд" : "Подтверди в чате с ботом и вернись сюда";
+    if (view === "settings") renderSettings();
+    try {
+      const kp = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+      const pub = new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey));
+      const secret = await linkSecret(kp.privateKey);
+      if (viaTG) {
+        const blob = await streamXor(secret, utf8(tg.initData));
+        const m = await hmacRaw(await kdf(secret, "mac"), cat(utf8("link|"), blob));
+        const body = JSON.stringify({ q: "link", e: b64u(pub), c: b64u(blob), m });
+        try { await fetch(index.relay, { method: "POST", body }); }
+        catch (e) { await fetch(index.relay, { method: "POST", body, mode: "no-cors" }); }
+        return linkWait(secret, Date.now() + 30000);
+      }
+      // В браузере: подтверждение в чате. Ключ держим до 10 минут — вдруг вкладку выгрузят, пока ты в Telegram
+      const jwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
+      store.set("nlinkPending", JSON.stringify({ jwk, t: Date.now() }));
+      const short = cat(new Uint8Array([2 + (pub[64] & 1)]), pub.slice(1, 33));
+      const url = `https://t.me/${(index && index.bot) || "sodp55u_bot"}?start=lk${b64u(short)}`;
+      haptic("light");
+      if (inTG && tgAtLeast("6.1")) { try { tg.openTelegramLink(url); } catch (e) { window.open(url, "_blank", "noopener"); } }
+      else window.open(url, "_blank", "noopener");
+      return linkWait(secret, Date.now() + 10 * 60000);
+    } catch (e) {
+      linkFail(`Не получилось — нет связи. <button class="flink" data-act="notify-settings">Настроить в чате</button>`);
+    }
+  }
+  async function resumeLink() {
+    let p = null;
+    try { p = JSON.parse(store.get("nlinkPending") || "null"); } catch (e) { /* пусто */ }
+    if (!p || !p.jwk || Date.now() - p.t > 10 * 60000 || linkBusy || nkey || !canLinkNotify()) return;
+    try {
+      const priv = await crypto.subtle.importKey("jwk", p.jwk, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
+      linkBusy = true;
+      linkNote = "Подтверди в чате с ботом и вернись сюда";
+      if (view === "settings") renderSettings();
+      linkWait(await linkSecret(priv), p.t + 10 * 60000);
+    } catch (e) { store.set("nlinkPending", ""); }
   }
 
   // Подписываем настройки личным ключом и кладём в канал — бот заберёт их за пару секунд
@@ -2198,7 +2386,7 @@ window.__appStart = () => {
       ${fsSupported() ? `<div class="list" style="margin-top:10px"><div class="srow"><div class="body"><span class="nm">Во весь экран</span>
         <span class="sub">Без шапки Telegram, больше места для пар</span></div>
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
-      <h2 class="sec" id="nsec">Уведомления в чате</h2>
+      <h2 class="sec" id="nsec">Уведомления</h2>
       ${notifSettingsHTML()}
       <h2 class="sec" id="asec">Приложение</h2>
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
@@ -2359,6 +2547,7 @@ window.__appStart = () => {
       setFullscreen(!tg.isFullscreen);
     } else if (act === "to-settings") {
       haptic("light");
+      nOpen = true; store.set("nOpen", "1");
       go("settings", null, true);
       const sec = document.getElementById("nsec");
       if (sec) requestAnimationFrame(() => sec.scrollIntoView({ block: "start", behavior: "smooth" }));
@@ -2370,6 +2559,12 @@ window.__appStart = () => {
       openInstallPage();
     } else if (act === "notify-settings") {
       openNotifySettings();
+    } else if (act === "nfold") {
+      haptic("light");
+      setNotifOpen(!nOpen);
+    } else if (act === "nlink") {
+      haptic("light");
+      linkStart();
     } else if (act === "ntoggle") {
       if (!canEditNotify()) return;
       const k = el.dataset.k;
@@ -2377,6 +2572,7 @@ window.__appStart = () => {
       el.setAttribute("aria-checked", String(nstate[k]));
       if (k === "on") { const row = document.getElementById("nminrow"); if (row) row.hidden = !nstate.on; }
       haptic("select");
+      refreshNSummary();
       scheduleSave();
     } else if (act === "jump") {
       const date = el.dataset.date;
@@ -2421,6 +2617,7 @@ window.__appStart = () => {
     if (ev.target.id !== "nmin" || !canEditNotify()) return;
     nstate.min = +ev.target.value;
     haptic("select");
+    refreshNSummary();
     scheduleSave();
   });
 
@@ -2788,6 +2985,7 @@ window.__appStart = () => {
   ]).then(() => {
     loadedAt = Date.now();
     render();
+    resumeLink();
     if (QS.get("install") === "1" && !inTG) {
       // убираем служебные параметры из адреса — иконка на iPhone запомнит чистую ссылку
       try { history.replaceState(null, "", location.pathname); } catch (e) { /* не страшно */ }
