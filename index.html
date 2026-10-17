@@ -3,7 +3,7 @@
 <head>
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2">
+<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
@@ -755,6 +755,26 @@ button.offline u { text-underline-offset: 2px; }
 .vtop .ix { color: #fff; background: rgba(255, 255, 255, .1); }
 .vbox video { display: block; width: 100%; height: auto; max-height: calc(100vh - 120px); object-fit: contain; border-radius: 22px; background: #000; }
 .ibig svg { vertical-align: -3px; margin-right: 4px; }
+
+/* --- видео внутри блока установки --- */
+.ivid { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 14px 14px; }
+.isheet .ivid { padding: 16px 0 0; }
+.ivseg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 100%; max-width: 240px; padding: 4px; border-radius: 14px; background: var(--surface2); }
+.ivseg button { height: 34px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 13.5px; font-weight: 600; }
+.ivseg button.on { background: var(--bg); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.ivid video { display: block; width: 62%; max-width: 230px; height: auto; aspect-ratio: 9 / 16; border-radius: 20px; background: #000; object-fit: cover; }
+
+.ynote { width: 100%; display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 18px; text-align: left;
+  background: rgba(var(--acc-rgb), .1); border: 1px solid rgba(var(--acc-rgb), .25); font-size: 13.5px; line-height: 1.4; color: var(--text2); }
+.ynote b { font-size: 15px; color: var(--text); }
+.ynote .ibig { display: grid; place-items: center; height: 46px; margin-top: 8px; text-decoration: none; }
+.ynote .ibig.ghost { margin-top: 4px; }
+.ynote .yopt { margin-top: 8px; color: var(--text); font-weight: 600; }
+.ynote small { display: block; margin-top: 6px; font-size: 12.5px; color: var(--muted); }
+.ysteps { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.ymore { margin-top: 8px; }
+.ymore summary { cursor: pointer; color: var(--accent); font-weight: 600; list-style: none; text-align: center; padding: 6px 0; }
+.ymore summary::-webkit-details-marker { display: none; }
 
 /* --- выбор иконки --- */
 .icpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
@@ -1773,11 +1793,65 @@ window.__appStart = () => {
   function installHTML() {
     const main = installRowHTML();
     if (STANDALONE) return main;
-    return main + `<div class="list" style="margin-top:10px"><button class="item" data-act="install-video">
-      <span class="tile t-room" aria-hidden="true">${I.play}</span>
-      <span class="body"><span class="nm">Видео: как установить</span><span class="sub wrap">${IOS ? "iPhone" : ANDROID ? "Android" : "iPhone и Android"} · 10 секунд</span></span>
-      <span class="chev">${I.chev}</span></button></div>`;
+    // видео — внутри той же карточки «Установить», а не отдельной строкой
+    const k = main.lastIndexOf("</div>");
+    return main.slice(0, k) + inlineVideoHTML() + main.slice(k);
   }
+  // ---- видео-инструкция прямо в блоке установки: свой ролик для iPhone и Android, можно переключить ----
+  // Какой у человека телефон: по браузеру, а внутри Telegram — ещё и по его отметке платформы
+  function deviceOS() {
+    const p = tg && tg.platform ? String(tg.platform) : "";
+    if (IOS || p === "ios") return "ios";
+    if (/Android/i.test(navigator.userAgent) || p === "android" || p === "android_x") return "android";
+    return "";   // компьютер — не знаем, покажем выбор
+  }
+  function inlineVideoHTML(os) {
+    const dev = deviceOS();
+    os = os || dev || "ios";
+    // на телефоне сразу свой ролик без переключателя; на компьютере — можно выбрать
+    const seg = dev ? "" : `<div class="ivseg" role="group" aria-label="Видео для телефона">${[["ios", "iPhone"], ["android", "Android"]].map(([v, l]) =>
+        `<button data-iv="${v}" class="${v === os ? "on" : ""}" aria-pressed="${v === os}">${l}</button>`).join("")}</div>`;
+    return `<div class="ivid" data-ivid>${yandexNoteHTML(dev)}${seg}
+      <video src="media/install-${os}.mp4?v=2" poster="media/install-${os}.jpg?v=2" autoplay muted loop playsinline preload="metadata"
+        width="540" height="960" aria-label="Видео: как установить расписание на главный экран"></video></div>`;
+  }
+  // Яндекс Браузер ставит не приложение, а закладку с панелью браузера — ведём в Chrome (Android) или Safari (iPhone)
+  function installLink() { return `${siteURL()}?install=1&icon=${iconStyle()}`; }
+  function yandexNoteHTML(dev) {
+    if (!/YaBrowser|YaSearchBrowser/i.test(navigator.userAgent)) return "";
+    const ios = dev === "ios", url = installLink(), u = new URL(url);
+    // Если Chrome нет, Android вернёт сюда же — с пометкой nochrome=1
+    const href = ios ? "x-safari-" + url
+      : `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url + "&nochrome=1")};end`;
+    const name = ios ? "Safari" : "Chrome";
+    const shortcut = `<ol class="ysteps"><li>Нажми меню <b>⋮</b> или <b>≡</b> в Яндекс Браузере</li><li>Выбери <b>«Добавить ярлык»</b> или <b>«На главный экран»</b></li></ol>
+      <small>Расписание откроется с иконки и будет работать без сети, только сверху останется панель Яндекса.</small>`;
+    if (!ios && QS.get("nochrome") === "1") {
+      return `<div class="ynote"><b>Chrome на телефоне не нашёлся</b>
+        <span>Есть два способа:</span>
+        <span class="yopt">1. Поставить Chrome — тогда получится настоящее приложение, как на видео.</span>
+        <a class="ibig" href="https://play.google.com/store/apps/details?id=com.android.chrome" rel="noopener">Установить Chrome</a>
+        <span class="yopt">2. Или сделать ярлык прямо в Яндекс Браузере:</span>${shortcut}</div>`;
+    }
+    return `<div class="ynote"><b>Ты в Яндекс Браузере</b>
+      <span>${ios ? "Надёжнее всего установить через Safari" : "Он сделает обычную закладку с панелью браузера, а не приложение"}. Открой страницу в ${name} и сделай как на видео.</span>
+      <a class="ibig" href="${href}" rel="noopener">Открыть в ${name}</a>
+      <button class="ibig ghost" data-ycopy>Скопировать ссылку</button>
+      ${ios ? "" : `<details class="ymore"><summary>Нет Chrome?</summary>${shortcut}</details>`}</div>`;
+  }
+  document.addEventListener("click", async (ev) => {
+    const c = ev.target.closest("[data-ycopy]");
+    if (!c) return;
+    try { await navigator.clipboard.writeText(installLink()); toast(/iPhone|iPad|Mac/.test(navigator.userAgent) ? "Ссылка скопирована — вставь её в Safari" : "Ссылка скопирована — вставь её в Chrome"); }
+    catch (e) { toast(installLink()); }
+  });
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-iv]");
+    const box = b && b.closest("[data-ivid]");
+    if (!box || b.classList.contains("on")) return;
+    haptic("select");
+    box.outerHTML = inlineVideoHTML(b.dataset.iv);
+  });
   function installRowHTML() {
     const row = (title, sub, act) => act
       ? `<div class="list"><button class="item" data-act="${act}"><span class="tile t-room" aria-hidden="true">${I.home}</span>
@@ -1868,8 +1942,7 @@ window.__appStart = () => {
       body = `<ol class="isteps">
         ${step(1, `Открой меню браузера <b>⋮</b> или <b>≡</b>`)}
         ${step(2, `Выбери <b>«Установить приложение»</b> или <b>«Добавить на главный экран»</b>`)}</ol>
-        ${YANDEX ? `<p class="ihint">Яндекс Браузер может сделать обычную закладку с панелью браузера. Чтобы получилось приложение — открой ссылку в Chrome.</p>
-          <button class="ibig ghost" data-is="copy">Скопировать ссылку</button>` : ""}`;
+`;
     }
     return `<div class="isheet" role="dialog" aria-label="Установка на главный экран">
       <button class="ix iclose" data-is="close" aria-label="Закрыть">${I.x}</button>
@@ -1877,7 +1950,7 @@ window.__appStart = () => {
       <h3>Установка на главный экран</h3>
       <p class="isub">Своя иконка, открывается без браузера и Telegram, работает без сети</p>
       <div class="ipick">${pick}</div>${body}
-      <button class="ibig ghost" data-is="video">${I.play} Смотреть видео</button></div>${IOS ? `<div class="iarrow" aria-hidden="true">↓</div>` : ""}`;
+      ${inlineVideoHTML()}</div>${IOS ? `<div class="iarrow" aria-hidden="true">↓</div>` : ""}`;
   }
   function showInstallSheet() {
     if (STANDALONE) return;
@@ -1893,7 +1966,6 @@ window.__appStart = () => {
         if (a === "close") closeInstallSheet();
         else if (a === "icon") { store.set("iconStyle", b.dataset.v); try { window.applyIconStyle(b.dataset.v); } catch (e) { /* старая страница */ } haptic("select"); wrap.innerHTML = installSheetHTML(); }
         else if (a === "install") { await promptInstall(); closeInstallSheet(); }
-        else if (a === "video") showInstallVideo();
         else if (a === "copy") {
           try { await navigator.clipboard.writeText(siteURL()); toast("Ссылка скопирована — вставь её в Chrome"); } catch (e) { toast(siteURL()); }
         }
@@ -2107,9 +2179,6 @@ window.__appStart = () => {
     } else if (act === "install") {
       haptic("light");
       promptInstall();
-    } else if (act === "install-video") {
-      haptic("light");
-      showInstallVideo();
     } else if (act === "install-open") {
       haptic("light");
       openInstallPage();
