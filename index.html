@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="fa7846a70b46">
+<meta name="app-ver" content="9c2534dc6ae5">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -133,7 +133,7 @@ body {
 }
 button { font: inherit; color: inherit; cursor: pointer; }
 svg { flex: none; }
-#app {
+#app, .snap {
   max-width: 520px; margin: 0 auto; min-height: 100vh; overflow-x: clip;
   padding: calc(16px + var(--safe-top, 0px) + var(--top-gap, 0px)) var(--side) calc(92px + max(env(safe-area-inset-bottom), var(--safe-bottom, 0px)));
 }
@@ -446,8 +446,15 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .ptr-c { display: grid; place-items: center; }
 @keyframes ptrspin { to { transform: rotate(360deg); } }
 /* свайп от края — назад: тень у левого края */
-.edgeshade { position: fixed; top: 0; bottom: 0; left: 0; width: 18px; z-index: 30; pointer-events: none; opacity: 0;
-  background: linear-gradient(90deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, 0)); }
+/* свайп назад как в iOS: снимок прошлого экрана под текущим */
+.under { position: fixed; inset: 0; z-index: 1; overflow: hidden; background: var(--bg); pointer-events: none; will-change: transform; }
+.under *, .under *::before, .under *::after { animation: none !important; transition: none !important; }
+.under-dim { position: fixed; inset: 0; z-index: 2; pointer-events: none; background: rgba(0, 0, 0, .14); }
+html[data-theme="dark"] .under-dim { background: rgba(0, 0, 0, .42); }
+html.swiping #app { position: relative; z-index: 3; background: var(--bg); will-change: transform;
+  box-shadow: -1px 0 0 rgba(255, 255, 255, .04), -14px 0 32px rgba(0, 0, 0, .28); }
+html[data-theme="light"].swiping #app { box-shadow: -14px 0 30px rgba(0, 0, 0, .14); }
+html.swiping body { overflow-x: hidden; }
 .nlink .alt { margin-top: 10px; text-align: center; font-size: 13px; color: var(--muted); }
 .nlink .alt .flink { font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { .ncard .nhead .chev svg { transition: none; } }
@@ -455,7 +462,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .nstatus.err { color: var(--red-fg); }
 .hint { margin: 12px 4px 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
 /* Пустой экран уведомлений: всё по центру, блок — посередине свободного места */
-#app.fill { display: flex; flex-direction: column; }
+#app.fill, .snap.fill { display: flex; flex-direction: column; }
 .nempty { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 16px 0 6vh; }
 .nempty .empty { padding: 0 16px; }
 .nempty .hint { max-width: 330px; margin: 24px auto 0; text-wrap: balance; }
@@ -778,7 +785,7 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
 }
 html[data-theme="light"] .ibar { background: rgba(255, 255, 255, .8); }
 .ibar .tile { width: 36px; height: 36px; border-radius: 11px; }
-body.has-ibar #app { padding-bottom: calc(170px + max(env(safe-area-inset-bottom), var(--safe-bottom, 0px))); }   /* плашка не закрывает последнюю пару */
+body.has-ibar #app, body.has-ibar .snap { padding-bottom: calc(170px + max(env(safe-area-inset-bottom), var(--safe-bottom, 0px))); }   /* плашка не закрывает последнюю пару */
 /* устаревшие данные и подсветка пары из уведомления */
 .offline.stale { background: var(--warn-bg); color: var(--warn-fg); }
 .foot.old { color: var(--warn-fg); }
@@ -1371,8 +1378,20 @@ window.__appStart = () => {
     if (!tg || !tg.BackButton || !tgAtLeast("6.1")) return;
     try { stack.length ? tg.BackButton.show() : tg.BackButton.hide(); } catch (e) { /* старый клиент */ }
   }
+  // Снимок экрана, с которого уходим вглубь: его показываем под пальцем при свайпе назад (как в iOS)
+  function snapshot() {
+    try {
+      const c = app.cloneNode(true);
+      c.removeAttribute("id");
+      c.classList.add("snap");
+      c.removeAttribute("style");
+      c.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
+      c.querySelectorAll("[data-pager] .page.prev, [data-pager] .page.next, video").forEach((e) => e.remove());
+      return c;
+    } catch (e) { return null; }
+  }
   function go(v, t, push) {
-    if (push) stack.push({ view, target });
+    if (push) stack.push({ view, target, y: window.scrollY, snap: snapshot() });
     else stack = [];
     view = v;
     if (t) target = t;
@@ -1384,16 +1403,18 @@ window.__appStart = () => {
     render();
     window.scrollTo(0, 0);
   }
-  function back() {
+  function back(instant) {
+    instant = instant === true;   // true — после свайпа: экран уже «приехал», без анимации появления
     const prev = stack.pop();
-    if (!prev) { if (view !== "schedule") go("schedule", "g", false); return; }   // открыли не из расписания — просто туда
-    haptic("light");
+    if (!prev) { if (view !== "schedule") go("schedule", "g", false); return Promise.resolve(); }   // открыли не из расписания — просто туда
+    if (!instant) haptic("light");
     view = prev.view;
     target = prev.target;
-    enterNext = true;
+    enterNext = !instant;
     syncBack();
     syncTabs();
-    render();
+    // возвращаемся туда же, где были на прошлом экране
+    return Promise.resolve(render()).then(() => { if (prev.y) window.scrollTo(0, prev.y); });
   }
 
   function pickDefault(data) {
@@ -1697,7 +1718,7 @@ window.__appStart = () => {
   // ---------------- экраны ----------------
   function render() {
     const token = ++renderToken;
-    if (app.style.transform && window.resetEdgeSwipe) window.resetEdgeSwipe();   // экран не должен остаться сдвинутым
+    if (app.style.transform && window.resetEdgeSwipe) window.resetEdgeSwipe();   // экран не должен остаться сдвинутым (кроме самого свайпа)
     app.classList.remove("fill");
     if (view === "settings") return renderSettings();
     if (view === "teachers") return renderTeachers(token);
@@ -3389,38 +3410,72 @@ window.__appStart = () => {
     }, { passive: true });
   }
 
-  // --- свайп от левого края — назад (в Telegram «назад» есть свой, там не нужно) ---
+  // --- свайп от левого края — назад, как в iOS ---
+  // Текущий экран едет за пальцем (с тенью слева), под ним — предыдущий: сдвинут влево, затемнён
+  // и выезжает навстречу. Отпустили — решаем по пройденному пути и скорости броска.
   if (!inTG) {
-    const shade = document.createElement("div");
-    shade.className = "edgeshade";
-    document.body.appendChild(shade);
-    // Состояние жеста: sx — откуда начали (null — жеста нет), mode: 0 — ещё не решили, 1 — свайп назад.
-    // Любое «странное» событие (второй палец, отмена, сворачивание) не бросает жест на полпути,
-    // а возвращает экран на место — иначе он так и остаётся сдвинутым.
-    let sx = null, sy = 0, dx = 0, mode = 0, lockedPager = null;
+    let sx = null, sy = 0, dx = 0, mode = 0, lockedPager = null, under = null, dim = null;
+    let vx = 0, lastX = 0, lastT = 0, animating = false;
+    const W = () => app.getBoundingClientRect().width || innerWidth;
     const unlockPager = () => { if (lockedPager) { lockedPager.style.overflowX = ""; lockedPager = null; } };
-    const snapBack = (animate) => {
-      shade.style.opacity = "0";
-      const cur = app.style.transform;
+    function begin() {
+      ROOT.classList.add("swiping");
+      const e = stack[stack.length - 1];
+      under = document.createElement("div");
+      under.className = "under";
+      under.setAttribute("aria-hidden", "true");
+      under.inert = true;
+      if (e && e.snap) under.appendChild(e.snap);
+      dim = document.createElement("div");
+      dim.className = "under-dim";
+      document.body.append(under, dim);
+      under.scrollTop = (e && e.y) || 0;
+    }
+    function setP(p) {   // 0 — экран на месте, 1 — уехал целиком
+      const w = W();
+      app.style.transform = `translate3d(${(p * w).toFixed(1)}px,0,0)`;
+      if (under) under.style.transform = `translate3d(${(-0.3 * w * (1 - p)).toFixed(1)}px,0,0)`;
+      if (dim) dim.style.opacity = String(1 - p);
+    }
+    function cleanup() {
+      ROOT.classList.remove("swiping");
       app.style.transform = "";
-      if (animate && cur && cur !== "none") {
-        app.animate([{ transform: cur }, { transform: "none" }], { duration: 220, easing: "cubic-bezier(.25, .9, .3, 1)" });
-      }
-    };
-    const abort = () => {   // жест прерван — экран на место
+      if (under) { if (under.firstChild) under.firstChild.remove(); under.remove(); under = null; }   // снимок остаётся в стеке
+      if (dim) { dim.remove(); dim = null; }
+    }
+    function settle(goBack) {
+      animating = true;
+      const w = W(), p0 = Math.max(0, Math.min(1, dx / w)), to = goBack ? 1 : 0;
+      const dist = Math.abs(to - p0) * w;
+      // быстрее бросили — быстрее доезжает; но не дольше 0,33 с и не резче 0,14 с
+      const dur = REDUCED ? 1 : Math.max(140, Math.min(330, dist / Math.max(Math.abs(vx), 0.9)));
+      const t0 = performance.now();
+      const step = (now) => {
+        const k = Math.min(1, (now - t0) / dur);
+        const e = 1 - Math.pow(1 - k, 3);
+        setP(p0 + (to - p0) * e);
+        if (k < 1) { requestAnimationFrame(step); return; }
+        if (!goBack) { cleanup(); animating = false; return; }
+        // настоящий прошлый экран рисуем, пока он ещё скрыт снимком, и только потом убираем снимок
+        Promise.resolve(back(true)).catch(() => {}).then(() => requestAnimationFrame(() => { cleanup(); animating = false; }));
+      };
+      requestAnimationFrame(step);
+    }
+    const abort = () => {   // жест прерван (второй палец, отмена, сворачивание) — экран на место
+      if (animating) return;
       const was = sx !== null && mode === 1;
       sx = null; mode = 0; unlockPager();
-      if (was || app.style.transform) snapBack(true);
+      if (was) { vx = 0; settle(false); } else if (app.style.transform) cleanup();
     };
-    window.resetEdgeSwipe = () => { sx = null; mode = 0; unlockPager(); snapBack(false); };
+    window.resetEdgeSwipe = () => { if (animating || mode === 1) return; sx = null; unlockPager(); cleanup(); };
     document.addEventListener("touchstart", (e) => {
-      if (sx !== null) { abort(); return; }   // второй палец посреди жеста
+      if (animating) return;
+      if (sx !== null) { abort(); return; }
       const t = e.touches[0];
-      if (e.touches.length !== 1 || !stack.length || t.clientX > 22) return;
-      sx = t.clientX; sy = t.clientY; dx = 0; mode = 0;
-      // у самого края листание дней не начинаем — этот жест для «назад»
+      if (e.touches.length !== 1 || !stack.length || t.clientX > 24 || document.querySelector(".vbox, .isheet")) return;
+      sx = t.clientX; sy = t.clientY; dx = 0; mode = 0; vx = 0; lastX = t.clientX; lastT = performance.now();
       const pg = e.target.closest && e.target.closest("[data-pager]");
-      if (pg) { lockedPager = pg; pg.style.overflowX = "hidden"; }
+      if (pg) { lockedPager = pg; pg.style.overflowX = "hidden"; }   // у края — жест «назад», а не листание дней
     }, { passive: true });
     document.addEventListener("touchmove", (e) => {
       if (sx === null) return;
@@ -3429,43 +3484,27 @@ window.__appStart = () => {
       dx = t.clientX - sx;
       const dy = t.clientY - sy;
       if (mode === 0) {
-        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;   // ещё не понятно, куда тянут
-        // вбок вправо — наш свайп, вверх-вниз — обычная прокрутка
-        if (dx > 0 && dx >= Math.abs(dy)) mode = 1;
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        if (dx > 0 && dx >= Math.abs(dy)) { mode = 1; begin(); }
         else { sx = null; unlockPager(); return; }
       }
       if (e.cancelable) e.preventDefault();
-      app.style.transform = `translateX(${Math.max(0, dx)}px)`;
-      shade.style.opacity = String(Math.min(1, dx / 120));
+      const now = performance.now(), dt = Math.max(1, now - lastT);
+      vx = 0.7 * ((t.clientX - lastX) / dt) + 0.3 * vx;   // px/мс, сглаженно
+      lastX = t.clientX; lastT = now;
+      setP(Math.max(0, dx) / W());
     }, { passive: false });
-    const end = (e) => {
-      if (e && e.touches && e.touches.length) return;   // ещё есть пальцы на экране
-      if (sx === null) { if (app.style.transform) snapBack(true); return; }   // подстраховка
-      const go = mode === 1 && dx > Math.min(110, innerWidth * 0.28);
+    document.addEventListener("touchend", (e) => {
+      if (e.touches && e.touches.length) return;
+      if (sx === null) return;
       const was = mode === 1;
       sx = null; mode = 0; unlockPager();
       if (!was) return;
-      shade.style.opacity = "0";
-      const from = `translateX(${Math.max(0, dx)}px)`;
-      app.style.transform = "";
-      if (go) {
-        let done = false;
-        const finish = () => {
-          if (done) return;
-          done = true;
-          back();
-          app.animate([{ transform: "translateX(-28px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 240, easing: "cubic-bezier(.25, .9, .3, 1)" });
-        };
-        const anim = app.animate([{ transform: from, opacity: 1 }, { transform: `translateX(${Math.round(innerWidth * 0.45)}px)`, opacity: 0 }],
-          { duration: 160, easing: "ease-in" });
-        anim.finished.then(finish).catch(finish);
-        setTimeout(finish, 400);   // если анимацию прервали — всё равно уходим назад
-      } else {
-        app.animate([{ transform: from }, { transform: "none" }], { duration: 220, easing: "cubic-bezier(.25, .9, .3, 1)" });
-      }
-    };
-    document.addEventListener("touchend", end, { passive: true });
-    document.addEventListener("touchcancel", () => abort(), { passive: true });
+      if (performance.now() - lastT > 80) vx = 0;   // палец остановился перед отпусканием — броска нет
+      const p = Math.max(0, dx) / W();
+      settle(vx > 0.45 || (p > 0.45 && vx > -0.2));
+    }, { passive: true });
+    document.addEventListener("touchcancel", abort, { passive: true });
     document.addEventListener("visibilitychange", () => { if (document.hidden) abort(); });
     window.addEventListener("pageshow", () => window.resetEdgeSwipe());
   }
