@@ -396,9 +396,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .ncard .nhead .sub.off { color: var(--faint); }
 .ncard .nhead .chev svg { transform: rotate(90deg); transition: transform .32s var(--ease-spring, ease); }
 .ncard.open .nhead .chev svg { transform: rotate(-90deg); }
-.nfold { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s var(--ease-spring, ease); }
-.ncard.open .nfold { grid-template-rows: 1fr; }
-.nfold > .nin { min-height: 0; overflow: hidden; }
+.nfold[hidden] { display: none; }
 .nfold .srow:first-child { border-top: 1px solid var(--sep); }
 .nfold .nstatus { margin: 0; padding: 4px 16px 14px; }
 .nfold .selrow + .srow, .nfold .srow + .srow { border-top: 1px solid var(--sep); }
@@ -412,7 +410,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .nlink .nstatus:empty { display: none; }
 .nlink .alt { margin-top: 10px; text-align: center; font-size: 13px; color: var(--muted); }
 .nlink .alt .flink { font-size: 13px; }
-@media (prefers-reduced-motion: reduce) { .nfold, .ncard .nhead .chev svg { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ncard .nhead .chev svg { transition: none; } }
 .nstatus.ok { color: var(--tag-fg); }
 .nstatus.err { color: var(--red-fg); }
 .hint { margin: 12px 4px 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
@@ -1750,17 +1748,54 @@ window.__appStart = () => {
         <span class="tile t-room" aria-hidden="true">${I.bell}</span>
         <span class="body"><span class="nm">Уведомления в Telegram</span><span class="sub${off ? " off" : ""}" id="nsum">${sum}</span></span>
         <span class="chev" aria-hidden="true">${I.chev}</span></button>
-      <div class="nfold" id="nfold"${nOpen ? "" : " inert"}><div class="nin">${nstate ? nSwitchesHTML() : nLinkHTML()}</div></div></div>`;
+      <div class="nfold" id="nfold"${nOpen ? "" : " hidden inert"}><div class="nin">${nstate ? nSwitchesHTML() : nLinkHTML()}</div></div></div>`;
   }
+  // Раскрытие — тем же приёмом, что у карточек пар: карточка открывается маской сверху вниз,
+  // всё, что ниже, съезжает сдвигом, строки проявляются. Только transform/clip-path/opacity — без рывков.
+  let nAnim = null;
   function setNotifOpen(open) {
     nOpen = open;
     store.set("nOpen", open ? "1" : "0");
     const card = document.getElementById("ncard");
     if (!card) return;
+    const fold = document.getElementById("nfold");
+    if (nAnim) nAnim();   // предыдущее раскрытие/сворачивание ещё идёт — завершаем его сразу
     card.classList.toggle("open", open);
     card.querySelector(".nhead").setAttribute("aria-expanded", String(open));
-    const fold = document.getElementById("nfold");
-    if (open) fold.removeAttribute("inert"); else fold.setAttribute("inert", "");
+    const ease = springEase(), dur = ease.startsWith("linear") ? 520 : 320, opt = { duration: dur, easing: ease };
+    const chev = card.querySelector(".nhead .chev svg");
+    if (chev) chev.style.transition = REDUCED ? "none" : `transform ${dur}ms ${ease}`;
+    const below = [];
+    for (let el = card.nextElementSibling; el; el = el.nextElementSibling) below.push(el);
+    const radius = getComputedStyle(card).borderTopLeftRadius;
+    if (open) {
+      const h0 = card.getBoundingClientRect().height, tops = below.map((el) => el.getBoundingClientRect().top);
+      fold.hidden = false; fold.removeAttribute("inert");
+      if (REDUCED) return;
+      const d = card.getBoundingClientRect().height - h0;
+      const anims = [card.animate([{ clipPath: `inset(0px 0px ${d}px 0px round ${radius})` }, { clipPath: `inset(0px 0px 0px 0px round ${radius})` }], opt)];
+      below.forEach((el, i) => {
+        const dy = tops[i] - el.getBoundingClientRect().top;
+        if (Math.abs(dy) > 0.5) anims.push(el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], opt));
+      });
+      [...fold.querySelector(".nin").children].forEach((c, i) =>
+        anims.push(c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: 30 + i * 18, easing: "ease-out", fill: "backwards" })));
+      const end = () => { if (nAnim !== end) return; nAnim = null; anims.forEach((a) => a.finish()); };
+      nAnim = end;
+      Promise.all(anims.map((a) => a.finished)).then(end).catch(() => {});
+    } else {
+      fold.setAttribute("inert", "");
+      if (REDUCED) { fold.hidden = true; return; }
+      // Сначала двигаем всё как будто содержимого уже нет, а в конце убираем его — в тот же кадр
+      const d = fold.getBoundingClientRect().height;
+      const anims = [card.animate([{ clipPath: `inset(0px 0px 0px 0px round ${radius})` }, { clipPath: `inset(0px 0px ${d}px 0px round ${radius})` }], { ...opt, fill: "forwards" })];
+      for (const el of below) anims.push(el.animate([{ transform: "none" }, { transform: `translateY(${-d}px)` }], { ...opt, fill: "forwards" }));
+      for (const c of fold.querySelector(".nin").children) anims.push(c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: "ease-out", fill: "forwards" }));
+      // конец: прячем содержимое и снимаем сдвиги в одном кадре — визуально ничего не прыгает
+      const end = () => { if (nAnim !== end) return; nAnim = null; fold.hidden = true; anims.forEach((a) => a.cancel()); };
+      nAnim = end;
+      Promise.all(anims.map((a) => a.finished)).then(end).catch(() => {});
+    }
   }
   function refreshNSummary() {
     const el = document.getElementById("nsum");
