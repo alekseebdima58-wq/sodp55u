@@ -1,11 +1,12 @@
 // Service worker расписания: приложение открывается с главного экрана даже без сети.
 // Страницу берём из сети (не дольше 4 с), иначе — сохранённую копию. Иконки и шрифты — из кэша
 // с тихим обновлением. Расписание (data/*.json) не трогаем: офлайн-копию держит сама страница.
-const CACHE = "shell-v6";
+const CACHE = "shell-v7";
 const ICONS = ["icon-192", "icon-512", "maskable-512", "apple-touch-icon", "favicon-64"];
 const SHELL = [
   "./",
   "fonts/fonts.css",
+  "icons/badge-96.png",
   ...["", "-light", "-dark"].flatMap((s) => [`manifest${s}.webmanifest`, ...ICONS.map((n) => `icons/${n}${s}.png`)]),
 ];
 
@@ -80,8 +81,15 @@ self.addEventListener("push", (event) => {
   let d = {};
   try { d = event.data ? event.data.json() : {}; } catch (e) { d = { title: "Расписание", body: event.data ? event.data.text() : "" }; }
   const title = d.title || "Расписание";
-  const opts = { body: d.body || "", tag: d.kind === "remind" ? "remind" : d.kind || "info", renotify: true,
-    icon: "icons/icon-192.png", badge: "icons/favicon-64.png", data: { url: d.url || "./" } };
+  // Короткий текст готовит бот. tag: напоминание о той же паре или новая сводка заменяют старое уведомление,
+  // а не копятся стопкой. badge — белый силуэт для строки состояния Android.
+  const opts = {
+    body: d.body || "", tag: d.tag || d.kind || "info", renotify: true, lang: "ru", dir: "ltr",
+    icon: "icons/icon-192.png", badge: "icons/badge-96.png",
+    timestamp: d.ts || Date.now(),
+    vibrate: d.kind === "remind" || d.kind === "changes" ? [70, 50, 70] : [40],
+    data: { url: d.url || "./" },
+  };
   event.waitUntil((async () => {
     if (d.kind === "changes") await badgeSet((await badgeGet()) + 1);
     await self.registration.showNotification(title, opts);
