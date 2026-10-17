@@ -3,7 +3,7 @@
 <head>
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard">
+<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
@@ -805,6 +805,8 @@ button.offline u { text-underline-offset: 2px; }
 .vsteps li { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; font-size: 13.5px; line-height: 1.35; color: var(--muted); cursor: pointer; transition: background .25s, color .25s; }
 .vsteps li b { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: var(--surface2); color: var(--muted); transition: background .25s, color .25s; }
 .vsteps li.on { background: rgba(var(--acc-rgb), .1); color: var(--text); font-weight: 600; }
+.sfx { width: 100%; display: flex; flex-direction: column; gap: 2px; margin-top: 6px; padding: 12px 14px; border-radius: 16px; background: var(--surface2); text-align: left; font-size: 13px; line-height: 1.4; color: var(--text2); }
+.sfx .ibig { display: grid; place-items: center; height: 42px; margin-top: 8px; text-decoration: none; font-size: 15px; background: var(--bg); }
 .vsteps li.on b { background: var(--accent); color: var(--on-accent); }
 
 /* --- выбор иконки --- */
@@ -1851,6 +1853,18 @@ window.__appStart = () => {
     android: [[0, "Открой сайт в Chrome — внизу будет плашка «Установить»"], [1.67, "Нажми «Установить» (или меню ⋮ → «Установить приложение»)"],
       [3.17, "Подтверди установку"], [4.57, "Иконка на рабочем столе — открывается как приложение"]],
   };
+  // Ролик для Android есть в лёгком формате AV1 (≈220 КБ вместо 420) — берём его, если браузер умеет
+  function videoSrc(os) {
+    let av1 = "";
+    try { av1 = document.createElement("video").canPlayType('video/webm; codecs="av01.0.05M.08"'); } catch (e) { /* старый браузер */ }
+    return os === "android" && av1 ? "media/install-android.webm?v=2" : `media/install-${os}.mp4?v=2`;
+  }
+  // iPhone: если страница открылась во встроенном окне (из Telegram и т. п.), там нет «На экран „Домой“» — переносим в настоящий Safari
+  function safariHintHTML(dev) {
+    if (dev !== "ios" || inTG || browserKind()) return "";
+    return `<div class="sfx"><span>Нет пункта <b>«На экран „Домой“»</b>? Значит, страница открылась во встроенном окне.</span>
+      <a class="ibig ghost" href="x-safari-${installLink()}" rel="noopener">Открыть в Safari</a></div>`;
+  }
   function inlineVideoHTML(os) {
     const dev = deviceOS();
     os = os || dev || "ios";
@@ -1859,10 +1873,10 @@ window.__appStart = () => {
         `<button data-iv="${v}" class="${v === os ? "on" : ""}" aria-pressed="${v === os}">${l}</button>`).join("")}</div>`;
     const steps = VSTEPS[os].map(([t, s], i) => `<li data-t="${t}" class="${i ? "" : "on"}"><b>${i + 1}</b><span>${s}</span></li>`).join("");
     return `<div class="ivid" data-ivid>${dev ? browserNoteHTML(dev) : desktopNoteHTML()}${seg}
-      <div class="vframe"><video data-src="media/install-${os}.mp4?v=2" poster="media/install-${os}.jpg?v=2" muted loop playsinline preload="none"
+      <div class="vframe"><video data-src="${videoSrc(os)}" poster="media/install-${os}.jpg?v=2" muted loop playsinline preload="none"
         width="540" height="960" aria-label="Видео: как установить расписание на главный экран"></video>
         <button class="vplay" data-vplay aria-label="Смотреть видео">${I.play}</button></div>
-      <ol class="vsteps" aria-label="Шаги">${steps}</ol></div>`;
+      <ol class="vsteps" aria-label="Шаги">${steps}</ol>${safariHintHTML(dev)}</div>`;
   }
   // ---- какой браузер: у каждого свои пункты меню ----
   function browserKind() {
@@ -2068,7 +2082,7 @@ window.__appStart = () => {
     const share = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>`;
     let body;
     if (IOS) {
-      body = `<p class="ihint">На новых iPhone «Поделиться» ${share} может прятаться за ⋯ или ≡ в адресной строке. Нет пункта «На экран „Домой“»? Значит, страница открылась внутри Telegram — нажми «Открыть в Safari» (значок компаса или ⋯).</p>`;
+      body = `<p class="ihint">На новых iPhone «Поделиться» ${share} может прятаться за ⋯ или ≡ в адресной строке.</p>`;
     } else if (installEvt) {
       body = `<button class="ibig" data-is="install">Установить приложение</button>`;
     } else {
