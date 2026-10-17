@@ -526,13 +526,22 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
 
 /* шапка: над заголовком везде название группы; у расписания заголовок — неделя, рядом стрелки и колокольчик */
 h1 { font-size: 24px; margin-top: 4px; }
-.whead { margin-top: 0; align-items: center; gap: 10px; }
-.whead .ht { flex: 1; min-width: 0; }
+/* Кнопки стоят по центру строки с неделей (а не посередине между подписью и неделей, как раньше).
+   Сетка: подпись — первая строка, неделя — вторая; кнопки во второй строке, выступают вверх/вниз поровну. */
+.whead {
+  --wrfs: clamp(18px, 5.6vw, 22px); --wb: 40px;
+  margin-top: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; align-items: end;
+}
+.whead .ht { display: contents; }
+.whead .eyebrow { grid-column: 1; grid-row: 1; }
+.whead h1.wr { grid-column: 1; grid-row: 2; font-size: var(--wrfs); line-height: 1.15; }
+.whead .top-actions { grid-column: 2; grid-row: 2; align-self: end; margin: calc((var(--wrfs) * 1.15 - var(--wb)) / 2) 0; }
+.sbar.small .whead { --wrfs: 17px; --wb: 34px; }
 .whead .eyebrow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .whead .eyebrow .wl { font-size: inherit; letter-spacing: inherit; }
 h1.wr { font-family: inherit; font-size: clamp(18px, 5.6vw, 22px); font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
 .whead .top-actions { gap: 6px; flex: none; }
-.whead .top-actions .wbtn, .whead .top-actions .icon-btn { width: 40px; height: 40px; }
+.whead .top-actions .wbtn, .whead .top-actions .icon-btn { width: var(--wb); height: var(--wb); }
 .wbtn { flex: none; border: 1px solid var(--hair); border-radius: 50%; background: var(--surface); box-shadow: var(--elev); color: var(--text); display: grid; place-items: center; padding: 0; }
 .wbtn:disabled { opacity: .3; cursor: default; }
 .whead + .days, .whead + .offline + .days { margin-top: 14px; }
@@ -647,8 +656,7 @@ html[data-theme="light"] .tabs {
 .sbar .eyebrow { max-height: 18px; transition: max-height .25s ease, opacity .2s ease; }
 .sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day { transition: font-size .25s ease, width .25s ease, height .25s ease; }
 .sbar.small .whead .eyebrow { max-height: 0; opacity: 0; }
-.sbar.small h1.wr { font-size: 17px; }
-.sbar.small .whead .top-actions .wbtn, .sbar.small .whead .top-actions .icon-btn { width: 34px; height: 34px; }
+.sbar .whead .top-actions { transition: margin .25s ease; }
 .sbar.small .days { margin-top: 8px; }
 .sbar.small .day { height: 48px; }
 .sbar .week { margin-top: 0; }
@@ -859,7 +867,7 @@ button.offline u { text-underline-offset: 2px; }
 .tl.enter .mark { animation: slide .9s var(--ease-spring) both; animation-delay: calc(var(--i) * 70ms + 200ms); }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
 .ring .arc, .fill, .mark, .nowlbl, .bmark, .bnow { transition-timing-function: var(--ease-spring); }
-.sbar .eyebrow, .sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day { transition-timing-function: var(--ease-spring); transition-duration: .45s; }
+.sbar .eyebrow, .sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day, .sbar .whead .top-actions { transition-timing-function: var(--ease-spring); transition-duration: .45s; }
 
 /* нажатие: элемент чуть проседает и пружинит обратно */
 .day, .btn, .wbtn, .tab, .cc, .item, .sw, .seg3 button, .tlink {
@@ -1738,7 +1746,9 @@ window.__appStart = () => {
       <ul><li>Напоминание о паре за 5–30 минут</li><li>Утренняя сводка в 7:30</li><li>Пары на завтра в 20:00</li><li>Отмены, замены, другая аудитория</li></ul>
       ${can ? `<button class="btn wide" data-act="nlink"${linkBusy ? " disabled" : ""}>${I.bell}${label}</button>
         <p class="nstatus" id="nstatus" aria-live="polite" style="text-align:center">${linkBusy ? linkNote : ""}</p>
-        <div class="alt">или <button class="flink" data-act="notify-settings">настроить в чате с ботом</button></div>`
+        ${linkBusy && linkStartArg
+          ? `<div class="alt"><button class="flink" data-act="nlink-reopen">Открыть чат снова</button> · <button class="flink" data-act="nlink-cancel">Отменить</button></div>`
+          : linkBusy ? "" : `<div class="alt">или <button class="flink" data-act="notify-settings">настроить в чате с ботом</button></div>`}`
         : `<button class="btn wide" data-act="notify-settings">${I.bell}Настроить в чате с ботом</button>`}</div>`;
   }
   function notifSettingsHTML() {
@@ -1813,7 +1823,8 @@ window.__appStart = () => {
   // Нужно, когда приложение открыто без личного ключа в адресе: из профиля бота, общей кнопкой меню
   // или ярлыком на рабочем столе. Пара ключей P-256 (ECDH) + открытый ключ бота из index.json дают
   // общий секрет; им зашифрован initData (в Telegram) и ответ бота с личным ключом.
-  let linkBusy = false, linkNote = "";
+  let linkBusy = false, linkNote = "", linkStartArg = "";
+  const LINK_NOTE = "В чате с ботом нажми «✅ Подключить» и вернись сюда";
   function canLinkNotify() {
     return !!(index && index.pub && index.relay && window.crypto && crypto.subtle);
   }
@@ -1842,25 +1853,64 @@ window.__appStart = () => {
     return new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: bot }, priv, 256));
   }
   const relayBase = () => index.relay.replace(/\/[^/]+$/, "");
-  async function linkPollOnce(secret) {
-    const topic = "sodp55u-r" + hex(await kdf(secret, "topic")).slice(0, 24);
-    const r = await fetch(`${relayBase()}/${topic}/json?poll=1&since=15m`, { cache: "no-store" });
-    if (!r.ok) return null;
-    const mk = await kdf(secret, "mac");
-    for (const line of (await r.text()).split("\n")) {
-      try {
-        const ev = JSON.parse(line);
-        if (ev.event !== "message") continue;
-        const m = JSON.parse(ev.message);
-        if (!/^[0-9a-f]{32}$/.test(m.k) || !parseCode(m.n)) continue;
-        if (await hmacRaw(mk, utf8(`reply|${m.k}|${m.n}|${m.ts}`)) !== m.h) continue;
-        const pad = (await kdf(secret, "key")).slice(0, 16);
-        const key = hex(m.k.match(/../g).map((h, i) => parseInt(h, 16) ^ pad[i]));
-        return { key, n: m.n, ts: +m.ts || 0 };
-      } catch (e) { /* не наша строка */ }
-    }
-    return null;
+  // Ответ бота ждём одним долгим соединением с каналом (ntfy присылает сообщения сам).
+  // Раньше спрашивали каждые 2 с — ntfy.sh пускает не чаще раза в 5 с, и через пару минут
+  // начинал отвечать «слишком часто» (429), так что ответ бота уже не доходил.
+  const linkTopic = async (secret) => "sodp55u-r" + hex(await kdf(secret, "topic")).slice(0, 24);
+  async function linkParse(secret, line) {
+    try {
+      const ev = JSON.parse(line);
+      if (ev.event !== "message") return null;
+      const m = JSON.parse(ev.message);
+      if (!/^[0-9a-f]{32}$/.test(m.k) || !parseCode(m.n)) return null;
+      if (await hmacRaw(await kdf(secret, "mac"), utf8(`reply|${m.k}|${m.n}|${m.ts}`)) !== m.h) return null;
+      const pad = (await kdf(secret, "key")).slice(0, 16);
+      return { key: hex(m.k.match(/../g).map((h, i) => parseInt(h, 16) ^ pad[i])), n: m.n, ts: +m.ts || 0 };
+    } catch (e) { return null; }   // не наша строка
   }
+  let linkAbort = null;
+  async function linkListenOnce(secret, maxMs) {
+    const url = `${relayBase()}/${await linkTopic(secret)}/json?since=15m`;
+    const ctl = new AbortController();
+    linkAbort = ctl;
+    const stop = () => ctl.abort();
+    const timer = setTimeout(stop, maxMs);
+    const onHide = () => { if (document.hidden) stop(); };   // телефон всё равно рвёт соединение в фоне
+    document.addEventListener("visibilitychange", onHide);
+    try {
+      const r = await fetch(url, { cache: "no-store", signal: ctl.signal });
+      if (!r.ok) return { err: r.status };
+      if (!r.body || !r.body.getReader) {   // старый браузер без потокового чтения — разовый запрос
+        const r2 = await fetch(url.replace("/json?", "/json?poll=1&"), { cache: "no-store" });
+        for (const line of (await r2.text()).split("\n")) { const res = await linkParse(secret, line); if (res) return { res }; }
+        return {};
+      }
+      const reader = r.body.getReader(), dec = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) return {};
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf("\n")) >= 0) {
+          const res = await linkParse(secret, buf.slice(0, i));
+          buf = buf.slice(i + 1);
+          if (res) { ctl.abort(); return { res }; }
+        }
+      }
+    } catch (e) {
+      return {};
+    } finally {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onHide);
+      if (linkAbort === ctl) linkAbort = null;
+    }
+  }
+  const waitVisible = () => new Promise((r) => {
+    if (!document.hidden) return r();
+    const f = () => { if (!document.hidden) { document.removeEventListener("visibilitychange", f); r(); } };
+    document.addEventListener("visibilitychange", f);
+  });
   function linkDone(res) {
     linkBusy = false;
     nkey = res.key;
@@ -1879,19 +1929,42 @@ window.__appStart = () => {
     if (view === "settings") { renderSettings(); setNStatus(text, "err"); }
   }
   async function linkWait(secret, until) {
+    let last = 0, slow = 0;
     while (Date.now() < until && linkBusy) {
-      if (!document.hidden) {
-        try { const res = await linkPollOnce(secret); if (res) return linkDone(res); } catch (e) { /* нет сети — ещё раз */ }
-      }
-      await new Promise((r) => setTimeout(r, 2000));
+      await waitVisible();
+      // не чаще раза в 6 с (после «слишком часто» — раз в 20 с), чтобы канал нас не отрезал
+      const gap = (slow ? 20000 : 6000) - (Date.now() - last);
+      if (gap > 0) await new Promise((r) => setTimeout(r, gap));
+      if (!linkBusy) return;
+      last = Date.now();
+      const { res, err } = await linkListenOnce(secret, Math.min(70000, Math.max(1000, until - Date.now())));
+      if (res) return linkDone(res);
+      slow = err === 429 ? 1 : 0;
     }
     if (linkBusy) linkFail(`Бот не ответил. Попробуй ещё раз или <button class="flink" data-act="notify-settings">настрой в чате</button>`);
+  }
+  // Открыть чат с ботом со ссылкой подключения. На телефоне — сразу приложение Telegram (tg://),
+  // иначе из ярлыка на экране «Домой» ссылка t.me открывается страницей сайта, а не Telegram.
+  function openLinkChat(start) {
+    const bot = (index && index.bot) || "sodp55u_bot";
+    const https = `https://t.me/${bot}?start=${start}`;
+    haptic("light");
+    if (inTG && tgAtLeast("6.1")) { try { tg.openTelegramLink(https); return; } catch (e) { /* ниже */ } }
+    if (IOS || ANDROID) location.href = `tg://resolve?domain=${bot}&start=${start}`;
+    else window.open(https, "_blank", "noopener");
+  }
+  function linkCancel() {
+    linkBusy = false; linkNote = "";
+    store.set("nlinkPending", "");
+    if (linkAbort) linkAbort.abort();
+    if (view === "settings") renderSettings();
   }
   async function linkStart() {
     if (linkBusy || !canLinkNotify()) return;
     linkBusy = true;
     const viaTG = !!(inTG && tg.initData);
-    linkNote = viaTG ? "Обычно это пара секунд" : "Подтверди в чате с ботом и вернись сюда";
+    linkNote = viaTG ? "Обычно это пара секунд" : LINK_NOTE;
+    linkStartArg = "";
     if (view === "settings") renderSettings();
     try {
       const kp = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
@@ -1907,12 +1980,11 @@ window.__appStart = () => {
       }
       // В браузере: подтверждение в чате. Ключ держим до 10 минут — вдруг вкладку выгрузят, пока ты в Telegram
       const jwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
-      store.set("nlinkPending", JSON.stringify({ jwk, t: Date.now() }));
-      const short = cat(new Uint8Array([2 + (pub[64] & 1)]), pub.slice(1, 33));
-      const url = `https://t.me/${(index && index.bot) || "sodp55u_bot"}?start=lk${b64u(short)}`;
-      haptic("light");
-      if (inTG && tgAtLeast("6.1")) { try { tg.openTelegramLink(url); } catch (e) { window.open(url, "_blank", "noopener"); } }
-      else window.open(url, "_blank", "noopener");
+      const start = "lk" + b64u(cat(new Uint8Array([2 + (pub[64] & 1)]), pub.slice(1, 33)));
+      linkStartArg = start;
+      store.set("nlinkPending", JSON.stringify({ jwk, t: Date.now(), start }));
+      if (view === "settings") renderSettings();
+      openLinkChat(start);
       return linkWait(secret, Date.now() + 10 * 60000);
     } catch (e) {
       linkFail(`Не получилось — нет связи. <button class="flink" data-act="notify-settings">Настроить в чате</button>`);
@@ -1925,7 +1997,8 @@ window.__appStart = () => {
     try {
       const priv = await crypto.subtle.importKey("jwk", p.jwk, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
       linkBusy = true;
-      linkNote = "Подтверди в чате с ботом и вернись сюда";
+      linkNote = LINK_NOTE;
+      linkStartArg = p.start || "";
       if (view === "settings") renderSettings();
       linkWait(await linkSecret(priv), p.t + 10 * 60000);
     } catch (e) { store.set("nlinkPending", ""); }
@@ -2605,6 +2678,11 @@ window.__appStart = () => {
     } else if (act === "nlink") {
       haptic("light");
       linkStart();
+    } else if (act === "nlink-reopen") {
+      if (linkStartArg) openLinkChat(linkStartArg);
+    } else if (act === "nlink-cancel") {
+      haptic("light");
+      linkCancel();
     } else if (act === "ntoggle") {
       if (!canEditNotify()) return;
       const k = el.dataset.k;
