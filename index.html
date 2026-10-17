@@ -396,6 +396,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .ncard .nhead .sub.off { color: var(--faint); }
 .ncard .nhead .chev svg { transform: rotate(90deg); transition: transform .32s var(--ease-spring, ease); }
 .ncard.open .nhead .chev svg { transform: rotate(-90deg); }
+.nfold { overflow: hidden; }   /* содержимое выезжает сверху — не заезжает на шапку */
 .nfold[hidden] { display: none; }
 .nfold .srow:first-child { border-top: 1px solid var(--sep); }
 .nfold .nstatus { margin: 0; padding: 4px 16px 14px; }
@@ -1750,53 +1751,57 @@ window.__appStart = () => {
         <span class="chev" aria-hidden="true">${I.chev}</span></button>
       <div class="nfold" id="nfold"${nOpen ? "" : " hidden inert"}><div class="nin">${nstate ? nSwitchesHTML() : nLinkHTML()}</div></div></div>`;
   }
-  // Раскрытие — тем же приёмом, что у карточек пар: карточка открывается маской сверху вниз,
-  // всё, что ниже, съезжает сдвигом, строки проявляются. Только transform/clip-path/opacity — без рывков.
+  // Раскрытие — как у карточек пар: карточка открывается маской сверху вниз, всё ниже съезжает сдвигом.
+  // Пружину с перелётом здесь не берём: на высоте ~350 px её 4% — это 14 px «болтанки»
+  // и маска, заезжающая на шапку. Кривая без перелёта, длительность — от расстояния.
+  const N_EASE = "cubic-bezier(.25, .9, .3, 1)";
+  const nDur = (d) => Math.round(Math.min(440, Math.max(260, 200 + Math.abs(d) * 0.6)));
   let nAnim = null;
   function setNotifOpen(open) {
     nOpen = open;
     store.set("nOpen", open ? "1" : "0");
     const card = document.getElementById("ncard");
     if (!card) return;
-    const fold = document.getElementById("nfold");
-    if (nAnim) nAnim();   // предыдущее раскрытие/сворачивание ещё идёт — завершаем его сразу
-    card.classList.toggle("open", open);
-    card.querySelector(".nhead").setAttribute("aria-expanded", String(open));
-    const ease = springEase(), dur = ease.startsWith("linear") ? 520 : 320, opt = { duration: dur, easing: ease };
-    const chev = card.querySelector(".nhead .chev svg");
-    if (chev) chev.style.transition = REDUCED ? "none" : `transform ${dur}ms ${ease}`;
+    const fold = document.getElementById("nfold"), inner = fold.querySelector(".nin");
+    if (nAnim) nAnim();   // предыдущее раскрытие/сворачивание ещё идёт — доводим его до конца сразу
+    const h0 = card.getBoundingClientRect().height;
     const below = [];
     for (let el = card.nextElementSibling; el; el = el.nextElementSibling) below.push(el);
+    const tops = below.map((el) => el.getBoundingClientRect().top);
+    card.classList.toggle("open", open);
+    card.querySelector(".nhead").setAttribute("aria-expanded", String(open));
+    const chev = card.querySelector(".nhead .chev svg");
+    if (open) { fold.hidden = false; fold.removeAttribute("inert"); } else fold.setAttribute("inert", "");
+    if (REDUCED) { if (!open) fold.hidden = true; if (chev) chev.style.transition = "none"; return; }
     const radius = getComputedStyle(card).borderTopLeftRadius;
+    const clip = (b) => `inset(0px 0px ${b}px 0px round ${radius})`;
+    let anims, end;
     if (open) {
-      const h0 = card.getBoundingClientRect().height, tops = below.map((el) => el.getBoundingClientRect().top);
-      fold.hidden = false; fold.removeAttribute("inert");
-      if (REDUCED) return;
-      const d = card.getBoundingClientRect().height - h0;
-      const anims = [card.animate([{ clipPath: `inset(0px 0px ${d}px 0px round ${radius})` }, { clipPath: `inset(0px 0px 0px 0px round ${radius})` }], opt)];
+      const d = card.getBoundingClientRect().height - h0, opt = { duration: nDur(d), easing: N_EASE };
+      anims = [card.animate([{ clipPath: clip(d) }, { clipPath: clip(0) }], opt)];
       below.forEach((el, i) => {
         const dy = tops[i] - el.getBoundingClientRect().top;
         if (Math.abs(dy) > 0.5) anims.push(el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], opt));
       });
-      [...fold.querySelector(".nin").children].forEach((c, i) =>
-        anims.push(c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: 30 + i * 18, easing: "ease-out", fill: "backwards" })));
-      const end = () => { if (nAnim !== end) return; nAnim = null; anims.forEach((a) => a.finish()); };
-      nAnim = end;
-      Promise.all(anims.map((a) => a.finished)).then(end).catch(() => {});
+      // содержимое одним слоем: чуть выезжает сверху и проявляется, пока маска его открывает
+      anims.push(inner.animate([{ opacity: 0, transform: "translateY(-14px)" }, { opacity: 1, transform: "none" }],
+        { duration: opt.duration, delay: 30, easing: N_EASE, fill: "backwards" }));
+      end = () => { if (nAnim !== end) return; nAnim = null; anims.forEach((a) => a.finish()); };
+      if (chev) chev.style.transition = `transform ${opt.duration}ms ${N_EASE}`;
     } else {
-      fold.setAttribute("inert", "");
-      if (REDUCED) { fold.hidden = true; return; }
-      // Сначала двигаем всё как будто содержимого уже нет, а в конце убираем его — в тот же кадр
-      const d = fold.getBoundingClientRect().height;
-      const anims = [card.animate([{ clipPath: `inset(0px 0px 0px 0px round ${radius})` }, { clipPath: `inset(0px 0px ${d}px 0px round ${radius})` }], { ...opt, fill: "forwards" })];
-      for (const el of below) anims.push(el.animate([{ transform: "none" }, { transform: `translateY(${-d}px)` }], { ...opt, fill: "forwards" }));
-      for (const c of fold.querySelector(".nin").children) anims.push(c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: "ease-out", fill: "forwards" }));
-      // конец: прячем содержимое и снимаем сдвиги в одном кадре — визуально ничего не прыгает
-      const end = () => { if (nAnim !== end) return; nAnim = null; fold.hidden = true; anims.forEach((a) => a.cancel()); };
-      nAnim = end;
-      Promise.all(anims.map((a) => a.finished)).then(end).catch(() => {});
+      // Двигаем всё так, будто содержимого уже нет, а в конце убираем его — в тот же кадр, без скачка
+      const d = fold.getBoundingClientRect().height, opt = { duration: Math.round(nDur(d) * 0.85), easing: N_EASE, fill: "forwards" };
+      anims = [card.animate([{ clipPath: clip(0) }, { clipPath: clip(d) }], opt)];
+      for (const el of below) anims.push(el.animate([{ transform: "none" }, { transform: `translateY(${-d}px)` }], opt));
+      anims.push(inner.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(-10px)" }],
+        { duration: Math.round(opt.duration * 0.6), easing: "ease-in", fill: "forwards" }));
+      end = () => { if (nAnim !== end) return; nAnim = null; fold.hidden = true; anims.forEach((a) => a.cancel()); };
+      if (chev) chev.style.transition = `transform ${opt.duration}ms ${N_EASE}`;
     }
+    nAnim = end;
+    Promise.all(anims.map((a) => a.finished)).then(end).catch(() => {});
   }
+
   function refreshNSummary() {
     const el = document.getElementById("nsum");
     if (!el) return;
