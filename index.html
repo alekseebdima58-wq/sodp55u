@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="9c2534dc6ae5">
+<meta name="app-ver" content="fb001697ff36">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -300,16 +300,16 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 @keyframes grow { from { height: 0; } }
 @keyframes slide { from { top: 0; } }
-/* Листание дней: дни лежат в горизонтальной прокрутке с защёлкиванием по страницам —
-   двигает их сам телефон (как фото в «Фото»), поэтому плавно на любой скорости */
+/* Листание дней ведёт приложение само (как в приложениях iOS): лента идёт за пальцем 1:1,
+   короткий быстрый бросок перелистывает день, медленный короткий — возвращает. Вертикальная прокрутка — родная. */
 .pager {
-  display: flex; margin: 0 calc(-1 * var(--side)); overflow-x: auto; overflow-y: hidden;
-  scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  display: flex; margin: 0 calc(-1 * var(--side)); overflow: hidden;
+  touch-action: pan-y; overscroll-behavior-x: contain; scrollbar-width: none;
 }
 .pager::-webkit-scrollbar { display: none; }
 .page {
   position: relative; isolation: isolate; flex: 0 0 100%; min-width: 0; align-self: flex-start;
-  padding: 0 var(--side); display: flow-root; scroll-snap-align: center; scroll-snap-stop: always;
+  padding: 0 var(--side); display: flow-root;
 }
 /* Пока листаем — под днями проявляются скруглённые «карточки», как при переключении приложений */
 .pframe {
@@ -900,6 +900,8 @@ button.offline u { text-underline-offset: 2px; }
 .sfx { width: 100%; display: flex; flex-direction: column; gap: 2px; margin-top: 6px; padding: 12px 14px; border-radius: 16px; background: var(--surface2); text-align: left; font-size: 13px; line-height: 1.4; color: var(--text2); }
 .sfx .ibig { display: grid; place-items: center; height: 42px; margin-top: 8px; text-decoration: none; font-size: 15px; background: var(--bg); }
 .vsteps li.on b { background: var(--accent); color: var(--on-accent); }
+
+.foot .ver { font-size: 11px; opacity: .55; font-variant-numeric: tabular-nums; }
 
 /* --- выбор иконки --- */
 .icpick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
@@ -2684,7 +2686,8 @@ window.__appStart = () => {
       <h2 class="sec" id="asec">Приложение</h2>
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
-        ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}</p>`;
+        ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
+        <br><span class="ver">v16y · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -3126,7 +3129,74 @@ window.__appStart = () => {
     fitPager();
     pg.scrollLeft = curIndex(pg) * pg.clientWidth;
     pg.addEventListener("scroll", onPagerScroll, { passive: true });
-    pg.addEventListener("touchstart", () => { pagerTouch = true; }, { passive: true });
+    pg.addEventListener("touchstart", pagerDown, { passive: true });
+    pg.addEventListener("touchmove", pagerMove, { passive: false });
+    pg.addEventListener("touchend", pagerUp, { passive: true });
+    pg.addEventListener("touchcancel", pagerUp, { passive: true });
+  }
+
+  // ---- свой жест листания дней ----
+  let pgDrag = null, pgAnim = 0;
+  function pagerAnimTo(pg, left, v) {
+    cancelAnimationFrame(pgAnim);
+    const from = pg.scrollLeft, dist = left - from;
+    if (Math.abs(dist) < 0.5 || REDUCED) { pg.scrollLeft = left; return; }
+    // быстрее бросили — быстрее доезжает (но не резче 0,16 с и не дольше 0,34 с)
+    const dur = Math.max(160, Math.min(340, Math.abs(dist) / Math.max(Math.abs(v || 0), 1.1)));
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / dur);
+      pg.scrollLeft = from + dist * (1 - Math.pow(1 - k, 3));
+      if (k < 1) pgAnim = requestAnimationFrame(step);
+      else { pg.scrollLeft = left; pgAnim = 0; }
+    };
+    pgAnim = requestAnimationFrame(step);
+  }
+  function pagerDown(e) {
+    const t = e.touches[0];
+    if (e.touches.length !== 1 || (stack.length && t.clientX <= 24 && !inTG)) { pgDrag = null; return; }   // у края — свайп «назад»
+    const pg = e.currentTarget;
+    cancelAnimationFrame(pgAnim); pgAnim = 0;
+    pagerTouch = true;
+    pgDrag = { pg, x: t.clientX, y: t.clientY, base: pg.scrollLeft, mode: 0, vx: 0, lx: t.clientX, lt: performance.now() };
+  }
+  function pagerMove(e) {
+    const d = pgDrag;
+    if (!d) return;
+    const t = e.touches[0];
+    const dx = t.clientX - d.x, dy = t.clientY - d.y;
+    if (d.mode === 0) {
+      if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+      d.mode = Math.abs(dx) > Math.abs(dy) * 1.15 ? 1 : 2;   // 1 — листаем дни, 2 — прокрутка вверх-вниз
+      d.x = t.clientX; d.base = d.pg.scrollLeft;              // без рывка на величину «мёртвой зоны»
+    }
+    if (d.mode !== 1) return;
+    if (e.cancelable) e.preventDefault();
+    const W = d.pg.clientWidth || 1, idx = curIndex(d.pg);
+    let x = d.base - (t.clientX - d.x);
+    // у края (дальше дней нет) — тянется туго, как резинка
+    const min = hasNeighbor(-1) ? (idx - 1) * W : idx * W, max = hasNeighbor(1) ? (idx + 1) * W : idx * W;
+    if (x < min) x = min - (min - x) / 3;
+    if (x > max) x = max + (x - max) / 3;
+    d.pg.scrollLeft = x;
+    const now = performance.now(), dt = Math.max(1, now - d.lt);
+    d.vx = 0.7 * ((t.clientX - d.lx) / dt) + 0.3 * d.vx;   // px/мс, плюс — палец вправо
+    d.lx = t.clientX; d.lt = now;
+  }
+  function pagerUp(e) {
+    const d = pgDrag;
+    if (!d || (e.touches && e.touches.length)) return;
+    pgDrag = null;
+    pagerTouch = false;
+    if (d.mode !== 1) return;
+    const pg = d.pg, W = pg.clientWidth || 1, idx = curIndex(pg);
+    if (performance.now() - d.lt > 90) d.vx = 0;          // палец остановился — броска нет
+    const off = (pg.scrollLeft - idx * W) / W;             // -1 … 1, плюс — тянем к следующему дню
+    let dir = 0;
+    if (d.vx < -0.3 || (off > 0.35 && d.vx < 0.25)) dir = 1;
+    else if (d.vx > 0.3 || (off < -0.35 && d.vx > -0.25)) dir = -1;
+    if (dir && !hasNeighbor(dir)) dir = 0;
+    pagerAnimTo(pg, (idx + dir) * W, d.vx);   // вибро — когда день сменится (commitDay)
   }
 
   {
@@ -3197,7 +3267,7 @@ window.__appStart = () => {
   function shiftDay(dir) {
     const pg = pagerEl();
     if (!pg || !hasNeighbor(dir)) return false;
-    pg.scrollTo({ left: (curIndex(pg) + dir) * pg.clientWidth, behavior: REDUCED ? "auto" : "smooth" });
+    pagerAnimTo(pg, (curIndex(pg) + dir) * pg.clientWidth, 0);
     return true;
   }
   // На компьютере — стрелками ← →
