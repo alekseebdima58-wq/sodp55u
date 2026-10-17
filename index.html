@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 design-2">
+<meta name="app-build" content="2026-10-17 design-2 swipes-span3 compact-all">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0E1014">
 <title>Расписание СОДП-55у</title>
@@ -451,19 +451,15 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 .seg3 button { border-radius: 12px; }
 .sec { margin: 24px 6px 8px; }
 
-/* нижняя панель — плавающая «стеклянная» капсула над полоской «домой» */
+/* нижняя панель — плавающая капсула над полоской «домой» */
 .tabs {
   left: 12px; right: 12px; bottom: max(10px, env(safe-area-inset-bottom), var(--safe-bottom, 0px));
   max-width: 496px; margin: 0 auto; padding: 6px; border-radius: 28px;
   background: var(--glass); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6);
 }
 .tab { min-height: 52px; border-radius: 22px; transition: background .2s, color .2s; }
 .tab.on { background: rgba(var(--acc-rgb), .14); }
 html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст подписи ≥ 4.5:1 на подсветке */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .tabs { background: var(--tab-bg); }
-}
 
 /* Узкие телефоны (360–380 px): чуть меньше полей, чтобы статус пары и подписи не обрезались */
 @media (max-width: 380px) {
@@ -899,7 +895,8 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
       const s = toSec(l.start), e = toSec(l.end);
       const k = kindOf(l.type);
       const key = `${date}|${i}`;
-      const compact = (st === "past" || (n >= 3 && st !== "live" && st !== "next")) && !opened.has(key);
+      // Свёрнуты все пары, кроме идущей и следующей — в любой день одинаково (раскрываются нажатием)
+      const compact = st !== "live" && st !== "next" && !opened.has(key);
       const p = st === "live" ? Math.min(100, Math.max(0, Math.round((now.sec - s) / (e - s) * 100))) : 0;
       let statusText;
       if (st === "live") statusText = `Идёт · ещё ${dur(e - now.sec)}`;
@@ -1010,6 +1007,13 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
       <div class="blbl">${I.cup}<span data-btext>Перерыв · ${esc(it.text)}</span></div></li>`;
   }
 
+  const PAGER_SPAN = 3;
+  // Сосед через n дней (dir = ±n): шагаем по одному, пока не кончатся недели
+  function stepPos(data, p, dir) {
+    let q = p;
+    for (let k = 0; k < Math.abs(dir) && q; k++) q = neighborPos(data, q.w, q.d, Math.sign(dir));
+    return q;
+  }
   function neighborPos(data, w, d, dir) {
     let nw = w, nd = d + dir;
     if (nd > 6) { if (nw >= data.weeks.length - 1) return null; nw += 1; nd = 0; }
@@ -1058,13 +1062,15 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
     }
     html += `</nav>`;
 
-    // Текущий день и соседние (для листания пальцем) — соседи лежат за краями экрана
-    const prev = neighborPos(data, p.w, p.d, -1), next = neighborPos(data, p.w, p.d, 1);
+    // Текущий день и по PAGER_SPAN соседей с каждой стороны — лежат за краями экрана.
+    // Запас нужен для быстрых свайпов подряд: лента успевает уехать на 2–3 дня, пока не «переложилась».
     const fr = `<div class="pframe" aria-hidden="true"></div>`;
+    const side = (dir) => { const out = []; let q = p; for (let k = 0; k < PAGER_SPAN && (q = neighborPos(data, q.w, q.d, dir)); k++) out.push(q); return out; };
+    const prevs = side(-1).reverse(), nexts = side(1);
     html += `<div class="pager" data-pager>`;
-    if (prev) html += `<div class="page prev" aria-hidden="true" inert>${fr}${dayBodyHTML(data, prev.w, prev.d, isTeacher, false)}</div>`;
+    for (const q of prevs) html += `<div class="page prev" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
     html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${fr}${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
-    if (next) html += `<div class="page next" aria-hidden="true" inert>${fr}${dayBodyHTML(data, next.w, next.d, isTeacher, false)}</div>`;
+    for (const q of nexts) html += `<div class="page next" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
     html += `</div>`;
     liveSig = m.sig;
     return { html, notToday: notToday && todayInData };
@@ -1643,7 +1649,7 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
   const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   let scrolling = false, pagerTouch = false, settleTimer = 0, scrollFrame = 0;
   function pagerEl() { return app.querySelector("[data-pager]"); }
-  function curIndex(pg) { return pg.querySelector(".page.prev") ? 1 : 0; }
+  function curIndex(pg) { return pg.querySelectorAll(":scope > .page.prev").length; }
   function curPos() {
     if (view !== "schedule" && view !== "teacher") return null;
     const id = view === "teacher" ? target : "g";
@@ -1671,9 +1677,11 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
     pg.scrollLeft = curIndex(pg) * pg.clientWidth;
     pg.addEventListener("scroll", onPagerScroll, { passive: true });
     pg.addEventListener("touchstart", () => { pagerTouch = true; }, { passive: true });
-    const up = () => { pagerTouch = false; if (scrolling) armSettle(); };
-    pg.addEventListener("touchend", up, { passive: true });
-    pg.addEventListener("touchcancel", up, { passive: true });
+  }
+  {
+    const up = (e) => { if (e.touches && e.touches.length) return; if (pagerTouch) { pagerTouch = false; if (scrolling) armSettle(); } };
+    document.addEventListener("touchend", up, { passive: true, capture: true });
+    document.addEventListener("touchcancel", up, { passive: true, capture: true });
   }
   function onPagerScroll() {
     scrolling = true;
@@ -1694,7 +1702,7 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
     const d = Math.abs(off - Math.round(off));                  // насколько далеко от «ровного» дня
     const o = REDUCED ? "0" : Math.min(1, d * 5).toFixed(2);
     pg.querySelectorAll(".pframe").forEach((el) => { el.style.opacity = o; });
-    previewChips(off > 0.5 ? 1 : off < -0.5 ? -1 : 0);
+    previewChips(Math.round(off));
   }
   function settlePager() {
     const pg = pagerEl();
@@ -1711,7 +1719,7 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
   function previewChips(dir) {
     const c = curPos();
     if (!c) return;
-    const np = dir ? neighborPos(c.data, c.p.w, c.p.d, dir) : c.p;
+    const np = dir ? stepPos(c.data, c.p, dir) : c.p;
     if (!np || np.w !== c.p.w) return;
     const week = c.data.weeks[np.w], today = samaraNow().date;
     app.querySelectorAll(".days .day").forEach((b) => {
@@ -1724,7 +1732,7 @@ html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст по�
   }
   function commitDay(dir) {
     const c = curPos();
-    const np = c && neighborPos(c.data, c.p.w, c.p.d, dir);
+    const np = c && stepPos(c.data, c.p, dir);
     if (!np) return;
     pos[c.id] = np;
     opened.clear();
