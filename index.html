@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 oled-style">
+<meta name="app-build" content="2026-10-17 modern-2026 spring-squircle quiet-ctl">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
@@ -531,6 +531,194 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ================= Современный вид 2026 ================= */
+
+/* --- цвета типов пар (из макета): полоска — насыщенный цвет, подложка — светлая заливка --- */
+html[data-theme="light"] {
+  --lec-bar: #55B685; --lec-rgb: 85, 182, 133;  --lec-fg: #1F7A4C;  --lec-soft: #EFFDF5;
+  --prac-bar: #E9A23B; --prac-rgb: 233, 162, 59; --prac-fg: #965A00; --prac-soft: #FEFBED;
+  --lab-bar: #845EEE; --lab-rgb: 132, 94, 238;  --lab-fg: #5B34D6;  --lab-soft: #F5F3FE;
+  --oth-soft: #EDF7FC;
+}
+html[data-theme="dark"] {
+  --lec-bar: #55B685; --lec-rgb: 85, 182, 133;  --lec-fg: #7FD6AA;  --lec-soft: rgba(85, 182, 133, .16);
+  --prac-bar: #E9A23B; --prac-rgb: 233, 162, 59; --prac-fg: #F2BD6B; --prac-soft: rgba(233, 162, 59, .16);
+  --lab-bar: #845EEE; --lab-rgb: 132, 94, 238;  --lab-fg: #AD92FF;  --lab-soft: rgba(132, 94, 238, .18);
+  --oth-soft: rgba(51, 200, 255, .14);
+}
+.k-lec  { --k-soft: var(--lec-soft); }
+.k-prac { --k-soft: var(--prac-soft); }
+.k-lab  { --k-soft: var(--lab-soft); }
+.k-oth  { --k-soft: var(--oth-soft); }
+/* чип типа — как в легенде: скруглённая полоска цвета + светлая заливка */
+.kind { background: var(--k-soft); color: var(--k-fg); box-shadow: none; border-radius: 8px; padding: 4px 10px 4px 6px; }
+.kind::before { display: block; width: 4px; height: 14px; border-radius: 2px; background: var(--k-bar); }
+html[data-theme="light"] .row.live .card { background: var(--k-soft); }
+html[data-theme="light"] .hero { background: radial-gradient(130% 150% at 0% 0%, rgba(var(--k-rgb), .16), rgba(var(--k-rgb), 0) 70%), var(--k-soft); }
+
+/* --- «жидкое стекло»: нижняя панель просвечивает и размывает то, что под ней --- */
+.tabs {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, 0) 55%),
+              color-mix(in srgb, var(--tab-bg) 58%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 14px 36px rgba(0, 0, 0, .55);
+}
+html[data-theme="light"] .tabs {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .7), rgba(255, 255, 255, 0) 60%), rgba(255, 255, 255, .62);
+  border-color: rgba(0, 0, 0, .06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 10px 30px rgba(0, 0, 0, .12);
+}
+.tab.on { background: rgba(var(--acc-rgb), .16); box-shadow: inset 0 0 0 1px rgba(var(--acc-rgb), .18); }
+
+/* --- липкая шапка: дни прилипают сверху на стекле, заголовок недели сжимается --- */
+.sbar {
+  position: sticky; top: var(--safe-top, 0px); z-index: 8;
+  margin: -10px calc(-1 * var(--side)) -10px; padding: 10px var(--side);
+  transition: background-color .25s ease, box-shadow .25s ease;
+}
+.sbar.stuck {
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 1px 0 var(--hair);
+}
+.sbar .eyebrow { max-height: 18px; transition: max-height .25s ease, opacity .2s ease; }
+.sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day { transition: font-size .25s ease, width .25s ease, height .25s ease; }
+.sbar.small .whead .eyebrow { max-height: 0; opacity: 0; }
+.sbar.small h1.wr { font-size: 17px; }
+.sbar.small .whead .top-actions .wbtn, .sbar.small .whead .top-actions .icon-btn { width: 34px; height: 34px; }
+.sbar.small .days { margin-top: 8px; }
+.sbar.small .day { height: 48px; }
+.sbar .week { margin-top: 0; }
+.tcard + .sbar, .tcard + .offline + .sbar { margin-top: 6px; }
+.sbar .week + .days { margin-top: 12px; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tabs { background: var(--glass); }
+  .sbar.stuck { background: var(--bg); }
+}
+
+/* --- блок «Сейчас», как Live Activity: кольцо, сколько осталось, куда идти --- */
+.hero {
+  position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px 14px; align-items: center;
+  margin: 0 0 16px; padding: 16px; border-radius: 26px;
+  background: radial-gradient(130% 150% at 0% 0%, rgba(var(--k-rgb), .24), rgba(var(--k-rgb), .06) 55%, rgba(var(--k-rgb), 0) 85%), var(--surface);
+  border: 1px solid rgba(var(--k-rgb), .38);
+  box-shadow: 0 20px 44px -24px rgba(var(--k-rgb), .85);
+}
+html[data-theme="light"] .hero { box-shadow: 0 16px 34px -20px rgba(var(--k-rgb), .55); }
+/* кольцо: ровная дуга без свечения, заметная дорожка, цифры по центру */
+.hv-ring { grid-template-columns: 72px minmax(0, 1fr); }
+.ring { position: relative; width: 72px; height: 72px; align-self: start; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.ring circle { fill: none; stroke-width: 6; }
+.ring .trk { stroke: rgba(var(--k-rgb), .2); }
+html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
+.ring .arc { stroke: var(--k-bar); stroke-linecap: round; transition: stroke-dashoffset .8s ease; }
+.ring .rv { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+.ring .rv b { font-size: 22px; font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.ring .rv small { font-size: 11px; font-weight: 600; line-height: 1; color: var(--muted); }
+
+.hb { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.hl { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--k-fg); }
+.hero h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.hr { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
+.hr b { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+.hr span { font-size: 13px; color: var(--muted); }
+.hn {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; min-width: 0;
+  padding-top: 12px; border-top: 1px solid rgba(var(--k-rgb), .18); font-size: 13px; color: var(--text2);
+}
+.hn i { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--k-bar); }
+.hn .x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hn b { color: var(--text); font-variant-numeric: tabular-nums; }
+.row.live .cc, .row.next .cc { border-color: rgba(var(--k-rgb), .35); }
+.row.live .cc .ln, .row.next .cc .ln { color: var(--k-fg); }
+/* --- форма контроля в сессии: тихий чип в шапке карточки вместо отдельной строки --- */
+.meta .mrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; align-self: stretch; min-width: 0; }
+.meta .mrow > :first-child:not(.ctlchip) { min-width: 0; }
+.meta .mrow .ctlchip { margin-left: auto; }
+.ctlchip {
+  flex: none; padding: 3px 8px; border-radius: 8px; border: 1px solid var(--border);
+  font-size: 11px; font-weight: 600; line-height: 16px; color: var(--muted); white-space: nowrap;
+}
+.row.past .ctlchip { opacity: .7; }
+
+/* ================= Пружины и сквиркл ================= */
+
+/* --- пружинные кривые: рассчитаны из затухающей пружины (перелёт ~4% и ~16%) --- */
+:root { --ease-spring: cubic-bezier(.22, 1, .36, 1); --ease-bounce: cubic-bezier(.34, 1.56, .64, 1); }
+@supports (animation-timing-function: linear(0, 1)) {
+  :root { --ease-spring: linear(0, 0.01924, 0.06951, 0.141, 0.2256, 0.3169, 0.4097, 0.5004, 0.5861, 0.6649, 0.7358, 0.7981, 0.8519, 0.8972, 0.9347, 0.9649, 0.9887, 1.007, 1.02, 1.029, 1.035, 1.038, 1.038, 1.038, 1.036, 1.033, 1.03, 1.026, 1.022, 1.019, 1.016, 1.013, 1.01, 1.008, 1.006, 1.004, 1.002, 1.001, 1, 0.9997, 1); --ease-bounce: linear(0, 0.0265, 0.09696, 0.1984, 0.3191, 0.4487, 0.5787, 0.7025, 0.815, 0.913, 0.9945, 1.059, 1.106, 1.139, 1.157, 1.163, 1.16, 1.149, 1.133, 1.113, 1.092, 1.071, 1.051, 1.032, 1.016, 1.002, 0.9915, 0.9834, 0.9779, 0.9747, 0.9735, 0.9738, 0.9755, 0.978, 0.9811, 0.9845, 0.988, 0.9914, 0.9944, 0.9971, 1); }
+}
+.tl.enter .dot { animation: pop .6s var(--ease-bounce) both; animation-delay: calc(var(--i) * 70ms); }
+.tl.enter .card, .tl.enter .cc { animation: rise .55s var(--ease-spring) both; animation-delay: calc(var(--i) * 50ms); }
+.tl.enter .fill { animation: grow .9s var(--ease-spring) both; animation-delay: calc(var(--i) * 70ms + 200ms); }
+.tl.enter .mark { animation: slide .9s var(--ease-spring) both; animation-delay: calc(var(--i) * 70ms + 200ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+.page.cur.from-r { animation: inR .55s var(--ease-spring) both; }
+.page.cur.from-l { animation: inL .55s var(--ease-spring) both; }
+.ring .arc, .fill, .mark, .nowlbl, .bmark, .bnow { transition-timing-function: var(--ease-spring); }
+.sbar .eyebrow, .sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day { transition-timing-function: var(--ease-spring); transition-duration: .45s; }
+
+/* нажатие: элемент чуть проседает и пружинит обратно */
+.day, .btn, .wbtn, .tab, .cc, .item, .sw, .seg3 button, .tlink {
+  transition-property: background-color, border-color, color, opacity, box-shadow, transform, width, height, font-size;
+  transition-duration: .2s, .2s, .2s, .2s, .2s, .5s, .45s, .45s, .45s;
+  transition-timing-function: ease, ease, ease, ease, ease, var(--ease-spring), var(--ease-spring), var(--ease-spring), var(--ease-spring);
+}
+.day:active, .btn:active, .wbtn:active:not(:disabled), .tab:active, .seg3 button:active { transform: scale(.92); transition-duration: .2s, .2s, .2s, .2s, .2s, .08s; }
+.cc:active, .item:active { transform: scale(.98); transition-duration: .2s, .2s, .2s, .2s, .2s, .08s; }
+.sw .kn { transition: transform .5s var(--ease-bounce); }
+
+/* --- смена дня и недели через View Transitions: лента уезжает вбок, выбранный день перетекает --- */
+html[data-vt] .page.cur { view-transition-name: daypage; }
+html[data-vt] .day.on { view-transition-name: daypill; }
+html[data-vt] .sbar .wr { view-transition-name: weekrange; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; }
+::view-transition-group(daypill), ::view-transition-group(daypage) { animation-duration: .55s; animation-timing-function: var(--ease-spring); }
+::view-transition-group(daypill) { z-index: 5; }
+::view-transition-old(daypill), ::view-transition-new(daypill) { height: 100%; animation-duration: .2s; }
+html[data-vt="next"]::view-transition-old(daypage) { animation: vtOutL .28s ease both; }
+html[data-vt="next"]::view-transition-new(daypage) { animation: vtInR .55s var(--ease-spring) both; }
+html[data-vt="prev"]::view-transition-old(daypage) { animation: vtOutR .28s ease both; }
+html[data-vt="prev"]::view-transition-new(daypage) { animation: vtInL .55s var(--ease-spring) both; }
+html[data-vt="next"]::view-transition-new(weekrange) { animation: vtInR .45s var(--ease-spring) both; }
+html[data-vt="prev"]::view-transition-new(weekrange) { animation: vtInL .45s var(--ease-spring) both; }
+::view-transition-old(weekrange) { animation: vtFade .15s ease both; }
+@keyframes vtOutL { to { opacity: 0; transform: translateX(-18%); } }
+@keyframes vtOutR { to { opacity: 0; transform: translateX(18%); } }
+@keyframes vtInR { from { opacity: 0; transform: translateX(22%); } }
+@keyframes vtInL { from { opacity: 0; transform: translateX(-22%); } }
+@keyframes vtFade { to { opacity: 0; } }
+
+/* --- сквиркл: плавные углы как у иконок iOS; радиусы крупнее, потому что сквиркл «съедает» скругление --- */
+@supports (corner-shape: squircle) {
+  .card, .cc, .hero, .days, .day, .tabs, .tab, .list, .tcard, .search, .kind, .seg3, .seg3 button, .nsel,
+  .btn:not(.icon-btn), .empty .ic, .offline, .tag, .toast, .pframe { corner-shape: squircle; }
+  .card { border-radius: 30px; }
+  .cc { border-radius: 26px; }
+  .hero { border-radius: 36px; }
+  .days { border-radius: 30px; }
+  .day { border-radius: 26px; }
+  .tabs { border-radius: 38px; }
+  .tab { border-radius: 32px; }
+  .list, .tcard { border-radius: 32px; }
+  .search { border-radius: 22px; }
+  .kind { border-radius: 11px; }
+  .seg3 { border-radius: 22px; }
+  .seg3 button { border-radius: 17px; }
+  .btn:not(.icon-btn), .nsel { border-radius: 18px; }
+  .empty .ic { border-radius: 28px; }
+  .tag, .offline, .toast { border-radius: 14px; }
+  .ctlchip { corner-shape: squircle; border-radius: 11px; }
+  .pframe { border-radius: 36px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 </style>
 </head>
 <body>
@@ -601,6 +789,7 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
   const normSubj = (x) => String(x || "").toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]+/g, " ").trim();
   const SESSION_MAP = new Map(Object.entries(SESSION.list).map(([k, v]) => [normSubj(k), v.split(" ")]));
   const CTL_TEXT = { exam: "экзамен", z: "зачёт", zo: "зачёт с оценкой", kr: "курсовая" };
+  const CTL_SHORT = { exam: "Экзамен", z: "Зачёт", zo: "Зачёт с оц.", kr: "Курсовая" };
   function controlOf(subject, date, isTeacher, extra) {
     if (date > SESSION.until) return null;
     if (isTeacher) {   // у преподавателя — только пары нашей группы
@@ -609,7 +798,7 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
     }
     const forms = SESSION_MAP.get(normSubj(subject));
     if (!forms) return null;
-    return { exam: forms.includes("exam"), text: "Сессия: " + forms.map((x) => CTL_TEXT[x]).join(", ") };
+    return { exam: forms.includes("exam"), text: "Сессия: " + forms.map((x) => CTL_TEXT[x]).join(", "), short: forms.map((x) => CTL_SHORT[x]).join(" · ") };
   }
 
   // ---------------- иконки ----------------
@@ -971,8 +1160,27 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
         first: i === 0, last: i === n - 1, afterPast: i > 0 && status[i - 1] === "past" && isToday,
         showNow: st === "live", nowLabel: now.label,
         ctl: controlOf(l.subject, date, isTeacher, l.extra),
+        col: k.cls,
       });
     });
+
+    // Блок «Сейчас» наверху сегодняшнего дня: идущая пара, перерыв или ожидание первой пары
+    let hero = null;
+    if (isToday) {
+      const ls = items.filter((x) => x.type === "lesson");
+      const live = ls.find((x) => x.st === "live");
+      const up = ls.filter((x) => { const s = toSec(x.start); return s != null && s > now.sec; });
+      const brk = items.find((x) => x.type === "break" && x.active);
+      if (live && toSec(live.end) != null) {
+        hero = { mode: "live", main: live, left: toSec(live.end) - now.sec, p: live.p, next: up[0] || null, from: live.start, to: live.end };
+      } else if (up.length) {
+        const prev = brk ? ls.find((x) => x.i === brk.i - 1) : null;
+        hero = { mode: brk ? "break" : "before", main: up[0], left: toSec(up[0].start) - now.sec, p: brk ? brk.p : 0, next: up[1] || null,
+          from: prev ? prev.end : "", to: up[0].start };
+      }
+      // Пара из блока «Сейчас» в ленте сворачивается, чтобы не дублировать её (раскрывается нажатием)
+      if (hero && !opened.has(hero.main.key)) hero.main.compact = true;
+    }
 
     let summary = "";
     if (n) {
@@ -984,7 +1192,30 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
     }
     const sig = [date, now.date, status.join(","), activeBreak, items.filter((x) => x.showNow).length,
       [...opened].join(",")].join("|");
-    return { date, isToday, isPastDay, n, items, summary, sig };
+    return { date, isToday, isPastDay, n, items, summary, sig, hero };
+  }
+
+  function heroLeft(h) {
+    const m = Math.max(1, Math.ceil(h.left / 60));
+    if (m < 100) return { big: String(m), unit: "мин", text: `${m} мин` };
+    const hh = Math.floor(m / 60), mm = m % 60;
+    return { big: `${hh} ч`, unit: mm ? `${mm} мин` : "ровно", text: mm ? `${hh} ч ${mm} мин` : `${hh} ч` };
+  }
+  function heroHTML(h) {
+    const t = heroLeft(h);
+    const label = h.mode === "live" ? `Сейчас · ${h.main.k.label}` : h.mode === "break" ? "Перерыв · дальше" : (h.main.first ? "Первая пара" : "Следующая пара");
+    const [roomMain, ...roomRest] = (h.main.room || "").split(" · ");
+    const tail = h.mode === "live" ? `до ${h.main.end}` : `начало в ${h.main.start}`;
+    const sub = [roomRest.join(" · "), tail].filter(Boolean).join(" · ");
+    const nx = h.next;
+    const next = nx ? `<div class="hn ${nx.col}"><i></i><span class="x">Дальше <b>${esc(nx.start)}</b> · ${esc(nx.subject)}${nx.room ? " · " + esc(nx.room.split(" · ")[0]) : ""}</span></div>` : "";
+    const info = `<div class="hb"><span class="hl">${esc(label)}</span><h3>${esc(h.main.subject)}</h3>
+        <div class="hr"><b>${esc(roomMain || "аудитория не указана")}</b><span>${esc(sub)}</span></div></div>`;
+    // ring: ровная дуга без свечения, pathLength=100 — дуга ровно p%
+    const vis = `<div class="ring" aria-hidden="true"><svg viewBox="0 0 80 80"><circle class="trk" cx="40" cy="40" r="34" pathLength="100"/>
+        ${h.p > 0 ? `<circle class="arc" data-hfill cx="40" cy="40" r="34" pathLength="100" stroke-dasharray="100" style="stroke-dashoffset:${100 - h.p}"/>` : ""}</svg>
+        <span class="rv"><b data-hbig>${t.big}</b><small data-hunit>${t.unit}</small></span></div>`;
+    return `<section class="hero hv-ring ${h.main.col} ${h.mode}" data-hero>${vis}${info}${next}</section>`;
   }
 
   function emptyHint(data, w, d, isPastDay) {
@@ -1024,7 +1255,7 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
   }
 
   function lessonHTML(it, n, isTeacher) {
-    const cls = ["row", it.st, it.k.cls, it.first ? "first" : "", it.last ? "last" : "", it.afterPast ? "after-past" : ""].join(" ");
+    const cls = ["row", it.st, it.col, it.first ? "first" : "", it.last ? "last" : "", it.afterPast ? "after-past" : ""].join(" ");
     let rail = `<span class="seg-top"></span><span class="dot"></span><span class="seg" style="--p:${it.p}%">`;
     if (it.st === "live") {
       rail += `<span class="fill"></span><span class="mark"></span>`
@@ -1038,19 +1269,25 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
       const lead = it.st === "past" ? I.check : `<span class="bar"></span>`;
       const who = isTeacher ? it.extra : (it.teacher ? shortName(it.teacher.name) : it.extra);
       const room = it.room ? `<b class="rm">${esc(it.room)}</b>` : "";
-      const parts = it.st === "past" ? [esc("Прошла"), esc(it.k.label), room] : [esc(it.k.label), room, esc(who || "")];
+      const parts = it.st === "past" ? [esc(it.k.label), room]
+        : it.st === "live" ? [esc("Идёт"), esc(it.k.label), room]
+        : it.st === "next" ? [esc("Следующая"), esc(it.k.label), room]
+        : [esc(it.k.label), room, esc(who || "")];
       body = `<button class="cc" data-act="open" data-key="${esc(it.key)}" aria-expanded="false">
         <h3>${esc(it.subject)}</h3><span class="ln">${lead}<span class="x">${parts.filter(Boolean).join(" · ")}</span></span></button>`;
     } else {
       let meta = it.room ? `<span>${I.pin}<span class="x">${esc(it.room)}</span></span>` : "";
+      let who = "";
       if (isTeacher) {
-        if (it.extra) meta += `<span>${I.users}<span class="x">${esc(it.extra)}</span></span>`;
+        if (it.extra) who = `<span>${I.users}<span class="x">${esc(it.extra)}</span></span>`;
       } else if (it.teacher) {
-        meta += `<button class="tlink" data-act="teacher" data-t="${esc(it.teacher.id)}">${I.user}<span class="x">${esc(shortName(it.teacher.name))}</span></button>`;
+        who = `<button class="tlink" data-act="teacher" data-t="${esc(it.teacher.id)}">${I.user}<span class="x">${esc(shortName(it.teacher.name))}</span></button>`;
       } else if (it.extra) {
-        meta += `<span>${I.user}<span class="x">${esc(it.extra)}</span></span>`;
+        who = `<span>${I.user}<span class="x">${esc(it.extra)}</span></span>`;
       }
-      if (it.ctl) meta += `<span class="ctl">${I.cap}<span class="x">${esc(it.ctl.text)}</span></span>`;
+      // Форма контроля — тихим чипом справа в последней строке, а не отдельной строкой «Сессия: …»
+      const ctl = it.ctl ? `<span class="ctlchip" title="${esc(it.ctl.text)}" aria-label="${esc(it.ctl.text)}">${esc(it.ctl.short)}</span>` : "";
+      meta += ctl ? `<div class="mrow">${who}${ctl}</div>` : who;
       const isOpened = opened.has(it.key);
       body = `<div class="card${isOpened ? " opened" : ""}"${isOpened ? ` data-act="open" data-key="${esc(it.key)}"` : ""}>
         <div class="hd"><span class="status" data-status>${esc(it.statusText)}</span><span class="kind">${esc(it.k.label)}</span></div>
@@ -1085,6 +1322,7 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
     const m = model || dayModel(data, w, d, isTeacher);
     let html = `<div class="dayhead"><div class="t"><h2>${DAYS[d]}, ${fmtDate(m.date)}</h2>${m.isToday ? `<span class="tag">сегодня</span>` : ""}</div>
       ${m.summary ? `<span class="summary" data-summary>${esc(m.summary)}</span>` : ""}</div>`;
+    if (m.hero) html += heroHTML(m.hero);
     if (m.n) {
       let n = 0;
       html += `<ol class="tl${enter ? " enter" : ""}">`;
@@ -1110,32 +1348,32 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
     const nextW = `<button class="wbtn" data-act="week" data-dir="1" aria-label="Следующая неделя"${p.w >= data.weeks.length - 1 ? " disabled" : ""}>${I.right}</button>`;
     const wl = `<span class="wl${label === "Эта неделя" ? " cur" : ""}">${esc(label)}</span>`, wr = esc(weekRange(week.monday));
     // У преподавателя неделя — отдельной строкой под его карточкой; у группы она в шапке (см. renderSchedule)
-    let html = isTeacher ? `<div class="week"><div class="mid" aria-live="polite">${wl}<span class="wr">${wr}</span></div>${prevW}${nextW}</div>` : "";
+    let bar = isTeacher ? `<div class="week"><div class="mid" aria-live="polite">${wl}<span class="wr">${wr}</span></div>${prevW}${nextW}</div>` : "";
 
-    html += `<nav class="days" aria-label="Дни недели">`;
+    bar += `<nav class="days" aria-label="Дни недели">`;
     for (let d = 0; d < 7; d++) {
       const date = addDays(week.monday, d);
       const ls = lessonsOf(week, d);
       const on = d === p.d, today = date === now.date, dim = date < now.date && !on;
       const dots = ls.slice(0, 4).map((l) => `<i class="${kindOf(l.type).cls}"></i>`).join("");
       const aria = `${DAYS[d]}, ${fmtDate(date)}${today ? ", сегодня" : ""}, ${ls.length ? ls.length + " " + plural(ls.length, "пара", "пары", "пар") : "пар нет"}`;
-      html += `<button class="day${on ? " on" : ""}${today ? " today" : ""}${dim ? " dim" : ""}" data-act="day" data-d="${d}" aria-pressed="${on}" aria-label="${esc(aria)}">
+      bar += `<button class="day${on ? " on" : ""}${today ? " today" : ""}${dim ? " dim" : ""}" data-act="day" data-d="${d}" aria-pressed="${on}" aria-label="${esc(aria)}">
         <span class="s">${SHORT[d]}</span><span class="n">${dayNum(date)}</span><span class="dots">${dots}</span></button>`;
     }
-    html += `</nav>`;
+    bar += `</nav>`;
 
     // Текущий день и по PAGER_SPAN соседей с каждой стороны — лежат за краями экрана.
     // Запас нужен для быстрых свайпов подряд: лента успевает уехать на 2–3 дня, пока не «переложилась».
     const fr = `<div class="pframe" aria-hidden="true"></div>`;
     const side = (dir) => { const out = []; let q = p; for (let k = 0; k < PAGER_SPAN && (q = neighborPos(data, q.w, q.d, dir)); k++) out.push(q); return out; };
     const prevs = side(-1).reverse(), nexts = side(1);
-    html += `<div class="pager" data-pager>`;
+    let html = `<div class="pager" data-pager>`;
     for (const q of prevs) html += `<div class="page prev" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
     html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${fr}${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
     for (const q of nexts) html += `<div class="page next" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
     html += `</div>`;
     liveSig = m.sig;
-    return { html, notToday: notToday && todayInData, wl, wr, prevW, nextW, isCur: label === "Эта неделя" };
+    return { html, bar, notToday: notToday && todayInData, wl, wr, prevW, nextW, isCur: label === "Эта неделя" };
   }
 
   // ---------------- экраны ----------------
@@ -1329,7 +1567,11 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
         <div class="top-actions">${s.prevW}${s.nextW}${bell}</div></div>`;
     }
     const off = data._offline ? `<div class="offline">Нет сети · показано сохранённое</div>` : "";
-    app.innerHTML = head + off + s.html;
+    // Липкая полоса: у группы — шапка недели + дни, у преподавателя — строка недели + дни
+    app.innerHTML = isTeacher
+      ? head + off + `<div class="sbar">${s.bar}</div>` + s.html
+      : `<div class="sbar">${head}${s.bar}</div>` + off + s.html;
+    syncBar();
     setupPager();
     placeNowLabels(false);
     enterNext = false;
@@ -1457,7 +1699,60 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
         if (nl) nl.textContent = it.nowLabel;
       }
     }
+    const hero = m.hero && app.querySelector("[data-cur] [data-hero]");
+    if (hero) {
+      const t = heroLeft(m.hero);
+      const fill = hero.querySelector("[data-hfill]");
+      if (fill) { if (fill.tagName.toLowerCase() === "circle") fill.style.strokeDashoffset = 100 - m.hero.p; else fill.style.width = m.hero.p + "%"; }
+      const big = hero.querySelector("[data-hbig]"), unit = hero.querySelector("[data-hunit]");
+      if (big) big.textContent = t.big;
+      if (unit) unit.textContent = t.unit;
+    }
   }
+
+  // ---------------- пружины и переходы ----------------
+  let springCache = null;
+  // Пружинная кривая из CSS (--ease-spring); если linear() не поддерживается — обычная плавная
+  function springEase() {
+    if (springCache) return springCache;
+    const v = getComputedStyle(ROOT).getPropertyValue("--ease-spring").trim() || "cubic-bezier(.4, 0, .2, 1)";
+    try { document.body.animate([{ opacity: 1 }, { opacity: 1 }], { duration: 1, easing: v }).cancel(); springCache = v; }
+    catch (e) { springCache = "cubic-bezier(.4, 0, .2, 1)"; }
+    return springCache;
+  }
+  // Смена дня/недели: через View Transitions лента уезжает вбок, выбранный день перетекает на новое место.
+  // Где переходов нет (старые клиенты) — как раньше: появление с анимацией.
+  function swapDay(dir, apply, fallback = { enter: true, slide: false }) {
+    opened.clear();
+    if (!document.startViewTransition || REDUCED) {
+      apply();
+      enterNext = fallback.enter;
+      slideDir = fallback.slide ? dir : 0;
+      render();
+      return;
+    }
+    enterNext = false;
+    slideDir = 0;
+    ROOT.dataset.vt = dir > 0 ? "next" : dir < 0 ? "prev" : "same";
+    const t = document.startViewTransition(() => { apply(); return render(); });
+    t.ready.catch(() => {});
+    t.finished.catch(() => {}).finally(() => { delete ROOT.dataset.vt; });
+  }
+
+  // ---------------- липкая шапка ----------------
+  // Как «большой заголовок» в iOS: при прокрутке полоса с днями прилипает к верху на стекле,
+  // а заголовок недели сжимается. Порог с запасом (56 / 8 px), чтобы не дрожало на границе.
+  let barSmall = false;
+  function syncBar() {
+    const bar = app.querySelector(".sbar");
+    if (!bar) return;
+    const y = window.scrollY;
+    if (!barSmall && y > 56) barSmall = true;
+    else if (barSmall && y < 8) barSmall = false;
+    bar.classList.toggle("stuck", y > 2);
+    bar.classList.toggle("small", barSmall);
+  }
+  window.addEventListener("scroll", syncBar, { passive: true });
 
   // ---------------- события ----------------
   app.addEventListener("click", async (ev) => {
@@ -1468,13 +1763,17 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
 
     if (act === "day") {
       const d = +el.dataset.d;
-      if (pos[id] && pos[id].d !== d) { pos[id].d = d; opened.clear(); enterNext = true; haptic("select"); render(); }
+      if (pos[id] && pos[id].d !== d) { const dir = Math.sign(d - pos[id].d); haptic("select"); swapDay(dir, () => { pos[id].d = d; }); }
     } else if (act === "week") {
       const data = mem[id];
       const w = pos[id].w + (+el.dataset.dir);
-      if (data && w >= 0 && w < data.weeks.length) { pos[id].w = w; opened.clear(); enterNext = true; haptic("select"); render(); }
+      if (data && w >= 0 && w < data.weeks.length) { haptic("select"); swapDay(+el.dataset.dir, () => { pos[id].w = w; }); }
     } else if (act === "today") {
-      if (mem[id]) { pos[id] = pickDefault(mem[id]); opened.clear(); enterNext = true; haptic("light"); render(); }
+      if (mem[id]) {
+        const def = pickDefault(mem[id]), p = pos[id];
+        haptic("light");
+        swapDay(p && p.w * 7 + p.d > def.w * 7 + def.d ? -1 : 1, () => { pos[id] = def; });
+      }
     } else if (act === "teacher") {
       haptic("light");
       go("teacher", el.dataset.t, true);
@@ -1554,11 +1853,8 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
       const np = p && neighborPos(data, p.w, p.d, dir);
       if (np && np.w === def.w && np.d === def.d && shiftDay(dir)) return;   // соседний день — листаем плавно
     }
-    slideDir = p && p.w * 7 + p.d > def.w * 7 + def.d ? -1 : 1;   // сегодня «левее» — едем влево
-    pos.g = def;
-    opened.clear();
-    enterNext = false;
-    render();
+    const dir = p && p.w * 7 + p.d > def.w * 7 + def.d ? -1 : 1;   // сегодня «левее» — едем влево
+    swapDay(dir, () => { pos.g = def; }, { enter: false, slide: true });
   }
   tabs.forEach((b) => b.addEventListener("click", () => {
     const t = b.dataset.tab;
@@ -1636,11 +1932,11 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
     const body = fresh.querySelector(".card, .cc");
     const h1 = body.getBoundingClientRect().height;
     const d = h1 - h0;   // > 0 — раскрываем, < 0 — сворачиваем
-    if (d >= 0) fitPager(); else setTimeout(fitPager, 340);
+    if (d >= 0) fitPager(); else setTimeout(fitPager, springEase().startsWith("linear") ? 540 : 340);
 
     // Всё движение — сдвигами и масками, которые телефон считает на видеокарте:
     // страница под карточкой не перерисовывается каждый кадр, поэтому без рывков
-    const ease = "cubic-bezier(.4, 0, .2, 1)", dur = 320, opt = { duration: dur, easing: ease };
+    const ease = springEase(), dur = ease.startsWith("linear") ? 520 : 320, opt = { duration: dur, easing: ease };
     const radius = getComputedStyle(body).borderTopLeftRadius;
 
     // 1) пары ниже съезжают со старого места на новое
