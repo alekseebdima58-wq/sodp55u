@@ -3,7 +3,7 @@
 <head>
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome">
+<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
@@ -775,6 +775,37 @@ button.offline u { text-underline-offset: 2px; }
 .ymore { margin-top: 8px; }
 .ymore summary { cursor: pointer; color: var(--accent); font-weight: 600; list-style: none; text-align: center; padding: 6px 0; }
 .ymore summary::-webkit-details-marker { display: none; }
+
+/* --- мастер установки в Настройках --- */
+.iwiz { padding: 14px 14px 10px; }
+.iwiz .list { background: transparent !important; border: 0 !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+.iwiz .lbl15 { display: none; }
+.iwiz .icnote { margin-top: 8px; }
+.iwiz .item { padding: 6px 0; min-height: 0; }
+.wst { display: flex; align-items: center; gap: 10px; margin: 4px 2px 10px; font-size: 15px; font-weight: 700; color: var(--text); }
+.wst + .list .item { padding-top: 0; }
+.iwiz > .wst:not(:first-child) { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--sep); }
+.wn { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 700; }
+.iwiz .ivid { padding: 8px 0 4px; }
+.wdone { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 44px; margin-top: 6px; border: 0; border-radius: 14px; background: var(--surface2); color: var(--text2); font-size: 14px; font-weight: 600; }
+.idone { display: flex; gap: 12px; align-items: flex-start; padding: 14px; }
+.idone .body { display: flex; flex-direction: column; gap: 3px; }
+.idone .nm { font-size: 15px; font-weight: 700; }
+.idone .sub { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.t-ok { background: rgba(var(--lec-rgb), .16); color: var(--lec-fg); }
+.wlink { align-self: flex-start; margin-top: 6px; padding: 4px 0; border: 0; background: none; color: var(--accent); font-size: 13.5px; font-weight: 600; }
+.ivlbl { align-self: flex-start; margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
+/* видео: рамка, кнопка ▶ (экономия трафика / запрещён автозапуск), шаги в такт */
+.vframe { position: relative; width: 62%; max-width: 230px; }
+.vframe video { width: 100% !important; max-width: none !important; }
+.vplay { position: absolute; inset: 0; margin: auto; width: 64px; height: 64px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; display: none; place-items: center; }
+.vplay svg { width: 26px; height: 26px; }
+.vframe.tap .vplay { display: grid; }
+.vsteps { list-style: none; width: 100%; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.vsteps li { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; font-size: 13.5px; line-height: 1.35; color: var(--muted); cursor: pointer; transition: background .25s, color .25s; }
+.vsteps li b { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: var(--surface2); color: var(--muted); transition: background .25s, color .25s; }
+.vsteps li.on { background: rgba(var(--acc-rgb), .1); color: var(--text); font-weight: 600; }
+.vsteps li.on b { background: var(--accent); color: var(--on-accent); }
 
 /* --- выбор иконки --- */
 .icpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
@@ -1789,36 +1820,95 @@ window.__appStart = () => {
     if (view === "settings") renderSettings();
     showInstallBar();
   });
-  window.addEventListener("appinstalled", () => { installEvt = null; hideInstallBar(true); if (view === "settings") renderSettings(); });
-  function installHTML() {
-    const main = installRowHTML();
-    if (STANDALONE) return main;
-    // видео — внутри той же карточки «Установить», а не отдельной строкой
-    const k = main.lastIndexOf("</div>");
-    return main.slice(0, k) + inlineVideoHTML() + main.slice(k);
+  window.addEventListener("appinstalled", () => { installEvt = null; store.set("installDone", "1"); hideInstallBar(true); if (view === "settings") renderSettings(); });
+  function installHTML() { return installRowHTML(); }
+  // Установка в Настройках — один блок-«мастер»: ① иконка → ② установка (видео + шаги в такт)
+  function installWizardHTML() {
+    if (store.get("installDone") === "1") {
+      return `<div class="list iwiz idone"><span class="tile t-ok" aria-hidden="true">${I.check}</span>
+        <span class="body"><span class="nm">Готово — расписание на рабочем столе</span>
+        <span class="sub wrap">Открывай его с иконки: так быстрее, и работает даже без сети.</span>
+        <button class="wlink" data-act="install-again">Показать инструкцию снова</button></span></div>`;
+    }
+    const k = installRowHTML();
+    return `<div class="list iwiz">
+      <div class="wst"><span class="wn">1</span>Выбери иконку</div>${iconPickHTML()}
+      <div class="wst"><span class="wn">2</span>Установи</div>${k}${inlineVideoHTML()}
+      <button class="wdone" data-act="install-done">${I.check} Я уже установил</button></div>`;
   }
-  // ---- видео-инструкция прямо в блоке установки: свой ролик для iPhone и Android, можно переключить ----
+  // ---- видео-инструкция прямо в блоке установки ----
   // Какой у человека телефон: по браузеру, а внутри Telegram — ещё и по его отметке платформы
   function deviceOS() {
     const p = tg && tg.platform ? String(tg.platform) : "";
     if (IOS || p === "ios") return "ios";
     if (/Android/i.test(navigator.userAgent) || p === "android" || p === "android_x") return "android";
-    return "";   // компьютер — не знаем, покажем выбор
+    return "";   // компьютер
   }
+  // Шаги в роликах — моменты смены подписи в кадре (секунды)
+  const VSTEPS = {
+    ios: [[0, "Открой сайт расписания в Safari"], [1.67, "Нажми «Поделиться» — кнопка со стрелкой"], [3.07, "Выбери «На экран „Домой“» — пролистай, если не видно"],
+      [4.67, "Нажми «Добавить»"], [6.07, "Иконка появится на рабочем столе"], [7.67, "Открывается как приложение — даже без сети"]],
+    android: [[0, "Открой сайт в Chrome — внизу будет плашка «Установить»"], [1.67, "Нажми «Установить» (или меню ⋮ → «Установить приложение»)"],
+      [3.17, "Подтверди установку"], [4.57, "Иконка на рабочем столе — открывается как приложение"]],
+  };
   function inlineVideoHTML(os) {
     const dev = deviceOS();
     os = os || dev || "ios";
-    // на телефоне сразу свой ролик без переключателя; на компьютере — можно выбрать
-    const seg = dev ? "" : `<div class="ivseg" role="group" aria-label="Видео для телефона">${[["ios", "iPhone"], ["android", "Android"]].map(([v, l]) =>
+    // на телефоне — сразу свой ролик; на компьютере — подсказка для компьютера и ролики для телефона на выбор
+    const seg = dev ? "" : `<div class="ivlbl">Как поставить на телефон:</div><div class="ivseg" role="group" aria-label="Видео для телефона">${[["ios", "iPhone"], ["android", "Android"]].map(([v, l]) =>
         `<button data-iv="${v}" class="${v === os ? "on" : ""}" aria-pressed="${v === os}">${l}</button>`).join("")}</div>`;
-    return `<div class="ivid" data-ivid>${yandexNoteHTML(dev)}${seg}
-      <video src="media/install-${os}.mp4?v=2" poster="media/install-${os}.jpg?v=2" autoplay muted loop playsinline preload="metadata"
-        width="540" height="960" aria-label="Видео: как установить расписание на главный экран"></video></div>`;
+    const steps = VSTEPS[os].map(([t, s], i) => `<li data-t="${t}" class="${i ? "" : "on"}"><b>${i + 1}</b><span>${s}</span></li>`).join("");
+    return `<div class="ivid" data-ivid>${dev ? browserNoteHTML(dev) : desktopNoteHTML()}${seg}
+      <div class="vframe"><video data-src="media/install-${os}.mp4?v=2" poster="media/install-${os}.jpg?v=2" muted loop playsinline preload="none"
+        width="540" height="960" aria-label="Видео: как установить расписание на главный экран"></video>
+        <button class="vplay" data-vplay aria-label="Смотреть видео">${I.play}</button></div>
+      <ol class="vsteps" aria-label="Шаги">${steps}</ol></div>`;
+  }
+  // ---- какой браузер: у каждого свои пункты меню ----
+  function browserKind() {
+    const ua = navigator.userAgent;
+    if (/YaBrowser|YaSearchBrowser/i.test(ua)) return "yandex";
+    if (/SamsungBrowser/i.test(ua)) return "samsung";
+    if (/FxiOS|Firefox/i.test(ua)) return "firefox";
+    if (/EdgA|EdgiOS|Edg\//i.test(ua)) return "edge";
+    if (/OPR\/|OPiOS|OPT\//i.test(ua)) return "opera";
+    if (/CriOS/i.test(ua)) return "chrome-ios";
+    return "";   // Chrome на Android или Safari на iPhone — как на видео
+  }
+  function installLink() { return `${siteURL()}?install=1&icon=${iconStyle()}`; }
+  const shareSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>`;
+  function browserNoteHTML(dev) {
+    const b = browserKind(), ios = dev === "ios";
+    if (!b) return "";
+    if (b === "yandex") return yandexNoteHTML(dev);
+    const note = (title, text, steps) => `<div class="ynote"><b>${title}</b><span>${text}</span>
+      <ol class="ysteps">${steps.map((s) => `<li>${s}</li>`).join("")}</ol></div>`;
+    const iosShare = (where) => note(`Ты в ${where}`, "Он тоже умеет добавлять на экран «Домой». На видео Safari, у тебя кнопки чуть в другом месте:",
+      [`Нажми «Поделиться» ${shareSvg} — ${where === "Chrome" ? "справа в адресной строке" : "в меню браузера"}`, "Выбери <b>«На экран „Домой“»</b>", "Нажми <b>«Добавить»</b>"]);
+    if (ios) return iosShare({ "chrome-ios": "Chrome", firefox: "Firefox", edge: "Edge", opera: "Opera", samsung: "браузере" }[b] || "браузере");
+    if (b === "samsung") return note("Ты в Samsung Internet", "Он умеет ставить настоящее приложение. На видео Chrome, у тебя так:",
+      ["Нажми значок установки <b>⤓</b> в адресной строке, если он есть", "Или меню <b>≡</b> внизу → <b>«Добавить страницу на»</b> → <b>«Главный экран»</b>"]);
+    if (b === "firefox") return note("Ты в Firefox", "Он умеет ставить приложение. На видео Chrome, у тебя так:",
+      ["Нажми меню <b>⋮</b>", "Выбери <b>«Установить»</b> или <b>«Добавить на главный экран»</b>"]);
+    if (b === "edge") return note("Ты в Edge", "Он умеет ставить приложение. На видео Chrome, у тебя так:",
+      ["Нажми меню <b>⋯</b> внизу", "Выбери <b>«Добавить на телефон»</b> или <b>«Установить приложение»</b>"]);
+    if (b === "opera") return note("Ты в Opera", "Она умеет добавлять на главный экран. На видео Chrome, у тебя так:",
+      ["Нажми меню <b>⋮</b>", "Выбери <b>«Главный экран»</b> или <b>«Добавить на главный экран»</b>"]);
+    return "";
+  }
+  function desktopNoteHTML() {
+    const ua = navigator.userAgent;
+    const note = (title, steps) => `<div class="ynote"><b>${title}</b><ol class="ysteps">${steps.map((s) => `<li>${s}</li>`).join("")}</ol></div>`;
+    if (installEvt) return "";   // браузер сам предлагает установку — кнопка «Установить приложение» выше
+    if (/Edg\//.test(ua)) return note("На компьютере в Edge", ["Меню <b>⋯</b> → <b>«Приложения»</b>", "<b>«Установить этот сайт как приложение»</b>"]);
+    if (/YaBrowser/i.test(ua)) return note("На компьютере", ["Яндекс Браузер не ставит такие приложения — открой эту страницу в <b>Chrome</b> или <b>Edge</b>", "Там: значок установки справа в адресной строке"]);
+    if (/Firefox/i.test(ua)) return note("На компьютере", ["Firefox не ставит такие приложения — открой эту страницу в <b>Chrome</b> или <b>Edge</b>", "Там: значок установки справа в адресной строке"]);
+    if (/Chrome\//.test(ua)) return note("На компьютере в Chrome", ["Значок установки справа в адресной строке", "Или меню <b>⋮</b> → <b>«Трансляция, сохранение и отправка»</b> → <b>«Установить страницу как приложение»</b>"]);
+    if (/Safari\//.test(ua) && /Macintosh/.test(ua)) return note("На Mac в Safari", ["Меню <b>«Файл»</b> → <b>«Добавить в Dock»</b> (macOS 14 и новее)"]);
+    return note("На компьютере", ["Открой эту страницу в <b>Chrome</b> или <b>Edge</b>", "Нажми значок установки справа в адресной строке"]);
   }
   // Яндекс Браузер ставит не приложение, а закладку с панелью браузера — ведём в Chrome (Android) или Safari (iPhone)
-  function installLink() { return `${siteURL()}?install=1&icon=${iconStyle()}`; }
   function yandexNoteHTML(dev) {
-    if (!/YaBrowser|YaSearchBrowser/i.test(navigator.userAgent)) return "";
     const ios = dev === "ios", url = installLink(), u = new URL(url);
     // Если Chrome нет, Android вернёт сюда же — с пометкой nochrome=1
     const href = ios ? "x-safari-" + url
@@ -1851,6 +1941,53 @@ window.__appStart = () => {
     if (!box || b.classList.contains("on")) return;
     haptic("select");
     box.outerHTML = inlineVideoHTML(b.dataset.iv);
+  });
+  // ---- видео грузится и играет, только когда его видно; при экономии трафика — по нажатию ▶ ----
+  function saveData() {
+    const c = navigator.connection;
+    return !!(c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || "")));
+  }
+  function playVid(v, byUser) {
+    const box = v.closest(".vframe");
+    if (!byUser && saveData() && !v.dataset.started) { if (box) box.classList.add("tap"); return; }
+    if (!v.getAttribute("src")) v.src = v.dataset.src;
+    v.dataset.started = "1";
+    const pr = v.play();
+    if (pr && pr.then) pr.then(() => box && box.classList.remove("tap")).catch(() => box && box.classList.add("tap"));   // автозапуск запрещён (режим энергосбережения) — покажем ▶
+  }
+  const vio = "IntersectionObserver" in window ? new IntersectionObserver((list) => {
+    for (const e of list) {
+      if (e.isIntersecting && e.intersectionRatio >= 0.35) playVid(e.target);
+      else if (!e.target.paused) e.target.pause();
+    }
+  }, { threshold: [0, 0.35] }) : null;
+  function syncSteps(v) {
+    const box = v.closest("[data-ivid]");
+    if (!box) return;
+    const t = v.currentTime, lis = [...box.querySelectorAll(".vsteps li")];
+    let cur = 0;
+    lis.forEach((li, i) => { if (t >= +li.dataset.t) cur = i; });
+    lis.forEach((li, i) => li.classList.toggle("on", i === cur));
+  }
+  function hookVideos(root) {
+    for (const v of root.querySelectorAll ? root.querySelectorAll("video[data-src]:not([data-hooked])") : []) {
+      v.dataset.hooked = "1";
+      v.addEventListener("timeupdate", () => syncSteps(v));
+      if (vio) vio.observe(v); else playVid(v);
+    }
+  }
+  new MutationObserver((muts) => { for (const m of muts) for (const n of m.addedNodes) if (n.nodeType === 1) hookVideos(n); })
+    .observe(document.body, { childList: true, subtree: true });
+  document.addEventListener("click", (ev) => {
+    const p = ev.target.closest("[data-vplay]");
+    if (p) { const v = p.parentElement.querySelector("video"); haptic("light"); playVid(v, true); return; }
+    const li = ev.target.closest(".vsteps li");      // нажатие на шаг — перемотка к нему
+    const box = li && li.closest("[data-ivid]");
+    if (!box) return;
+    const v = box.querySelector("video");
+    if (!v.getAttribute("src")) v.src = v.dataset.src;
+    v.currentTime = +li.dataset.t + 0.05;
+    playVid(v, true); syncSteps(v);
   });
   function installRowHTML() {
     const row = (title, sub, act) => act
@@ -1931,18 +2068,11 @@ window.__appStart = () => {
     const share = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>`;
     let body;
     if (IOS) {
-      body = `<ol class="isteps">
-        ${step(1, `Нажми «Поделиться» ${share} внизу экрана. <small>На новых iPhone — сначала ⋯ или ≡ в адресной строке</small>`)}
-        ${step(2, `Выбери <b>«На экран „Домой“»</b> — пролистай список, если не видно`)}
-        ${step(3, `Нажми <b>«Добавить»</b>`)}</ol>
-        <p class="ihint">Нет пункта «На экран „Домой“»? Значит, страница открылась внутри Telegram — нажми «Открыть в Safari» (значок компаса или ⋯).</p>`;
+      body = `<p class="ihint">На новых iPhone «Поделиться» ${share} может прятаться за ⋯ или ≡ в адресной строке. Нет пункта «На экран „Домой“»? Значит, страница открылась внутри Telegram — нажми «Открыть в Safari» (значок компаса или ⋯).</p>`;
     } else if (installEvt) {
       body = `<button class="ibig" data-is="install">Установить приложение</button>`;
     } else {
-      body = `<ol class="isteps">
-        ${step(1, `Открой меню браузера <b>⋮</b> или <b>≡</b>`)}
-        ${step(2, `Выбери <b>«Установить приложение»</b> или <b>«Добавить на главный экран»</b>`)}</ol>
-`;
+      body = "";
     }
     return `<div class="isheet" role="dialog" aria-label="Установка на главный экран">
       <button class="ix iclose" data-is="close" aria-label="Закрыть">${I.x}</button>
@@ -2013,7 +2143,7 @@ window.__appStart = () => {
         <span class="sub">Без шапки Telegram, больше места для пар</span></div>
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
       <h2 class="sec" id="asec">Приложение</h2>
-      ${STANDALONE ? installHTML() + iconPickHTML() : iconPickHTML().replace('style="margin-top:10px"', 'style="margin-bottom:10px"') + installHTML()}
+      ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <h2 class="sec" id="nsec">Уведомления в чате</h2>
       ${notifSettingsHTML()}
       <p class="foot">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
@@ -2212,7 +2342,11 @@ window.__appStart = () => {
       store.set("iconStyle", el.dataset.v);
       try { window.applyIconStyle(el.dataset.v); } catch (e) { /* старая страница */ }
       haptic("select");
-      renderSettings();
+      app.querySelectorAll('[data-act="icon-style"]').forEach((b) => { const on = b === el; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); });
+    } else if (act === "install-done") {
+      haptic("medium"); store.set("installDone", "1"); hideInstallBar(true); renderSettings();
+    } else if (act === "install-again") {
+      haptic("light"); store.set("installDone", "0"); renderSettings();
     } else if (act === "theme") {
       store.set("theme", el.dataset.v);
       applyTheme();
