@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="84e72d0a9df3">
+<meta name="app-ver" content="073ca8933ef2">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -917,9 +917,18 @@ button.offline u { text-underline-offset: 2px; }
 .day { transition: color .18s ease, opacity .18s ease; }
 @supports (corner-shape: squircle) { .days .pill { corner-shape: squircle; border-radius: 26px; } }
 .sbar .days .day { transition: height .45s var(--ease-spring), color .18s ease, opacity .18s ease; }
-.days.moving .day.on { color: var(--text) !important; }
-.days.moving .day.on .dots i { background: var(--k-bar) !important; }
-.days.moving .day.on .s, .days.moving .day.on .n { color: inherit !important; }
+/* слой «выбранных» цифр: копия строки дней поверх, видна только внутри таблетки (clip-path двигаем вместе с ней) */
+.days:has(.days-on) .day.on { color: var(--text) !important; }
+.days:has(.days-on) .day.on .dots i { background: var(--k-bar) !important; }
+.days:has(.days-on) .day.on .s { opacity: .65; }
+.days-on { position: absolute; inset: 0; z-index: 2; pointer-events: none; padding: inherit;
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: inherit; color: var(--on-accent); clip-path: inset(50%); will-change: clip-path; }
+.days-on .day-o { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 56px; font: inherit; }
+.days-on .s { font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; opacity: .9; }
+.days-on .n { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.days-on .dots { display: flex; gap: 3px; height: 5px; }
+.days-on .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--on-accent); }
+.sbar.small .days-on .day-o { height: 48px; }
 
 /* --- выбор иконки --- */
 .icpick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
@@ -2711,7 +2720,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v17.2 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v17.3 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -3221,8 +3230,7 @@ window.__appStart = () => {
     pg.querySelectorAll(".pframe").forEach((el) => { el.style.opacity = o ? o.toFixed(2) : ""; });
     cascade(pg, off);
     pillFollow(off);
-    // пока таблетка в пути — цифры обычного цвета (тёмные «выбранные» цифры вне таблетки не читаются)
-    if (Math.abs(off) > 0.02) chipsMoving(true); else { chipsMoving(false); previewChips(0); }
+    if (Math.abs(off) < 0.02) previewChips(0);
   }
   function pagerAnim(pg, to, v, done) {
     cancelAnimationFrame(pgAnim);
@@ -3320,16 +3328,33 @@ window.__appStart = () => {
     const [la, wa] = pillPos[a], [lb, wb] = pillPos[b];
     return { x: la + (lb - la) * k, w: wa + (wb - wa) * k };
   }
+  // Цифры «выбранного» цвета — отдельным слоем поверх, вырезанным точно по форме таблетки:
+  // часть цифры над таблеткой — светлая, вне её — обычная (как в переключателях iOS)
+  let pillW = 0;
   function putPill(f) {
     const el = pillEl(), r = pillAt(f);
     if (!el || !r) return;
     el.style.width = `${r.w}px`;
     el.style.transform = `translate3d(${r.x.toFixed(2)}px,0,0)`;
+    const on = el.parentNode.querySelector(".days-on");
+    if (on) {
+      const W = pillW || on.offsetWidth;
+      on.style.clipPath = `inset(4px ${(W - r.x - r.w).toFixed(2)}px 4px ${r.x.toFixed(2)}px round 18px)`;
+    }
   }
   function setupPill() {
     const el = pillEl(), c = curPos();
     if (!el || !c) return;
+    const nav = el.parentNode;
+    if (!nav.querySelector(".days-on")) {
+      const on = document.createElement("div");
+      on.className = "days-on";
+      on.setAttribute("aria-hidden", "true");
+      on.innerHTML = [...nav.querySelectorAll(".day")].map((b) => `<span class="day-o">${b.innerHTML}</span>`).join("");
+      nav.appendChild(on);
+    }
     measurePill();
+    pillW = nav.querySelector(".days-on").offsetWidth;
     putPill(c.p.d);
     el.classList.add("ready");
     // день сменили нажатием / кнопкой «Сегодня» в той же неделе — таблетка переезжает, а не прыгает
@@ -3357,10 +3382,6 @@ window.__appStart = () => {
     const up = (e) => { if (e.touches && e.touches.length) return; if (pagerTouch) pagerTouch = false; };
     document.addEventListener("touchend", up, { passive: true, capture: true });
     document.addEventListener("touchcancel", up, { passive: true, capture: true });
-  }
-  function chipsMoving(on) {
-    const d = app.querySelector(".days");
-    if (d && d.classList.contains("moving") !== on) d.classList.toggle("moving", on);
   }
   // Подсветка (цвет цифр) дня в строке сверху — как только понятно, куда листаем
   function previewChips(dir) {
