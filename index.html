@@ -3,7 +3,7 @@
 <head>
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android">
+<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
@@ -699,6 +699,12 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
 }
 html[data-theme="light"] .ibar { background: rgba(255, 255, 255, .8); }
 .ibar .tile { width: 36px; height: 36px; border-radius: 11px; }
+body.has-ibar #app { padding-bottom: calc(170px + max(env(safe-area-inset-bottom), var(--safe-bottom, 0px))); }   /* плашка не закрывает последнюю пару */
+/* устаревшие данные и подсветка пары из уведомления */
+.offline.stale { background: var(--warn-bg); color: var(--warn-fg); }
+.foot.old { color: var(--warn-fg); }
+.row.flash > .card, .row.flash > .cc { animation: flashRing 2.4s ease both; }
+@keyframes flashRing { 0%, 60% { box-shadow: 0 0 0 3px var(--accent), 0 0 24px rgba(var(--acc-rgb), .5); } 100% { box-shadow: 0 0 0 0 transparent; } }
 .ibar .ib { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; line-height: 1.3; }
 .ibar .ib small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
 .ibtn { flex: none; height: 36px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 700; }
@@ -1103,6 +1109,24 @@ window.__appStart = () => {
     rest = rest.replace(/\s*г\.\s*Самара/i, "").replace(/^корпус\s*/i, "корп. ").trim();
     return rest ? `ауд. ${m[1]} · ${rest}` : `ауд. ${m[1]}`;
   }
+  function nowMs() { return NOW_OVERRIDE ? Date.parse(NOW_OVERRIDE + ":00+04:00") : Date.now(); }
+  // «обновлено 15 мин назад» / «сегодня в 09:05» / «вчера в 22:11» / «12 окт в 22:11»
+  function fmtAgo(iso) {
+    const t = Date.parse(iso || ""); if (!t) return "";
+    const min = Math.max(0, Math.round((nowMs() - t) / 60000));
+    if (min < 2) return "только что";
+    if (min < 60) return `${min} ${plural(min, "минуту", "минуты", "минут")} назад`;
+    if (min < 6 * 60) { const h = Math.floor(min / 60); return `${h} ${plural(h, "час", "часа", "часов")} назад`; }
+    const hm = String(iso).slice(11, 16), d = String(iso).slice(0, 10), today = samaraNow().date;
+    if (d === today) return `сегодня в ${hm}`;
+    if (d === addDays(today, -1)) return `вчера в ${hm}`;
+    return fmtUpdated(iso);
+  }
+  function dataAgeH() { const t = Date.parse((meta && meta.updated) || ""); return t ? (nowMs() - t) / 3600000 : 0; }
+  function staleHTML() {
+    if (dataAgeH() < 24) return "";
+    return `<div class="offline stale">Данные не обновлялись с ${esc(fmtUpdated(meta.updated))} — расписание могло измениться</div>`;
+  }
   function fmtUpdated(iso) {
     const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(iso || "");
     if (!m) return "";
@@ -1258,6 +1282,7 @@ window.__appStart = () => {
     opened.clear();
     syncBack();
     syncTabs();
+    if (v === "schedule") setTimeout(showInstallBar, 600); else hideInstallBar(false);   // плашка — только на расписании
     render();
     window.scrollTo(0, 0);
   }
@@ -1615,7 +1640,7 @@ window.__appStart = () => {
     else what = `${c.subject}: ${c.old} → ${c.new}`;
     const ts = String(c.ts || "");
     const posted = ts.slice(0, 10) === samaraNow().date ? ts.slice(11, 16) : (ts ? `${+ts.slice(8, 10)} ${MSHORT[+ts.slice(5, 7) - 1]}` : "");
-    return `<button class="item nitem${unread ? " unread" : ""}" data-act="jump" data-date="${esc(c.date)}">
+    return `<button class="item nitem${unread ? " unread" : ""}" data-act="jump" data-date="${esc(c.date)}" data-start="${esc(c.start || "")}" data-kind="${esc(c.kind || "")}">
       <span class="tile ${v.tile}" aria-hidden="true">${I[v.icon]}</span>
       <span class="body"><span class="row1"><span class="nm">${v.title}</span><span class="when">${esc(posted)}</span></span>
       <span class="desc">${esc(when)} · ${esc(what)}</span></span></button>`;
@@ -1764,7 +1789,7 @@ window.__appStart = () => {
     }
     const off = data._offline
       ? `<button class="offline" data-act="retry-net" title="${esc(lastNetError)}">${navigator.onLine === false ? "Нет сети" : "Не удалось обновить"} · показано сохранённое · <u>Повторить</u></button>`
-      : "";
+      : staleHTML();
     // Липкая полоса: у группы — шапка недели + дни, у преподавателя — строка недели + дни
     app.innerHTML = isTeacher
       ? head + off + `<div class="sbar">${s.bar}</div>` + s.html
@@ -1774,6 +1799,18 @@ window.__appStart = () => {
     placeNowLabels(false);
     enterNext = false;
     slideDir = 0;
+    if (focusTarget && !isTeacher) { const ft = focusTarget; focusTarget = null; setTimeout(() => focusLesson(ft), 420); }
+  }
+  // Пришли из уведомления: прокручиваем к паре и подсвечиваем её
+  let focusTarget = null;
+  function focusLesson(ft) {
+    const rows = [...app.querySelectorAll("[data-cur] .row")];
+    const row = ft.start && rows.find((r) => (r.querySelector(".time .st") || {}).textContent === ft.start);
+    if (!row) { toast(ft.kind === "cancel" ? `Пара в ${ft.start} отменена — в расписании её больше нет` : "Этой пары в расписании уже нет"); return; }
+    row.classList.remove("flash"); void row.offsetWidth; row.classList.add("flash");
+    row.scrollIntoView({ block: "center", behavior: REDUCED ? "auto" : "smooth" });
+    if (ft.kind === "cancel") toast("Эта пара отменена");
+    setTimeout(() => row.classList.remove("flash"), 2600);
   }
 
   function teacherRowsHTML(list, subjects) {
@@ -2028,8 +2065,11 @@ window.__appStart = () => {
     if (view === "settings") renderSettings();
   }
   // Ненавязчивая плашка над нижней панелью — только в обычном браузере и пока её не закрыли
+  // Сколько раз открывали приложение: плашку «Установи» показываем с третьего раза — когда уже ясно, что пользуются
+  const LAUNCHES = (() => { const n = (+store.get("launches") || 0) + 1; store.set("launches", String(n)); return n; })();
   function showInstallBar() {
-    if (STANDALONE || store.get("installBar") === "0" || document.querySelector(".ibar")) return;
+    if (STANDALONE || store.get("installBar") === "0" || store.get("installDone") === "1" || document.querySelector(".ibar")) return;
+    if (view !== "schedule" || LAUNCHES < 3) return;   // только на экране расписания и не в первые два запуска
     const el = document.createElement("div");
     el.className = "ibar";
     el.innerHTML = `<span class="tile t-room" aria-hidden="true">${I.home}</span>
@@ -2042,10 +2082,12 @@ window.__appStart = () => {
       if (b.dataset.ib === "x") hideInstallBar(true); else { haptic("light"); promptInstall(); }
     });
     document.body.appendChild(el);
+    document.body.classList.add("has-ibar");
   }
   function hideInstallBar(forever) {
     const el = document.querySelector(".ibar");
     if (el) el.remove();
+    document.body.classList.remove("has-ibar");
     if (forever) store.set("installBar", "0");
   }
 
@@ -2156,12 +2198,12 @@ window.__appStart = () => {
       ${fsSupported() ? `<div class="list" style="margin-top:10px"><div class="srow"><div class="body"><span class="nm">Во весь экран</span>
         <span class="sub">Без шапки Telegram, больше места для пар</span></div>
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
-      <h2 class="sec" id="asec">Приложение</h2>
-      ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <h2 class="sec" id="nsec">Уведомления в чате</h2>
       ${notifSettingsHTML()}
-      <p class="foot">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
-        ${upd ? `Данные от ${esc(upd)}` : ""}</p>`;
+      <h2 class="sec" id="asec">Приложение</h2>
+      ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
+      <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
+        ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}</p>`;
   }
 
   function toast(text) {
@@ -2339,10 +2381,10 @@ window.__appStart = () => {
     } else if (act === "jump") {
       const date = el.dataset.date;
       const g = mem.g;
-      if (g && date) {
-        const w = g.weeks.findIndex((x) => x.monday === mondayOf(date));
-        if (w >= 0) pos.g = { w, d: weekday(date) };
-      }
+      const w = g && date ? g.weeks.findIndex((x) => x.monday === mondayOf(date)) : -1;
+      if (w < 0) { haptic("light"); toast("Этого дня уже нет в расписании"); return; }
+      pos.g = { w, d: weekday(date) };
+      focusTarget = { date, start: el.dataset.start, kind: el.dataset.kind };
       haptic("select");
       go("schedule", "g", false);
     } else if (act === "retry") {
