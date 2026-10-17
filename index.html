@@ -2,9 +2,9 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 design-2 swipes-span3 compact-all header-v2">
+<meta name="app-build" content="2026-10-17 oled-style">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0E1014">
+<meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -480,6 +480,44 @@ h1.wr { font-family: inherit; font-size: clamp(18px, 5.6vw, 22px); font-weight: 
 .cc .rm { font-weight: 600; color: var(--text); }
 .row.past .cc .rm, .row.past .meta > span:first-child { color: var(--past-title); }
 
+
+/* ================= Стиль «Глубокий чёрный» =================
+   Тёмная тема: чистый чёрный фон (на OLED-экране iPhone чёрные точки не светятся), неоновые цвета пар и свечение.
+   Светлая — зеркально: чистый белый фон, насыщенные цвета, вместо свечения цветная тень. */
+html[data-theme="dark"] {
+  --bg: #000000; --surface: #0D0E11; --surface2: #15171B; --border: #1C1F24; --sep: #17191D; --strong: #2A2D33;
+  --hair: rgba(255, 255, 255, .09); --tab-bg: #08090B; --tab-border: #17191D;
+  --accent: #4DA3FF; --acc-rgb: 77, 163, 255; --on-accent: #000000; --acc-soft: #0F1D30;
+  --lec-fg: #5CFFB4; --lec-bar: #1FF29A; --lec-rgb: 31, 242, 154;
+  --prac-fg: #FFC861; --prac-bar: #FFB02E; --prac-rgb: 255, 176, 46;
+  --lab-fg: #CDB0FF; --lab-bar: #A36CFF; --lab-rgb: 163, 108, 255;
+  --oth-fg: #7FDBFF; --oth-bar: #33C8FF; --oth-rgb: 51, 200, 255;
+  --past-bg: #07080A; --past-border: #121418; --dot-past: #24272D;
+  --glass: rgba(8, 9, 11, .96); --glass-border: rgba(255, 255, 255, .08); --tint-a: .06;
+  --glow-card: 0 0 30px -8px; --glow-a: .55; --glow-line: 0 0 12px; --glow-day: 0 0 22px -4px;
+}
+html[data-theme="light"] {
+  --bg: #FFFFFF; --surface: #F5F6F8; --surface2: #ECEEF2; --border: #E6E8EC; --sep: #E9EBEF; --strong: #D5D8DE;
+  --hair: rgba(0, 0, 0, .05); --elev: none; --tab-bg: #FFFFFF; --tab-border: #E9EBEF;
+  --accent: #0A6CFF; --acc-rgb: 10, 108, 255; --on-accent: #FFFFFF; --acc-soft: #E5EFFF;
+  --lec-fg: #00733F; --lec-bar: #00C875; --lec-rgb: 0, 200, 117;
+  --prac-fg: #A35600; --prac-bar: #FF9500; --prac-rgb: 255, 149, 0;
+  --lab-fg: #6526E0; --lab-bar: #8E4DFF; --lab-rgb: 142, 77, 255;
+  --oth-fg: #006C99; --oth-bar: #14A7E8; --oth-rgb: 20, 167, 232;
+  --past-bg: #FAFAFB; --past-border: #F0F1F4;
+  --glass: rgba(255, 255, 255, .96); --glass-border: rgba(0, 0, 0, .06); --glass-shadow: 0 10px 30px rgba(0, 0, 0, .10);
+  --tint-a: .08;
+  --glow-card: 0 14px 30px -12px; --glow-a: .5; --glow-line: 0 2px 8px; --glow-day: 0 8px 20px -6px;
+}
+.row.live .card { border-color: rgba(var(--k-rgb), .6); box-shadow: var(--glow-card) rgba(var(--k-rgb), var(--glow-a)); }
+.row.live .fill, .row.live .mark, .row.live .dot { box-shadow: var(--glow-line) rgba(var(--k-rgb), .85); }
+.day.on { box-shadow: var(--glow-day) rgba(var(--acc-rgb), .9); }
+.kind { box-shadow: inset 0 0 0 1px rgba(var(--k-rgb), .4); }
+html[data-theme="light"] .tab.on { color: #0050CC; }
+html[data-theme="light"] .seg3 { background: var(--surface2); }
+html[data-theme="light"] .seg3 button.on { background: #FFFFFF; border-color: transparent; box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.today:not(.on) .s { color: #0050CC; }
+
 /* Узкие телефоны (360–380 px): чуть меньше полей, чтобы статус пары и подписи не обрезались */
 @media (max-width: 380px) {
   .whead .grp { display: none; }
@@ -536,7 +574,7 @@ h1.wr { font-family: inherit; font-size: clamp(18px, 5.6vw, 22px); font-weight: 
                   "июля", "августа", "сентября", "октября", "ноября", "декабря"];
   const MSHORT = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
   const HUES = [214, 150, 32, 268, 338, 188, 4, 92, 248, 120];
-  const BG = { dark: "#0E1014", light: "#F2F3F6" };
+  const BG = { dark: "#000000", light: "#FFFFFF" };
 
   // Для проверки можно открыть страницу с ?now=2026-10-12T10:52 — время «застынет» на этом моменте
   const NOW_OVERRIDE = new URLSearchParams(location.search).get("now");
