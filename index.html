@@ -2,14 +2,37 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 modern-2026 smooth-days">
+<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<!-- PWA: можно установить на главный экран, работает без сети -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Расписание">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Шрифты лежат рядом (fonts/); если скачать их не удалось, fonts.css подтягивает Google Fonts -->
+<link rel="stylesheet" href="fonts/fonts.css">
+<script>
+  // Скрипт Telegram грузим только внутри Telegram и не ждём его дольше 3 секунд:
+  // если telegram.org тормозит, приложение всё равно откроется (просто без кнопок Telegram).
+  (function () {
+    var inTg = /tgWebApp/.test(location.hash + location.search) || !!window.TelegramWebviewProxy || window.parent !== window;
+    var tgDone = !inTg, appReady = false, started = false;
+    function go() { if (!started && tgDone && appReady && window.__appStart) { started = true; window.__appStart(); } }
+    window.__boot = function () { appReady = true; go(); };
+    if (inTg) {
+      var s = document.createElement("script");
+      s.src = "https://telegram.org/js/telegram-web-app.js";
+      s.onload = s.onerror = function () { tgDone = true; go(); };
+      document.head.appendChild(s);
+      setTimeout(function () { tgDone = true; go(); }, 3000);
+    }
+  })();
+</script>
 <style>
 /* ---------- палитра ---------- */
 html[data-theme="dark"] {
@@ -644,6 +667,36 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
 }
 .row.past .ctlchip { opacity: .7; }
 
+/* --- PWA: установленное приложение и плашка «Установить» --- */
+@media (display-mode: standalone) {
+  :root { --safe-top: env(safe-area-inset-top, 0px); }
+  .topveil { display: block; position: fixed; left: 0; right: 0; top: 0; height: var(--safe-top); z-index: 9; background: var(--bg); }
+}
+.item .sub.wrap { white-space: normal; line-height: 1.4; }
+.ibar {
+  position: fixed; z-index: 11; left: 12px; right: 12px; max-width: 496px; margin: 0 auto;
+  bottom: calc(max(10px, env(safe-area-inset-bottom), var(--safe-bottom, 0px)) + 78px);
+  display: flex; align-items: center; gap: 10px; padding: 10px 8px 10px 12px; border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, 0) 55%), color-mix(in srgb, var(--tab-bg) 70%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
+  animation: rise .55s var(--ease-spring) both;
+}
+html[data-theme="light"] .ibar { background: rgba(255, 255, 255, .8); }
+.ibar .tile { width: 36px; height: 36px; border-radius: 11px; }
+.ibar .ib { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; line-height: 1.3; }
+.ibar .ib small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+.ibtn { flex: none; height: 36px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 700; }
+.ix { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); display: grid; place-items: center; padding: 0; }
+@supports (corner-shape: squircle) { .ibar { corner-shape: squircle; border-radius: 30px; } .ibtn, .ibar .tile { corner-shape: squircle; border-radius: 16px; } }
+
+/* --- переход по нажатию на день: сдвигается только содержимое, рамки страницы не трогаем --- */
+.page.cur.from-r, .page.cur.from-l { animation: none; }
+.page.cur.from-r > :not(.pframe) { animation: dayInR .28s cubic-bezier(.2, .8, .2, 1) both; }
+.page.cur.from-l > :not(.pframe) { animation: dayInL .28s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes dayInR { from { opacity: 0; transform: translate3d(24px, 0, 0); } }
+@keyframes dayInL { from { opacity: 0; transform: translate3d(-24px, 0, 0); } }
+
 /* ================= Пружины и сквиркл ================= */
 
 /* --- пружинные кривые: рассчитаны из затухающей пружины (перелёт ~4% и ~16%) --- */
@@ -656,8 +709,6 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
 .tl.enter .fill { animation: grow .9s var(--ease-spring) both; animation-delay: calc(var(--i) * 70ms + 200ms); }
 .tl.enter .mark { animation: slide .9s var(--ease-spring) both; animation-delay: calc(var(--i) * 70ms + 200ms); }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
-.page.cur.from-r { animation: inR .55s var(--ease-spring) both; }
-.page.cur.from-l { animation: inL .55s var(--ease-spring) both; }
 .ring .arc, .fill, .mark, .nowlbl, .bmark, .bnow { transition-timing-function: var(--ease-spring); }
 .sbar .eyebrow, .sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day { transition-timing-function: var(--ease-spring); transition-duration: .45s; }
 
@@ -721,7 +772,7 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
 </nav>
 
 <script>
-(() => {
+window.__appStart = () => {
   "use strict";
 
   // ---------------- Telegram ----------------
@@ -802,6 +853,8 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
     plus: svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>', 20),
     pinBig: svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>', 20),
     cap: svg('<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>', 14),
+    home: svg('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>', 20),
+    x: svg('<path d="M18 6 6 18M6 6l12 12"/>', 18),
     swap: svg('<path d="M7 4 3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/>', 20),
   };
 
@@ -1344,12 +1397,15 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
     // Запас нужен для быстрых свайпов подряд: лента успевает уехать на 2–3 дня, пока не «переложилась».
     const fr = `<div class="pframe" aria-hidden="true"></div>`;
     const side = (dir) => { const out = []; let q = p; for (let k = 0; k < PAGER_SPAN && (q = neighborPos(data, q.w, q.d, dir)); k++) out.push(q); return out; };
-    const prevs = side(-1).reverse(), nexts = side(1);
+    // Сразу строим только выбранный день — так переход лёгкий. Соседей для свайпа достраиваем
+    // чуть позже или в момент касания ленты (fillNeighbors).
     let html = `<div class="pager" data-pager>`;
-    for (const q of prevs) html += `<div class="page prev" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
     html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${fr}${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
-    for (const q of nexts) html += `<div class="page next" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
     html += `</div>`;
+    pendingNeighbors = () => {
+      const page = (q, cls) => `<div class="page ${cls}" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
+      return { prev: side(-1).reverse().map((q) => page(q, "prev")).join(""), next: side(1).map((q) => page(q, "next")).join("") };
+    };
     liveSig = m.sig;
     return { html, bar, notToday: notToday && todayInData, wl, wr, prevW, nextW, isCur: label === "Эта неделя" };
   }
@@ -1592,9 +1648,62 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
       <div id="tlists">${teacherListsHTML()}</div>`;
   }
 
+  // ---------------- установка на главный экран ----------------
+  const STANDALONE = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+  const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  let installEvt = null;   // Android/Chrome: отложенное системное окно «Установить»
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    installEvt = e;
+    if (view === "settings") renderSettings();
+    showInstallBar();
+  });
+  window.addEventListener("appinstalled", () => { installEvt = null; hideInstallBar(true); if (view === "settings") renderSettings(); });
+  function installHTML() {
+    const row = (title, sub, act) => act
+      ? `<div class="list"><button class="item" data-act="${act}"><span class="tile t-room" aria-hidden="true">${I.home}</span>
+          <span class="body"><span class="nm">${title}</span><span class="sub wrap">${sub}</span></span><span class="chev">${I.chev}</span></button></div>`
+      : `<div class="list"><div class="item"><span class="tile t-room" aria-hidden="true">${I.home}</span>
+          <span class="body"><span class="nm">${title}</span><span class="sub wrap">${sub}</span></span></div></div>`;
+    if (STANDALONE) return row("Установлено на главный экран", "Открывается с иконки и показывает расписание даже без сети");
+    if (inTG) return row("Установить на главный экран", "Откроется в браузере. Если страница откроется внутри Telegram — выбери «Открыть в браузере»", "install-open");
+    if (installEvt) return row("Установить приложение", "Иконка на главном экране, работает без сети и без Telegram", "install");
+    if (IOS) return row("Добавить на экран «Домой»", "Нажми «Поделиться» в Safari и выбери «На экран „Домой“». Работает без сети и без Telegram");
+    return row("Установить приложение", "В меню браузера выбери «Установить приложение» или «Добавить на главный экран»");
+  }
+  async function promptInstall() {
+    if (!installEvt) { go("settings", null, false); requestAnimationFrame(() => { const s = document.getElementById("asec"); if (s) s.scrollIntoView({ block: "start", behavior: "smooth" }); }); return; }
+    const e = installEvt;
+    installEvt = null;
+    try { e.prompt(); await e.userChoice; } catch (err) { /* окно уже показывалось */ }
+    hideInstallBar(false);
+    if (view === "settings") renderSettings();
+  }
+  // Ненавязчивая плашка над нижней панелью — только в обычном браузере и пока её не закрыли
+  function showInstallBar() {
+    if (STANDALONE || inTG || store.get("installBar") === "0" || document.querySelector(".ibar")) return;
+    const el = document.createElement("div");
+    el.className = "ibar";
+    el.innerHTML = `<span class="tile t-room" aria-hidden="true">${I.home}</span>
+      <span class="ib">Установи расписание на главный экран<small>Откроется с иконки, работает без сети</small></span>
+      <button class="ibtn" data-ib="go">${installEvt ? "Установить" : "Как?"}</button>
+      <button class="ix" data-ib="x" aria-label="Закрыть">${I.x}</button>`;
+    el.addEventListener("click", (ev) => {
+      const b = ev.target.closest("[data-ib]");
+      if (!b) return;
+      if (b.dataset.ib === "x") hideInstallBar(true); else { haptic("light"); promptInstall(); }
+    });
+    document.body.appendChild(el);
+  }
+  function hideInstallBar(forever) {
+    const el = document.querySelector(".ibar");
+    if (el) el.remove();
+    if (forever) store.set("installBar", "0");
+  }
+
   function renderSettings() {
     const pref = themePref();
-    const opts = [["auto", "Как в Telegram"], ["light", "Светлая"], ["dark", "Тёмная"]];
+    const opts = [["auto", inTG ? "Как в Telegram" : "Как в системе"], ["light", "Светлая"], ["dark", "Тёмная"]];
     const upd = meta && meta.updated ? fmtUpdated(meta.updated) : "";
     app.innerHTML = `<div class="top"><div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Настройки</h1></div></div>
       <h2 class="sec">Оформление</h2>
@@ -1604,6 +1713,8 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
       ${fsSupported() ? `<div class="list" style="margin-top:10px"><div class="srow"><div class="body"><span class="nm">Во весь экран</span>
         <span class="sub">Без шапки Telegram, больше места для пар</span></div>
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
+      <h2 class="sec" id="asec">Приложение</h2>
+      ${installHTML()}
       <h2 class="sec" id="nsec">Уведомления в чате</h2>
       ${notifSettingsHTML()}
       <p class="foot">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
@@ -1698,24 +1809,15 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
     catch (e) { springCache = "cubic-bezier(.4, 0, .2, 1)"; }
     return springCache;
   }
-  // Переход на другой день/неделю. Если нужный день уже отрисован рядом (±PAGER_SPAN) — просто
-  // плавно прокручиваем ленту к нему, как при свайпе: это идёт силами видеокарты и не тормозит.
-  // Дальние переходы (другая неделя) — один лёгкий сдвиг текущей страницы.
+  // Переход на другой день/неделю по нажатию (свайп пальцем идёт своей дорогой — через ленту).
   let quietCommit = false;
   function moveTo(np) {
     const c = curPos();
     if (!c || !np) return;
     const k = (np.w - c.p.w) * 7 + (np.d - c.p.d);
     if (!k) return;
-    const pg = pagerEl();
-    if (pg && Math.abs(k) <= PAGER_SPAN) {
-      const q = stepPos(c.data, c.p, k);
-      if (q && q.w === np.w && q.d === np.d) {
-        quietCommit = true;   // вибро уже было при нажатии — второй раз в конце не нужно
-        pg.scrollTo({ left: (curIndex(pg) + k) * pg.clientWidth, behavior: REDUCED ? "auto" : "smooth" });
-        return;
-      }
-    }
+    // Нажатие на день: выделение сразу встаёт на нужный день, а новый день появляется коротким
+    // сдвигом — без пролёта через промежуточные дни.
     pos[c.id] = np;
     opened.clear();
     enterNext = false;
@@ -1775,6 +1877,13 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
       go("settings", null, true);
       const sec = document.getElementById("nsec");
       if (sec) requestAnimationFrame(() => sec.scrollIntoView({ block: "start", behavior: "smooth" }));
+    } else if (act === "install") {
+      haptic("light");
+      promptInstall();
+    } else if (act === "install-open") {
+      const url = location.origin + location.pathname;
+      haptic("light");
+      try { tg.openLink(url, { try_instant_view: false }); } catch (e) { window.open(url, "_blank", "noopener"); }
     } else if (act === "notify-settings") {
       openNotifySettings();
     } else if (act === "ntoggle") {
@@ -2013,7 +2122,23 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
     fitPager();
     pg.scrollLeft = curIndex(pg) * pg.clientWidth;
     pg.addEventListener("scroll", onPagerScroll, { passive: true });
-    pg.addEventListener("touchstart", () => { pagerTouch = true; }, { passive: true });
+    pg.addEventListener("touchstart", () => { fillNeighbors(); pagerTouch = true; }, { passive: true });
+    pg.addEventListener("wheel", fillNeighbors, { passive: true });
+    clearTimeout(fillTimer);
+    fillTimer = setTimeout(fillNeighbors, slideDir || enterNext ? 450 : 150);   // после анимации появления
+  }
+  // Достроить соседние дни слева и справа, не сдвигая текущий (скролл компенсируем в том же кадре)
+  let pendingNeighbors = null, fillTimer = 0, suppressScroll = false;
+  function fillNeighbors() {
+    clearTimeout(fillTimer);
+    const pg = pagerEl();
+    if (!pendingNeighbors || !pg) return;
+    const nb = pendingNeighbors();
+    pendingNeighbors = null;
+    if (nb.prev) pg.insertAdjacentHTML("afterbegin", nb.prev);
+    if (nb.next) pg.insertAdjacentHTML("beforeend", nb.next);
+    suppressScroll = true;
+    pg.scrollLeft = curIndex(pg) * pg.clientWidth;
   }
   {
     const up = (e) => { if (e.touches && e.touches.length) return; if (pagerTouch) { pagerTouch = false; if (scrolling) armSettle(); } };
@@ -2021,6 +2146,7 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
     document.addEventListener("touchcancel", up, { passive: true, capture: true });
   }
   function onPagerScroll() {
+    if (suppressScroll) { suppressScroll = false; return; }   // это мы сами поправили позицию после достройки
     scrolling = true;
     if (!scrollFrame) scrollFrame = requestAnimationFrame(paintPaging);
     armSettle();
@@ -2083,6 +2209,7 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
   function shiftDay(dir) {
     const pg = pagerEl();
     if (!pg || !hasNeighbor(dir)) return false;
+    fillNeighbors();
     pg.scrollTo({ left: (curIndex(pg) + dir) * pg.clientWidth, behavior: REDUCED ? "auto" : "smooth" });
     return true;
   }
@@ -2157,11 +2284,18 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
     fetchJSON("data/meta.json").then((j) => { meta = j; }).catch(() => {}),
     fetchJSON("data/changes.json").then((j) => { changes = j; }).catch(() => { changes = { items: [] }; }),
     load("g").catch(() => {}),
-  ]).then(() => { loadedAt = Date.now(); render(); });
+  ]).then(() => { loadedAt = Date.now(); render(); setTimeout(showInstallBar, 4000); });
 
   setInterval(tick, 15000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { tick(); reloadIfStale(); } });
-})();
+
+  // ---------------- PWA: офлайн и установка ----------------
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+    window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+    if (document.readyState === "complete") navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+};
+window.__boot();
 </script>
 </body>
 </html>
