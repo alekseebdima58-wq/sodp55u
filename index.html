@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days tg-home icon-pick net-fallback">
+<meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Расписание СОДП-55у</title>
@@ -19,7 +19,12 @@
     document.getElementById("lnkFav").href = "icons/favicon-64" + suf + ".png";
     document.getElementById("lnkTouch").href = "icons/apple-touch-icon" + suf + ".png";
   };
-  try { var st0 = localStorage.getItem("iconStyle"); if (st0) applyIconStyle(st0); } catch (e) { /* хранилище недоступно */ }
+  try {
+    var fromUrl = new URLSearchParams(location.search).get("icon");   // выбор, сделанный внутри Telegram
+    if (/^(blue|light|dark)$/.test(fromUrl || "")) localStorage.setItem("iconStyle", fromUrl);
+    var st0 = localStorage.getItem("iconStyle") || fromUrl;
+    if (st0) applyIconStyle(st0);
+  } catch (e) { /* хранилище недоступно */ }
 </script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -710,6 +715,35 @@ html[data-theme="light"] .ibar { background: rgba(255, 255, 255, .8); }
 
 button.offline { border: 0; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; }
 button.offline u { text-underline-offset: 2px; }
+
+/* --- экран установки --- */
+.iwrap { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, .55); display: flex; align-items: flex-end; justify-content: center; animation: fadeIn .2s ease both; }
+.isheet {
+  position: relative; width: 100%; max-width: 520px; max-height: 88vh; overflow: auto; margin: 0 8px calc(8px + env(safe-area-inset-bottom, 0px));
+  padding: 26px 20px 20px; border-radius: 30px; background: var(--surface); border: 1px solid var(--border);
+  text-align: center; animation: rise .5s var(--ease-spring) both;
+}
+.iclose { position: absolute; top: 10px; right: 10px; }
+.iprev { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 10px 26px rgba(0, 0, 0, .35); }
+.isheet h3 { margin: 14px 0 4px; font-size: 20px; font-weight: 700; }
+.isub { margin: 0 0 14px; font-size: 13.5px; line-height: 1.4; color: var(--muted); }
+.ipick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+.ipick button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px 8px; border-radius: 16px;
+  border: 1.5px solid transparent; background: var(--bg); color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.ipick button img { width: 44px; height: 44px; border-radius: 11px; }
+.ipick button.on { border-color: var(--accent); color: var(--text); background: rgba(var(--acc-rgb), .1); }
+.isteps { list-style: none; margin: 0; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 10px; }
+.isteps li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; background: var(--bg); font-size: 15px; line-height: 1.4; }
+.isteps li > b { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-size: 13px; }
+.isteps li small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+.ihint { margin: 12px 2px 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); text-align: left; }
+.ibig { width: 100%; height: 50px; border: 0; border-radius: 16px; background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 700; margin-top: 4px; }
+.ibig.ghost { background: var(--bg); color: var(--accent); margin-top: 12px; }
+.iarrow { position: fixed; left: 50%; bottom: calc(4px + env(safe-area-inset-bottom, 0px)); margin-left: -16px; width: 32px; z-index: 31;
+  font-size: 30px; font-weight: 800; color: var(--accent); text-align: center; animation: ibounce 1s ease-in-out infinite; pointer-events: none; }
+@keyframes ibounce { 50% { transform: translateY(8px); } }
+@keyframes fadeIn { from { opacity: 0; } }
+@supports (corner-shape: squircle) { .isheet { corner-shape: squircle; border-radius: 40px; } .iprev { corner-shape: squircle; border-radius: 26px; } }
 
 /* --- выбор иконки --- */
 .icpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
@@ -1727,49 +1761,16 @@ window.__appStart = () => {
           <span class="body"><span class="nm">${title}</span><span class="sub wrap">${sub}</span></span></div></div>`;
     if (STANDALONE) return row("Установлено на главный экран", "Открывается с иконки и показывает расписание даже без сети");
     if (inTG) {
-      // Telegram 8.0+: ярлык на рабочий стол прямо из приложения, без перехода в браузер
-      if (homeStatus === "added") return row("Добавлено на рабочий стол", "Иконка открывает расписание в одно касание");
-      if (homeStatus === "missed" || homeStatus === "unknown") return row("Добавить на рабочий стол", "Иконка расписания на главном экране телефона — открывается в одно касание", "tg-home");
-      if (homeStatus === "checking") return row("Добавить на рабочий стол", "Проверяю, поддерживает ли Telegram на этом телефоне…");
-      return row("Установить на главный экран", "Этот Telegram не умеет добавлять ярлыки — откроется в браузере, там можно установить", "install-open");
+      // Настоящее приложение ставится через браузер: своя иконка, без Telegram, работает без сети.
+      return row("Установить как приложение", `Откроется ${IOS ? "Safari" : "браузер"} с подсказками. Своя иконка, открывается без Telegram и работает без сети`, "install-open");
     }
     if (installEvt) return row("Установить приложение", "Иконка на главном экране, работает без сети и без Telegram", "install");
     if (IOS) return row("Добавить на экран «Домой»", "Нажми «Поделиться» в Safari и выбери «На экран „Домой“». Работает без сети и без Telegram");
     return row("Установить приложение", "В меню браузера выбери «Установить приложение» или «Добавить на главный экран»");
   }
-  // ---- ярлык Telegram на рабочий стол (Bot API 8.0+) ----
-  const tgHomeOK = () => inTG && tgAtLeast("8.0") && typeof tg.addToHomeScreen === "function";
-  let homeStatus = tgHomeOK() ? "checking" : "unsupported";   // checking → unsupported | unknown | missed | added
-  function setHomeStatus(st) {
-    homeStatus = st || "unsupported";
-    if (view === "settings") renderSettings();
-    if (homeStatus === "added" || homeStatus === "unsupported") hideInstallBar(false);
-  }
-  function addToHome() {
-    if (!tgHomeOK()) return;
-    try { tg.addToHomeScreen(); } catch (e) { toast("Не получилось — обнови Telegram"); }
-  }
-  if (tgHomeOK()) {
-    try {
-      tg.onEvent("homeScreenAdded", () => {
-        setHomeStatus("added");
-        store.set("installBar", "0");
-        toast("Иконка добавлена на рабочий стол");
-        if (tg.HapticFeedback) { try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) { /* старый клиент */ } }
-      });
-      tg.onEvent("homeScreenChecked", (ev) => setHomeStatus(ev && ev.status));
-      tg.checkHomeScreenStatus((st) => setHomeStatus(st));
-    } catch (e) { homeStatus = "unsupported"; }
-    setTimeout(() => { if (homeStatus === "checking") setHomeStatus("unsupported"); }, 3000);
-  }
-
   async function promptInstall() {
-    if (inTG) {
-      if (homeStatus === "missed" || homeStatus === "unknown") addToHome();
-      hideInstallBar(true);   // «unknown» не сообщает, добавили ли иконку, — больше не предлагаем
-      return;
-    }
-    if (!installEvt) { go("settings", null, false); requestAnimationFrame(() => { const s = document.getElementById("asec"); if (s) s.scrollIntoView({ block: "start", behavior: "smooth" }); }); return; }
+    if (inTG) { hideInstallBar(true); openInstallPage(); return; }
+    if (!installEvt) { showInstallSheet(); return; }
     const e = installEvt;
     installEvt = null;
     try { e.prompt(); await e.userChoice; } catch (err) { /* окно уже показывалось */ }
@@ -1779,13 +1780,11 @@ window.__appStart = () => {
   // Ненавязчивая плашка над нижней панелью — только в обычном браузере и пока её не закрыли
   function showInstallBar() {
     if (STANDALONE || store.get("installBar") === "0" || document.querySelector(".ibar")) return;
-    // В Telegram плашку показываем, только если ярлык точно можно добавить и его ещё нет
-    if (inTG && homeStatus !== "missed" && homeStatus !== "unknown") return;
     const el = document.createElement("div");
     el.className = "ibar";
     el.innerHTML = `<span class="tile t-room" aria-hidden="true">${I.home}</span>
-      <span class="ib">${inTG ? "Добавь расписание на рабочий стол" : "Установи расписание на главный экран"}<small>${inTG ? "Иконка на главном экране, открывается в одно касание" : "Откроется с иконки, работает без сети"}</small></span>
-      <button class="ibtn" data-ib="go">${inTG ? "Добавить" : installEvt ? "Установить" : "Как?"}</button>
+      <span class="ib">Установи расписание как приложение<small>${inTG ? "Своя иконка, без Telegram, работает без сети" : "Откроется с иконки, работает без сети"}</small></span>
+      <button class="ibtn" data-ib="go">${inTG || installEvt ? "Установить" : "Как?"}</button>
       <button class="ix" data-ib="x" aria-label="Закрыть">${I.x}</button>`;
     el.addEventListener("click", (ev) => {
       const b = ev.target.closest("[data-ib]");
@@ -1804,10 +1803,10 @@ window.__appStart = () => {
   const ICON_STYLES = [["blue", "Синяя", ""], ["light", "Светлая", "-light"], ["dark", "Тёмная", "-dark"]];
   function iconStyle() { const v = store.get("iconStyle"); return ICON_STYLES.some((x) => x[0] === v) ? v : "blue"; }
   function iconPickHTML() {
-    if (inTG) return "";   // ярлык из Telegram рисует сам Telegram — свою иконку туда не передать
     const cur = iconStyle();
     const note = STANDALONE
       ? "Иконка уже на рабочем столе. Чтобы сменить её вид — удали иконку и установи приложение заново."
+      : inTG ? "Выбери до установки — эта иконка появится на рабочем столе."
       : "Выбери до установки — эта иконка появится на рабочем столе.";
     return `<div class="list pad" style="margin-top:10px"><span class="lbl15">Иконка на рабочем столе</span>
       <div class="icpick" role="radiogroup" aria-label="Иконка на рабочем столе">${ICON_STYLES.map(([v, l, suf]) =>
@@ -1815,6 +1814,68 @@ window.__appStart = () => {
           <img src="icons/icon-192${suf}.png" alt="" width="56" height="56"><span>${l}</span></button>`).join("")}</div>
       <p class="icnote">${note}</p></div>`;
   }
+
+  // ---------------- экран установки (открывается в браузере из Telegram или по «Как?») ----------------
+  const YANDEX = /YaBrowser|YaSearchBrowser/i.test(navigator.userAgent);
+  const ANDROID = /Android/i.test(navigator.userAgent);
+  function siteURL() { return location.origin + location.pathname.replace(/index\.html$/, ""); }
+  function openInstallPage() {
+    const url = `${siteURL()}?install=1&icon=${iconStyle()}`;
+    try { tg.openLink(url, { try_instant_view: false }); } catch (e) { window.open(url, "_blank", "noopener"); }
+  }
+  function installSheetHTML() {
+    const cur = iconStyle();
+    const suf = (ICON_STYLES.find((x) => x[0] === cur) || ICON_STYLES[0])[2];
+    const pick = ICON_STYLES.map(([v, l, sf]) => `<button data-is="icon" data-v="${v}" class="${cur === v ? "on" : ""}" aria-pressed="${cur === v}">
+      <img src="icons/icon-192${sf}.png" alt="" width="44" height="44"><span>${l}</span></button>`).join("");
+    const step = (n, html) => `<li><b>${n}</b><span>${html}</span></li>`;
+    const share = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>`;
+    let body;
+    if (IOS) {
+      body = `<ol class="isteps">
+        ${step(1, `Нажми «Поделиться» ${share} внизу экрана. <small>На новых iPhone — сначала ⋯ или ≡ в адресной строке</small>`)}
+        ${step(2, `Выбери <b>«На экран „Домой“»</b> — пролистай список, если не видно`)}
+        ${step(3, `Нажми <b>«Добавить»</b>`)}</ol>
+        <p class="ihint">Нет пункта «На экран „Домой“»? Значит, страница открылась внутри Telegram — нажми «Открыть в Safari» (значок компаса или ⋯).</p>`;
+    } else if (installEvt) {
+      body = `<button class="ibig" data-is="install">Установить приложение</button>`;
+    } else {
+      body = `<ol class="isteps">
+        ${step(1, `Открой меню браузера <b>⋮</b> или <b>≡</b>`)}
+        ${step(2, `Выбери <b>«Установить приложение»</b> или <b>«Добавить на главный экран»</b>`)}</ol>
+        ${YANDEX ? `<p class="ihint">Яндекс Браузер может сделать обычную закладку с панелью браузера. Чтобы получилось приложение — открой ссылку в Chrome.</p>
+          <button class="ibig ghost" data-is="copy">Скопировать ссылку</button>` : ""}`;
+    }
+    return `<div class="isheet" role="dialog" aria-label="Установка на главный экран">
+      <button class="ix iclose" data-is="close" aria-label="Закрыть">${I.x}</button>
+      <img class="iprev" src="icons/icon-512${suf}.png" alt="" width="84" height="84">
+      <h3>Установка на главный экран</h3>
+      <p class="isub">Своя иконка, открывается без браузера и Telegram, работает без сети</p>
+      <div class="ipick">${pick}</div>${body}</div>${IOS ? `<div class="iarrow" aria-hidden="true">↓</div>` : ""}`;
+  }
+  function showInstallSheet() {
+    if (STANDALONE) return;
+    hideInstallBar(false);
+    let wrap = document.querySelector(".iwrap");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.className = "iwrap";
+      wrap.addEventListener("click", async (ev) => {
+        const b = ev.target.closest("[data-is]");
+        if (!b) { if (ev.target === wrap) closeInstallSheet(); return; }
+        const a = b.dataset.is;
+        if (a === "close") closeInstallSheet();
+        else if (a === "icon") { store.set("iconStyle", b.dataset.v); try { window.applyIconStyle(b.dataset.v); } catch (e) { /* старая страница */ } haptic("select"); wrap.innerHTML = installSheetHTML(); }
+        else if (a === "install") { await promptInstall(); closeInstallSheet(); }
+        else if (a === "copy") {
+          try { await navigator.clipboard.writeText(siteURL()); toast("Ссылка скопирована — вставь её в Chrome"); } catch (e) { toast(siteURL()); }
+        }
+      });
+      document.body.appendChild(wrap);
+    }
+    wrap.innerHTML = installSheetHTML();
+  }
+  function closeInstallSheet() { const w = document.querySelector(".iwrap"); if (w) w.remove(); }
 
   function renderSettings() {
     const pref = themePref();
@@ -1829,8 +1890,7 @@ window.__appStart = () => {
         <span class="sub">Без шапки Telegram, больше места для пар</span></div>
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
       <h2 class="sec" id="asec">Приложение</h2>
-      ${installHTML()}
-      ${iconPickHTML()}
+      ${STANDALONE ? installHTML() + iconPickHTML() : iconPickHTML().replace('style="margin-top:10px"', 'style="margin-bottom:10px"') + installHTML()}
       <h2 class="sec" id="nsec">Уведомления в чате</h2>
       ${notifSettingsHTML()}
       <p class="foot">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
@@ -1996,13 +2056,9 @@ window.__appStart = () => {
     } else if (act === "install") {
       haptic("light");
       promptInstall();
-    } else if (act === "tg-home") {
-      haptic("light");
-      addToHome();
     } else if (act === "install-open") {
-      const url = location.origin + location.pathname;
       haptic("light");
-      try { tg.openLink(url, { try_instant_view: false }); } catch (e) { window.open(url, "_blank", "noopener"); }
+      openInstallPage();
     } else if (act === "notify-settings") {
       openNotifySettings();
     } else if (act === "ntoggle") {
@@ -2416,7 +2472,15 @@ window.__appStart = () => {
     fetchJSON("data/meta.json").then((j) => { meta = j; }).catch(() => {}),
     fetchJSON("data/changes.json").then((j) => { changes = j; }).catch(() => { changes = { items: [] }; }),
     load("g").catch(() => {}),
-  ]).then(() => { loadedAt = Date.now(); render(); setTimeout(showInstallBar, 4000); });
+  ]).then(() => {
+    loadedAt = Date.now();
+    render();
+    if (QS.get("install") === "1" && !inTG) {
+      // убираем служебные параметры из адреса — иконка на iPhone запомнит чистую ссылку
+      try { history.replaceState(null, "", location.pathname); } catch (e) { /* не страшно */ }
+      setTimeout(showInstallSheet, 300);
+    } else setTimeout(showInstallBar, 4000);
+  });
 
   setInterval(tick, 15000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { tick(); reloadIfStale(); } });
