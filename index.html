@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="d44af7431147">
+<meta name="app-ver" content="a89104589de7">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1137,27 +1137,47 @@ html[data-theme="dark"] .c1 { background: #3987e5; } html[data-theme="dark"] .c2
 .sgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .sgrid > div { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 18px; background: var(--surface); border: 1px solid var(--hair); min-width: 0; }
 .sgrid .tx { display: flex; flex-direction: column; min-width: 0; }
-.sgrid b { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.sgrid span { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sgrid b { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; color: var(--text); }
+.sgrid .sic { background: var(--surface2); color: var(--text2); }
+.sgrid .tx > span { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .snote { margin: 8px 4px 0; font-size: 13px; color: var(--muted); }
-.dg-ok { flex-direction: row !important; align-items: center; gap: 12px; }
-.dg-ok b { display: block; font-size: 15px; } .dg-ok .sub { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
-.dg-ic { width: 30px; height: 30px; flex: none; border-radius: 50%; display: grid; place-items: center; }
-.dg-ic.ok { background: var(--tag-bg); color: var(--tag-fg); }
-.dg-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.dg-tiles > div { padding: 10px 8px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); text-align: center; min-width: 0; }
-.dg-tiles b { display: block; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.dg-tiles span { display: block; font-size: 11px; font-weight: 600; color: var(--muted); line-height: 1.2; }
-.dg-tiles .bad b { color: var(--red-fg); } .dg-tiles .warn b { color: var(--warn-fg); }
-.dg-list { margin-top: 8px; gap: 0 !important; }
-.dg-list > div { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--sep); }
-.dg-list > div:first-child { border-top: 0; padding-top: 2px; }
-.dg-tag { flex: none; padding: 3px 8px; border-radius: 8px; font-size: 11.5px; font-weight: 700; margin-top: 1px; }
-.dg-tag.bad { background: var(--red-bg); color: var(--red-fg); } .dg-tag.warn { background: var(--warn-bg); color: var(--warn-fg); }
-.dg-tag.info { background: var(--surface2); color: var(--text2); }
-.dg-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.dg-m { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
-.dg-body .sub { font-size: 12px; color: var(--muted); }
+.sic-gray { background: linear-gradient(180deg, #A3AAB6, #737B89); }
+.sic-green { background: linear-gradient(180deg, #4ADE80, #16A34A); }
+.dg-hero { padding: 14px 16px 12px; border-radius: 22px; border: 1px solid var(--hair); background: var(--surface); box-shadow: var(--elev); }
+.dg-head .sic, .dg-chips .sic, .dg-row .sic { background: var(--surface2); color: var(--text2); }
+.dg-head .sic-red, .dg-chips .on .sic-red, .dg-row .sic-red { color: var(--red-fg); }
+.dg-head .sic-green { color: var(--tag-fg); }
+.dg-chips .on.err b { color: var(--red-fg); }
+.dg-head { display: flex; align-items: center; gap: 12px; }
+.dg-head .sic { width: 40px; height: 40px; border-radius: 13px; }
+.dg-head .sic svg { width: 22px; height: 22px; }
+.dg-ht { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dg-ht b { font-size: 19px; font-weight: 800; letter-spacing: -.01em; }
+.dg-ht span { font-size: 13px; color: var(--text2); }
+.dg-spark { display: block; width: 100%; height: 40px; margin-top: 14px; }
+.dg-spark .de { fill: var(--red-fg); } .dg-spark .dj { fill: var(--faint); } .dg-spark .dz { fill: var(--sep); }
+.dg-axis { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; font-size: 11px; color: var(--muted); }
+.dg-leg { display: inline-flex; align-items: center; gap: 5px; }
+.dg-leg i { width: 8px; height: 8px; border-radius: 2px; margin-left: 4px; } .dg-leg i.de { background: var(--red-fg); } .dg-leg i.dj { background: var(--faint); }
+.dg-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.dg-chips > div { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 9px; border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--hair); min-width: 0; }
+.dg-chips > div:not(.on) { opacity: .55; }
+.dg-chips .sic { width: 26px; height: 26px; border-radius: 9px; } .dg-chips .sic svg { width: 15px; height: 15px; }
+.dg-chips b { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.dg-chips span:last-child { font-size: 11px; font-weight: 600; color: var(--muted); text-align: center; line-height: 1.15; }
+.dg-list { margin-top: 8px; }
+.dg-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--sep); }
+.dg-row:first-child { border-top: 0; }
+.dg-row > .sic { margin-top: 2px; }
+.dg-body { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dg-k { font-size: 12px; font-weight: 700; color: var(--muted); }
+.dg-m { font-size: 14.5px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.dg-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.dg-pills i { font-style: normal; font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 7px; background: var(--surface2); color: var(--text2); }
+.dg-cnt { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding-top: 1px; }
+.dg-cnt b { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.dg-cnt span { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
 .schips { display: flex; flex-wrap: wrap; gap: 6px; }
 .schips span { padding: 6px 10px; border-radius: 99px; background: var(--surface); border: 1px solid var(--hair); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .schips span b { color: var(--muted); font-weight: 600; margin-left: 4px; }
@@ -1357,7 +1377,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.1";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.1.3";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2280,32 +2300,63 @@ window.__appStart = () => {
   function diagHTML(g) {
     if (!g) return "";
     const w = g.week || {}, n = (v) => +v || 0;
-    const PL = { ios: "iPhone", android: "Android", desktop: "компьютер" }, MD = { pwa: "с экрана", tg: "Telegram", web: "браузер" };
-    const where = (pm) => { const [p, m] = String(pm || "").split("."); return [PL[p], MD[m]].filter(Boolean).join(" · "); };
-    const KIND = { err: ["Ошибка", "bad"], jank: ["Рывок", "warn"], slow: ["Медленно", "warn"], dbl: ["Повтор", "info"] };
-    const total = n(w.err) + n(w.jank) + n(w.slow);
-    let h = `<h2 class="sec">Ошибки и сбои · 7 дней</h2>`;
-    if (!total && !n(w.dbl)) {
-      h += `<div class="list pad dg-ok"><span class="dg-ic ok" aria-hidden="true">${svg('<path d="M20 6 9 17l-5-5"/>', 16, 2.6)}</span>
-        <span><b>Сбоев не было</b><span class="sub">Ни ошибок, ни рывков ни у кого за неделю</span></span></div>`;
-    } else {
-      h += `<div class="dg-tiles">
-        <div class="${n(w.err) ? "bad" : ""}"><b>${n(w.err)}</b><span>ошибок</span></div>
-        <div class="${n(w.jank) ? "warn" : ""}"><b>${n(w.jank)}</b><span>рывков</span></div>
-        <div><b>${n(w.slow)}</b><span>медл. запусков</span></div>
-        <div><b>${n(w.dbl)}</b><span>двойных нажатий</span></div></div>`;
-      const list = (g.issues || []).slice(0, 8);
-      if (list.length) h += `<div class="list pad dg-list">${list.map((it) => {
-        const [lbl, cls] = KIND[it.k] || ["Сбой", "info"];
-        const extra = it.k === "jank" || it.k === "slow" ? ` · до ${it.k === "slow" ? (it.x / 1000).toFixed(1) + " с" : it.x + " мс"}` : "";
-        return `<div><span class="dg-tag ${cls}">${lbl}</span><span class="dg-body"><span class="dg-m">${esc(it.m)}</span>
-          <span class="sub">${n(it.n)} ${plural(n(it.n), "раз", "раза", "раз")} · ${n(it.dev)} ${plural(n(it.dev), "устройство", "устройства", "устройств")}${extra}${it.v ? " · " + esc(it.v) : ""}${where(it.p) ? " · " + where(it.p) : ""}</span></span></div>`;
+    const PL = { ios: "iPhone", android: "Android", desktop: "Компьютер" }, MD = { pwa: "с экрана", tg: "Telegram", web: "браузер" };
+    const IC = {
+      err: ["sic-red", svg('<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.6v.01"/>', 18, 2.2), "Ошибка"],
+      jank: ["sic-orange", svg('<path d="M3 12h4l3-7 4 14 3-7h4"/>', 18, 2.2), "Рывок"],
+      slow: ["sic-blue", svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>', 18, 2.2), "Медленный запуск"],
+      dbl: ["sic-gray", svg('<circle cx="12" cy="12" r="3"/><path d="M5.6 8A7 7 0 0 1 18.4 8M5.6 16a7 7 0 0 0 12.8 0"/>', 18, 2.2), "Двойное нажатие"],
+      ok: ["sic-green", svg('<path d="M20 6 9 17l-5-5"/>', 18, 2.6)],
+    };
+    const ago = (d) => { if (!d) return ""; const t = samaraNow().date; if (d === t) return "сегодня"; if (d === addDays(t, -1)) return "вчера";
+      return `${+d.slice(8, 10)} ${MSHORT[+d.slice(5, 7) - 1]}`; };
+    const issues = g.issues || [];
+    const errs = n(w.err), janks = n(w.jank) + n(w.slow);
+    const last = issues.filter((x) => x.k !== "dbl").reduce((a, x) => (x.last > a ? x.last : a), "");
+    const devs = (k) => issues.filter((x) => x.k === k).reduce((a, x) => a + n(x.dev), 0);
+    // главная карточка: состояние одним словом + столбики за 14 дней
+    const st = errs ? ["bad", "Есть ошибки", IC.err] : janks ? ["warn", "Есть рывки", IC.jank] : ["ok", "Всё работает", IC.ok];
+    const parts = [];
+    if (errs) parts.push(`${errs} ${plural(errs, "ошибка", "ошибки", "ошибок")} на ${devs("err")} ${plural(devs("err"), "устройстве", "устройствах", "устройствах")}`);
+    if (janks) parts.push(`${janks} ${plural(janks, "рывок", "рывка", "рывков")}`);
+    const sub = parts.length ? `${parts.join(" и ")} · последний ${ago(last)}` : "Ни ошибок, ни рывков ни у кого за неделю";
+    const days = (g.daily || []).slice(-14), top = Math.max(1, ...days.map((d) => n(d.err) + n(d.jank)));
+    const W = 280, H = 40, gap = 4, bw = (W - gap * 13) / 14;
+    const bars = days.map((d, i) => {
+      const x = (i * (bw + gap)).toFixed(1), e = n(d.err), j = n(d.jank);
+      if (!e && !j) return `<rect class="dz" x="${x}" y="${H - 3}" width="${bw.toFixed(1)}" height="3" rx="1.5"/>`;
+      const he = e ? Math.max(4, (e / top) * (H - 2)) : 0, hj = j ? Math.max(4, (j / top) * (H - 2)) : 0;
+      return (he ? `<rect class="de" x="${x}" y="${(H - he).toFixed(1)}" width="${bw.toFixed(1)}" height="${he.toFixed(1)}" rx="2.5"/>` : "") +
+        (hj ? `<rect class="dj" x="${x}" y="${(H - he - (he ? 2 : 0) - hj).toFixed(1)}" width="${bw.toFixed(1)}" height="${hj.toFixed(1)}" rx="2.5"/>` : "");
+    }).join("");
+    let h = `<h2 class="sec">Ошибки и сбои</h2>
+      <div class="dg-hero ${st[0]}">
+        <div class="dg-head"><span class="sic ${st[2][0]}" aria-hidden="true">${st[2][1]}</span>
+          <span class="dg-ht"><b>${st[1]}</b><span>${esc(sub)}</span></span></div>
+        <svg class="dg-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Сбои по дням за 2 недели">${bars}</svg>
+        <div class="dg-axis"><span>2 недели назад</span>${errs || janks ? `<span class="dg-leg"><i class="de"></i>ошибки<i class="dj"></i>рывки</span>` : ""}<span>сегодня</span></div>
+      </div>`;
+    if (errs || janks || n(w.dbl)) {
+      const chip = (k, v, l) => `<div class="${v ? "on " + k : ""}"><span class="sic ${IC[k][0]}" aria-hidden="true">${IC[k][1]}</span><b>${v}</b><span>${l}</span></div>`;
+      h += `<div class="dg-chips">${chip("err", errs, plural(errs, "ошибка", "ошибки", "ошибок"))}${chip("jank", n(w.jank), plural(n(w.jank), "рывок", "рывка", "рывков"))}${chip("slow", n(w.slow), "медл. запуск")}${chip("dbl", n(w.dbl), "двойн. нажат.")}</div>`;
+      const list = issues.slice(0, 8);
+      if (list.length) h += `<div class="list dg-list">${list.map((it) => {
+        const ic = IC[it.k] || IC.dbl;
+        const [p, m] = String(it.p || "").split(".");
+        const extra = it.k === "jank" ? `до ${n(it.x)} мс` : it.k === "slow" ? `до ${(n(it.x) / 1000).toFixed(1)} с` : "";
+        return `<div class="dg-row"><span class="sic ${ic[0]}" aria-hidden="true">${ic[1]}</span>
+          <span class="dg-body"><span class="dg-k">${ic[2]}${extra ? ` · ${extra}` : ""} · ${ago(it.last)}</span><span class="dg-m">${esc(it.m)}</span>
+            <span class="dg-pills">${it.v ? `<i>${esc(it.v)}</i>` : ""}${PL[p] ? `<i>${PL[p]}</i>` : ""}${MD[m] ? `<i>${MD[m]}</i>` : ""}</span></span>
+          <span class="dg-cnt"><b>×${n(it.n)}</b><span>${n(it.dev)} ${plural(n(it.dev), "устр.", "устр.", "устр.")}</span></span></div>`;
       }).join("")}</div>`;
     }
-    const fps = g.fps || {}, f = (k) => n(fps[k]);
-    if (f("120") + f("60") + f("30") + f("<30")) {
-      h += `<p class="snote">Частота кадров у людей: ${[["120", "120 Гц"], ["60", "60 Гц"], ["30", "30 Гц (энергосбережение)"], ["<30", "меньше 30"]]
-        .filter(([k]) => f(k)).map(([k, l]) => `${l} — ${f(k)}`).join(" · ")}</p>`;
+    // частота кадров у людей — одна полоса из частей
+    const fps = g.fps || {}, fr = [["120", "120 Гц", "c1"], ["60", "60 Гц", "c3"], ["30", "30 Гц — энергосбережение", "c2"], ["<30", "меньше 30 Гц", "c2"]].filter(([k]) => n(fps[k]));
+    const ft = fr.reduce((a, [k]) => a + n(fps[k]), 0);
+    if (ft) {
+      h += `<h2 class="sec">Частота кадров у людей</h2><div class="list pad">
+        <div class="sstack" aria-hidden="true">${fr.map(([k, , c]) => `<i class="${c}" style="flex:${n(fps[k])}"></i>`).join("")}</div>
+        <div class="sleg">${fr.map(([k, l, c]) => `<div><span class="dot ${c}"></span><span class="nm">${l}</span><b>${n(fps[k])}</b><span class="pc">${Math.round((n(fps[k]) / ft) * 100)}%</span></div>`).join("")}</div></div>`;
     }
     return h;
   }
@@ -2391,11 +2442,7 @@ window.__appStart = () => {
       ${tile("sic-blue", I.bell, nt.remind, "перед парой")}
       ${tile("sic-orange", svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', 18), nt.morning, "утром")}
       ${tile("sic-purple", I.moon, nt.evening, "вечером")}
-      ${tile("sic-red", I.swap, nt.changes, "об изменениях")}</div>
-      <p class="snote">Хоть одно включено у ${n(x.notify_users)} из ${n(x.bot_users)} · ${n(x.push_devices) ? `push на ${n(x.push_devices)} ${dev(n(x.push_devices))}` : "push пока не включали"}</p>`;
-    const vers = Object.entries(x.versions || {});
-    if (vers.length) html += `<h2 class="sec">Версии за неделю</h2><div class="schips">${vers.map(([v, k]) => `<span>${esc(v || "?")}<b>${k}</b></span>`).join("")}</div>`;
-    html += `<p class="foot">Считаются устройства, без имён и аккаунтов</p>`;
+      ${tile("sic-red", I.swap, nt.changes, "об изменениях")}</div>`;
     app.innerHTML = html;
     // касание столбика — подпись с датой и числом
     const svgEl = app.querySelector(".schart svg"), cap = app.querySelector("#scap");
