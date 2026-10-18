@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="30f76b95b910">
+<meta name="app-ver" content="a76bb043938a">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -438,13 +438,15 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .nlink .nstatus:empty { display: none; }
 .nfold .nsub { padding: 14px 16px 2px; border-top: 1px solid var(--sep); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .nfold .nsub + .srow { border-top: 0; }
-/* потянуть вниз — обновить (ярлык) */
-.ptr { position: fixed; left: 50%; top: calc(var(--safe-top, 0px) + var(--top-gap, 0px) - 44px); z-index: 8; width: 40px; height: 40px; margin-left: -20px;
-  border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--elev); color: var(--muted); opacity: 0; pointer-events: none; }
-.ptr.ready { color: var(--accent); }
-.ptr.spin .ptr-c { animation: ptrspin .8s linear infinite; }
-.ptr-c { display: grid; place-items: center; }
+/* потянуть вниз — обновить (ярлык): как в iOS — весь экран тянется вниз, в открывшейся щели
+   по одной зажигаются чёрточки индикатора; отпустили — экран чуть задерживается, индикатор крутится */
+.ptr { position: fixed; left: 50%; top: calc(var(--safe-top, 0px) + var(--top-gap, 0px)); z-index: 8; width: 28px; height: 28px;
+  margin: -14px 0 0 -14px; color: var(--muted); opacity: 0; pointer-events: none; will-change: transform, opacity; }
+.ptr svg { display: block; width: 28px; height: 28px; }
+.ptr .tk { opacity: 0; }
+.ptr.spin svg { animation: ptrspin .8s steps(8) infinite; }
 @keyframes ptrspin { to { transform: rotate(360deg); } }
+html.ptr-hold #app { will-change: transform; }
 /* свайп от края — назад: тень у левого края */
 /* свайп назад как в iOS: снимок прошлого экрана под текущим */
 .under { position: fixed; inset: 0; z-index: 1; overflow: hidden; background: var(--bg); pointer-events: none; will-change: transform; }
@@ -1752,7 +1754,7 @@ window.__appStart = () => {
   // ---------------- экраны ----------------
   function render() {
     const token = ++renderToken;
-    if (app.style.transform && window.resetEdgeSwipe) window.resetEdgeSwipe();   // экран не должен остаться сдвинутым (кроме самого свайпа)
+    if (app.style.transform && window.resetEdgeSwipe && !document.documentElement.classList.contains("ptr-busy")) window.resetEdgeSwipe();   // экран не должен остаться сдвинутым (кроме самого свайпа)
     app.classList.remove("fill");
     if (view === "settings") return renderSettings();
     if (view === "teachers") return renderTeachers(token);
@@ -2719,7 +2721,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v17.7 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v17.8 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -3599,61 +3601,100 @@ window.__appStart = () => {
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkAppVersion(false); });
 
   // --- потянуть вниз — обновить (только ярлык: в браузере и Telegram это делают они сами) ---
+  // Как в приложениях iPhone: экран (вместе с шапкой) тянется вниз с «резинкой», в щели сверху
+  // по одной загораются 8 чёрточек; когда загорелись все — отпускайте. Экран задерживается
+  // на высоте индикатора, пока идёт обновление, и мягко возвращается.
   if (STANDALONE && !inTG) {
+    const ROOT = document.documentElement;
     const ptr = document.createElement("div");
     ptr.className = "ptr";
     ptr.setAttribute("aria-hidden", "true");
-    ptr.innerHTML = `<span class="ptr-c">${I.refresh}</span>`;
+    let tk = "";
+    for (let i = 0; i < 8; i++) {
+      const a = (i * 45 - 90) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+      tk += `<line class="tk" x1="${(14 + 5.6 * c).toFixed(2)}" y1="${(14 + 5.6 * sn).toFixed(2)}" x2="${(14 + 11.4 * c).toFixed(2)}" y2="${(14 + 11.4 * sn).toFixed(2)}"/>`;
+    }
+    ptr.innerHTML = `<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round">${tk}</svg>`;
     document.body.appendChild(ptr);
-    const icon = ptr.firstElementChild;
-    let y0 = null, x0 = 0, dist = 0, active = false, busy = false;
-    const DONE = 64;
+    const ticks = [...ptr.querySelectorAll(".tk")];
+    const svgEl = ptr.firstElementChild;
+    const PULL = 84, HOLD = 58;      // сколько тянуть до обновления и на какой высоте держать экран
+    let y0 = null, x0 = 0, dist = 0, active = false, busy = false, ready = false;
+    // резинка как в iOS: чем дальше тянешь, тем туже
+    const rubber = (d) => { const H = Math.max(500, innerHeight); return (1 - 1 / (d * 0.55 / H + 1)) * H; };
+    const ease = "cubic-bezier(.25, 1, .35, 1)";
+    function place(d) {
+      app.style.transform = d > 0.2 ? `translate3d(0,${snap(d)}px,0)` : "";
+      ptr.style.transform = `translate3d(0,${snap(Math.max(14, d / 2))}px,0)`;
+    }
+    function showTicks(prog) {   // prog 0…1 — сколько чёрточек горит (по часовой, с верхней)
+      const n = prog * 8;
+      ticks.forEach((t, i) => { t.style.opacity = String(Math.max(0, Math.min(1, n - i)) * (prog >= 1 ? 1 - i * 0.085 : 1)); });
+    }
+    function spinTicks() { ticks.forEach((t, i) => { t.style.opacity = String(1 - ((8 - i) % 8) * 0.11); }); }
+    function release(ms) {
+      ROOT.classList.remove("ptr-hold");
+      app.style.transition = `transform ${ms}ms ${ease}`;
+      ptr.style.transition = `transform ${ms}ms ${ease}, opacity ${Math.round(ms * 0.6)}ms ease`;
+      place(0);
+      ptr.style.opacity = "0";
+      ptr.style.transform += " scale(.6)";
+      setTimeout(() => {
+        app.style.transition = ""; ptr.style.transition = ""; app.style.transform = "";
+        ptr.classList.remove("spin"); svgEl.style.transform = ""; busy = false;
+        ROOT.style.overscrollBehaviorY = ""; ROOT.classList.remove("ptr-busy");
+      }, ms + 30);
+    }
     document.addEventListener("touchstart", (e) => {
       y0 = null;
-      if (busy || e.touches.length !== 1 || window.scrollY > 0 || document.querySelector(".sheet, .vbox")) return;
-      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; active = false; dist = 0;
+      if (busy || e.touches.length !== 1 || window.scrollY > 0 || ROOT.classList.contains("swiping")
+        || document.querySelector(".sheet, .vbox, .iwrap, .vwrap")) return;
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; active = false; dist = 0; ready = false;
+      ROOT.style.overscrollBehaviorY = "none";   // родная «резинка» страницы сверху не мешает нашей
     }, { passive: true });
     document.addEventListener("touchmove", (e) => {
       if (y0 === null) return;
       const dy = e.touches[0].clientY - y0, dx = e.touches[0].clientX - x0;
       if (!active) {
-        if (dy > 6 && dy > Math.abs(dx) * 1.5 && window.scrollY <= 0) active = true;
-        else if (Math.abs(dx) > 8 || dy < -4) { y0 = null; return; } else return;
+        if (dy > 6 && dy > Math.abs(dx) * 1.5 && window.scrollY <= 0) {
+          active = true; y0 = e.touches[0].clientY - 1;   // без рывка на «мёртвую зону»
+          ROOT.classList.add("ptr-hold");
+          app.style.transition = ""; ptr.style.transition = "";
+        } else if (Math.abs(dx) > 8 || dy < -4) { y0 = null; ROOT.style.overscrollBehaviorY = ""; return; }
+        else return;
       }
-      dist = Math.min(Math.max(0, dy) * 0.5, 96);
-      ptr.style.transform = `translateY(${dist}px)`;
-      ptr.style.opacity = String(Math.min(1, dist / 40));
-      icon.style.transform = `rotate(${dist * 4}deg)`;
-      const ready = dist >= DONE;
-      if (ready !== ptr.classList.contains("ready")) { ptr.classList.toggle("ready", ready); if (ready && navigator.vibrate) navigator.vibrate(8); }
+      dist = rubber(Math.max(0, e.touches[0].clientY - y0));
+      place(dist);
+      const prog = Math.min(1, dist / PULL);
+      ptr.style.opacity = String(Math.min(1, dist / 30));
+      showTicks(prog);
+      if ((prog >= 1) !== ready) { ready = prog >= 1; haptic("light"); }
     }, { passive: true });
-    document.addEventListener("touchend", async () => {
+    const end = async () => {
       if (y0 === null) return;
       y0 = null;
-      if (!active) return;
+      if (!active) { ROOT.style.overscrollBehaviorY = ""; return; }
       active = false;
-      const go = dist >= DONE;
-      ptr.classList.remove("ready");
-      if (go) {
-        busy = true;
-        icon.style.transform = "";
-        ptr.style.transition = "transform .2s ease";
-        ptr.style.transform = `translateY(${DONE}px)`;
-        ptr.classList.add("spin");
-        const t0 = Date.now();
-        const updated = await checkAppVersion(true);
-        if (updated) return;
-        loadedAt = 0;
-        const ok = await reloadIfStale(true);
-        await new Promise((r) => setTimeout(r, Math.max(0, 450 - (Date.now() - t0))));   // крутилка не мелькает
-        if (ok) toast("Расписание обновлено");
-        ptr.classList.remove("spin");
-      }
-      ptr.style.transition = "transform .28s ease, opacity .28s ease";
-      ptr.style.transform = "";
-      ptr.style.opacity = "0";
-      setTimeout(() => { ptr.style.transition = ""; busy = false; }, 300);
-    }, { passive: true });
+      busy = true;
+      ROOT.classList.add("ptr-busy");   // пока экран не вернулся — свайп «назад» не начинаем
+      if (!ready) { release(320); return; }
+      // держим экран на высоте индикатора, пока обновляемся
+      app.style.transition = `transform 380ms ${ease}`;
+      ptr.style.transition = `transform 380ms ${ease}`;
+      place(HOLD);
+      spinTicks();
+      ptr.classList.add("spin");
+      const t0 = Date.now();
+      const updated = await checkAppVersion(true);
+      if (updated) return;
+      loadedAt = 0;
+      const ok = await reloadIfStale(true);
+      await new Promise((r) => setTimeout(r, Math.max(0, 700 - (Date.now() - t0))));   // крутилка не мелькает
+      release(420);
+      if (ok) setTimeout(() => toast("Расписание обновлено"), 200);
+    };
+    document.addEventListener("touchend", end, { passive: true });
+    document.addEventListener("touchcancel", end, { passive: true });
   }
 
   // --- свайп от левого края — назад, как в iOS ---
@@ -3711,14 +3752,15 @@ window.__appStart = () => {
       if (animating) return;
       const was = sx !== null && mode === 1;
       sx = null; mode = 0; unlockPager();
-      if (was) { vx = 0; settle(false); } else if (app.style.transform) cleanup();
+      if (was) { vx = 0; settle(false); } else if (app.style.transform && !document.documentElement.classList.contains("ptr-busy")) cleanup();
     };
     window.resetEdgeSwipe = () => { if (animating || mode === 1) return; sx = null; unlockPager(); cleanup(); };
     document.addEventListener("touchstart", (e) => {
       if (animating) return;
       if (sx !== null) { abort(); return; }
       const t = e.touches[0];
-      if (e.touches.length !== 1 || !stack.length || t.clientX > 24 || document.querySelector(".vbox, .isheet")) return;
+      if (e.touches.length !== 1 || !stack.length || t.clientX > 24 || document.querySelector(".vbox, .isheet")
+        || document.documentElement.classList.contains("ptr-busy")) return;
       sx = t.clientX; sy = t.clientY; dx = 0; mode = 0; vx = 0; lastX = t.clientX; lastT = performance.now();
       const pg = e.target.closest && e.target.closest("[data-pager]");
       if (pg) { lockedPager = pg; pg.style.overflowX = "hidden"; }   // у края — жест «назад», а не листание дней
