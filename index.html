@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="99864ca5e5ab">
+<meta name="app-ver" content="9e7aabb56f05">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -463,16 +463,15 @@ html.swiping, html.swiping body { overflow-x: clip; }   /* уехавший вб
 
 .foot { margin: 22px 0 0; text-align: center; font-size: 13px; line-height: 1.5; color: var(--muted); }
 .flink { border: 0; background: none; padding: 6px 2px; margin: -6px 0; color: var(--accent); font-weight: 600; }
-/* Подсказки — тихая чёрная капсула вверху, как «остров» iPhone. В приложении на iPhone с вырезом
-   она выходит прямо из «острова» и уходит обратно в него. */
+/* Подсказки — тихая чёрная капсула над нижней панелью. Не вверху: в iOS 26 у установленных приложений
+   система размывает полосу экрана под часами, и подсказка там выглядит мутной. */
 .toast {
-  position: fixed; left: 50%; top: calc(var(--safe-top, 0px) + 8px); transform: translateX(-50%); z-index: 40;
+  position: fixed; left: 50%; bottom: calc(max(10px, env(safe-area-inset-bottom), var(--safe-bottom, 0px)) + 76px); transform: translateX(-50%); z-index: 40;
   display: flex; align-items: center; gap: 8px; height: 36px; max-width: calc(100vw - 32px); padding: 0 14px 0 6px;
   border-radius: 999px; background: #000; color: #EDEEF0; font-size: 13px; font-weight: 600; letter-spacing: .005em; white-space: nowrap;
   box-shadow: 0 0 0 .5px rgba(255, 255, 255, .07), 0 6px 18px rgba(0, 0, 0, .28);
 }
 html[data-theme="light"] .toast { box-shadow: 0 6px 18px rgba(20, 30, 60, .18); }
-.toast.isl { top: 55px; }
 .toast.long { height: auto; min-height: 36px; padding-top: 7px; padding-bottom: 7px; border-radius: 19px; white-space: normal; line-height: 1.3; width: max-content; max-width: min(340px, calc(100vw - 32px)); }
 .toast .t-ic { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
   background: color-mix(in srgb, var(--tc) 20%, transparent); color: var(--tc); }
@@ -1043,13 +1042,14 @@ html[data-theme="light"] .ibar { background: linear-gradient(180deg, rgba(255, 2
 .ncw { position: relative; border-radius: 22px; }
 .ncw > .nc { position: relative; z-index: 1; touch-action: pan-y; }
 .ncw.ncsw > .nc { will-change: transform; }
-.nc-del { --w: 0px; position: absolute; z-index: 0; top: 0; bottom: 0; right: 0; width: max(var(--w), 0px); min-width: 0; overflow: hidden;
+.nc-del { position: absolute; z-index: 0; top: 0; bottom: 0; right: 0; width: 84px; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; border: 0; border-radius: 22px;
-  background: #E5484D; color: #fff; font: inherit; font-size: 12px; font-weight: 700; opacity: 0; transition: opacity .15s; }
-.ncw.ncsw > .nc-del { opacity: 1; }
+  background: #E5484D; color: #fff; font: inherit; font-size: 12px; font-weight: 700; transform: translate3d(92px, 0, 0); visibility: hidden; }
+.ncw.ncsw > .nc-del { visibility: visible; }
 .nc-del svg { flex: none; width: 22px; height: 22px; }
+.nc-del > * { opacity: var(--o, 1); transition: opacity .2s; }
 .nc-del span { white-space: nowrap; }
-.ncw.gone { overflow: hidden; pointer-events: none; }
+.ncw.gone { pointer-events: none; }
 
 .nc { --tone: var(--warn-fg); --tone-bg: var(--warn-bg);
   display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 14px 16px 15px; text-align: left; color: var(--text);
@@ -1186,7 +1186,7 @@ html[data-theme="dark"] .c1 { background: #3987e5; } html[data-theme="dark"] .c2
 .dg-axis { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; font-size: 11px; color: var(--muted); }
 .dg-leg { display: inline-flex; align-items: center; gap: 5px; }
 .dg-leg i { width: 8px; height: 8px; border-radius: 2px; margin-left: 4px; } .dg-leg i.de { background: var(--red-fg); } .dg-leg i.dj { background: var(--faint); }
-.dg-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.dg-chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
 .dg-chips > div { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 9px; border-radius: 18px;
   background: var(--surface); border: 1px solid var(--hair); min-width: 0; }
 .dg-chips > div:not(.on) { opacity: .55; }
@@ -1382,7 +1382,6 @@ window.__appStart = () => {
   });
   // Следим за кадрами, пока что-то движется: пропуск больше ~3 кадров подряд — заметный рывок.
   // Заодно узнаём настоящую частоту кадров у человека (30 — энергосбережение, 60, 120 — ProMotion).
-  const fpsSeen = new Set();
   function watchFrames(where, ms) {
     if (document.hidden || !window.requestAnimationFrame) return;
     const gaps = [];
@@ -1394,8 +1393,6 @@ window.__appStart = () => {
       if (ts - t0 < ms && !document.hidden) { requestAnimationFrame(step); return; }
       if (gaps.length < 4) return;
       const body = gaps.slice(1).sort((a, b) => a - b), med = body[Math.floor(body.length / 2)], max = body[body.length - 1];
-      const hz = med < 11 ? "120" : med < 22 ? "60" : med < 40 ? "30" : "<30";
-      if (!fpsSeen.has(hz)) { fpsSeen.add(hz); DIAG.add("fps", hz); }
       if (max > Math.max(50, med * 3)) DIAG.add("jank", where, max);
     };
     requestAnimationFrame(step);
@@ -1405,7 +1402,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.2.1";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.2.3";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2372,7 +2369,7 @@ window.__appStart = () => {
     }).join("");
     if (st[0] === "ok") {
       return `<h2 class="sec">Ошибки и сбои</h2><div class="dg-hero ok"><div class="dg-head"><span class="sic ${st[2][0]}" aria-hidden="true">${st[2][1]}</span>
-        <span class="dg-ht"><b>${st[1]}</b></span></div></div>` + fpsHTML(g);
+        <span class="dg-ht"><b>${st[1]}</b></span></div></div>`;
     }
     let h = `<h2 class="sec">Ошибки и сбои</h2>
       <div class="dg-hero ${st[0]}">
@@ -2381,10 +2378,10 @@ window.__appStart = () => {
         <svg class="dg-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Сбои по дням за 2 недели">${bars}</svg>
         <div class="dg-axis"><span>2 недели назад</span>${errs || janks ? `<span class="dg-leg"><i class="de"></i>ошибки<i class="dj"></i>рывки</span>` : ""}<span>сегодня</span></div>
       </div>`;
-    if (errs || janks || n(w.dbl)) {
+    {
       const chip = (k, v, l) => `<div class="${v ? "on " + k : ""}"><span class="sic ${IC[k][0]}" aria-hidden="true">${IC[k][1]}</span><b>${v}</b><span>${l}</span></div>`;
-      h += `<div class="dg-chips">${chip("err", errs, plural(errs, "ошибка", "ошибки", "ошибок"))}${chip("jank", n(w.jank), plural(n(w.jank), "рывок", "рывка", "рывков"))}${chip("slow", n(w.slow), "медл. запуск")}${chip("dbl", n(w.dbl), "двойн. нажат.")}</div>`;
-      const list = issues.slice(0, 8);
+      h += `<div class="dg-chips">${chip("err", errs, plural(errs, "ошибка", "ошибки", "ошибок"))}${chip("jank", n(w.jank), plural(n(w.jank), "рывок", "рывка", "рывков"))}${chip("slow", n(w.slow), "медл. запуск")}</div>`;
+      const list = issues.filter((x) => x.k !== "dbl").slice(0, 8);
       if (list.length) h += `<div class="list dg-list">${list.map((it) => {
         const ic = IC[it.k] || IC.dbl;
         const [p, m] = String(it.p || "").split(".");
@@ -2395,21 +2392,9 @@ window.__appStart = () => {
           <span class="dg-cnt"><b>×${n(it.n)}</b><span>${n(it.dev)} ${plural(n(it.dev), "устр.", "устр.", "устр.")}</span></span></div>`;
       }).join("")}</div>`;
     }
-    return h + fpsHTML(g);
-  }
-  function fpsHTML(g) {
-    const n = (v) => +v || 0;
-    let h = "";
-    // частота кадров у людей — одна полоса из частей
-    const fps = g.fps || {}, fr = [["120", "120 Гц", "c1"], ["60", "60 Гц", "c3"], ["30", "30 Гц — энергосбережение", "c2"], ["<30", "меньше 30 Гц", "c2"]].filter(([k]) => n(fps[k]));
-    const ft = fr.reduce((a, [k]) => a + n(fps[k]), 0);
-    if (ft) {
-      h += `<h2 class="sec">Частота кадров у людей</h2><div class="list pad">
-        <div class="sstack" aria-hidden="true">${fr.map(([k, , c]) => `<i class="${c}" style="flex:${n(fps[k])}"></i>`).join("")}</div>
-        <div class="sleg">${fr.map(([k, l, c]) => `<div><span class="dot ${c}"></span><span class="nm">${l}</span><b>${n(fps[k])}</b><span class="pc">${Math.round((n(fps[k]) / ft) * 100)}%</span></div>`).join("")}</div></div>`;
-    }
     return h;
   }
+
   function renderStats() {
     const x = adminStats;
     const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
@@ -2545,15 +2530,26 @@ window.__appStart = () => {
   // ---- удаление уведомлений свайпом, как в iPhone ----
   // Влево — под карточкой появляется красная «Удалить». Дотянул больше чем до середины или резко
   // смахнул — удаляется сразу; чуть-чуть — карточка останавливается с открытой кнопкой.
-  const NC_OPEN = 92;
+  const NC_OPEN = 92;   // насколько открывается карточка, чтобы показать кнопку
   let ncSw = null, ncOpenW = null, ncClickBlock = 0;
+  // Красная «Удалить» — отдельная капсула справа, всегда в 8 px от края карточки: выезжает из-за края
+  // экрана вместе с карточкой (оба — трансформом, синхронно). Дальше кнопки — растягивается к пальцу.
+  const NC_GAP = 8, NC_BTN = NC_OPEN - NC_GAP;
   const ncSet = (w, x, anim) => {
     const card = w.querySelector(".nc"), del = w.querySelector(".nc-del");
-    const from = card.style.transform || "none", to = x ? `translate3d(${x}px,0,0)` : "none";
-    card.style.transform = x ? to : "";
-    del.style.setProperty("--w", `${Math.max(0, -x)}px`);
-    w.classList.toggle("ncsw", x < 0);
-    if (anim && from !== to) try { card.animate([{ transform: from }, { transform: to }], { duration: 300, easing: "cubic-bezier(.25, .9, .3, 1)" }); } catch (e) { /* без анимации */ }
+    const r = Math.max(0, -x);
+    const from = [card.style.transform || "none", del.style.transform || "none"];
+    const to = [r ? `translate3d(${-r}px,0,0)` : "none", `translate3d(${Math.max(0, NC_OPEN - r)}px,0,0)`];
+    card.style.transform = r ? to[0] : "";
+    del.style.transform = to[1];
+    del.style.width = `${Math.max(NC_BTN, r - NC_GAP)}px`;
+    del.style.setProperty("--o", Math.max(0, Math.min(1, (r - 36) / 40)).toFixed(2));   // значок проявляется, когда кнопка почти выехала
+    w.classList.toggle("ncsw", r > 0);
+    if (anim) try {
+      const o = { duration: 320, easing: "cubic-bezier(.25, .9, .3, 1)" };
+      if (from[0] !== to[0]) card.animate([{ transform: from[0] }, { transform: to[0] }], o);
+      if (from[1] !== to[1]) del.animate([{ transform: from[1] }, { transform: to[1] }], o);
+    } catch (e) { /* без анимации */ }
   };
   function ncClose(anim) { if (ncOpenW && ncOpenW.isConnected) ncSet(ncOpenW, 0, anim); ncOpenW = null; }
   function ncRemove(ws) {
@@ -2564,16 +2560,15 @@ window.__appStart = () => {
     let left = ws.length;
     const done = () => { if (--left) return; if (view === "notif") { const y = scrollY; render(); scrollTo(0, y); } syncBadge(); };
     for (const w of ws) {
-      const card = w.querySelector(".nc"), del = w.querySelector(".nc-del"), h = w.offsetHeight;
+      const h = w.offsetHeight;
       w.classList.add("gone");
       try {
-        const W = w.offsetWidth;
-        // красная подложка растягивается за улетающей карточкой на всю ширину, как в iPhone
-        w.classList.add("ncsw");
-        del.animate([{ width: getComputedStyle(del).width }, { width: W + "px" }], { duration: 220, easing: "cubic-bezier(.4, 0, 1, 1)", fill: "forwards" });
-        card.animate([{ transform: card.style.transform || "none" }, { transform: `translate3d(${-W - 40}px,0,0)` }], { duration: 220, easing: "cubic-bezier(.4, 0, 1, 1)", fill: "forwards" });
-        w.animate([{ height: h + "px", marginBottom: "0px", opacity: 1 }, { height: "0px", marginBottom: "-10px", opacity: 0 }],
-          { duration: 260, delay: 160, easing: "cubic-bezier(.25, .9, .3, 1)", fill: "forwards" }).finished.then(done, done);
+        // строка целиком (карточка вместе с красной кнопкой) уезжает влево, потом список смыкается
+        const W = w.offsetWidth + 120;
+        w.animate([{ transform: "none", opacity: 1 }, { transform: `translate3d(${-W}px,0,0)`, opacity: 1 }],
+          { duration: 230, easing: "cubic-bezier(.4, 0, .9, .6)", fill: "forwards" });
+        w.animate([{ height: h + "px", marginBottom: "0px" }, { height: "0px", marginBottom: "-10px" }],
+          { duration: 260, delay: 190, easing: "cubic-bezier(.3, .9, .3, 1)", fill: "forwards" }).finished.then(done, done);
       } catch (e) { done(); }
     }
     toast(ids.length > 1 ? "Уведомления удалены" : "Уведомление удалено", "Вернуть", () => {
@@ -3564,27 +3559,12 @@ window.__appStart = () => {
       el.appendChild(b);
     }
     if (text.length > 34) el.classList.add("long");
-    // «остров» есть у установленного приложения на iPhone с вырезом: верхний отступ экрана 51 px и больше
-    let island = false;
-    if (IOS && STANDALONE && !el.classList.contains("long")) {
-      const pr = document.createElement("div");
-      pr.style.cssText = "position:fixed;top:env(safe-area-inset-top,0px);left:0;width:1px;height:1px;visibility:hidden";
-      document.body.appendChild(pr);
-      island = pr.getBoundingClientRect().top >= 51;
-      pr.remove();
-    }
-    el.classList.toggle("isl", island);
     document.body.appendChild(el);
-    const w = el.offsetWidth, side = Math.max(0, (w - (island ? 126 : 60)) / 2);
-    const closed = `inset(0px ${side}px round 999px)`, open = "inset(0px 0px round 999px)";
-    try {
-      // из «острова»: капсула размером с него опускается чуть ниже и раскрывается вширь
-      el.animate(island ? [{ clipPath: closed, transform: "translateX(-50%) translateY(-44px)" }, { clipPath: open, transform: "translateX(-50%)" }]
-        : [{ clipPath: closed, opacity: 0 }, { clipPath: open, opacity: 1 }], { duration: 460, easing: "cubic-bezier(.2, .9, .25, 1.04)" });
-      for (const c of el.children) c.animate([{ opacity: 0 }, { opacity: 0, offset: .25 }, { opacity: 1 }], { duration: 380, easing: "ease-out" });
-    } catch (e) { /* без анимации */ }
-    hideAnim = () => el.animate(island ? [{ clipPath: open, transform: "translateX(-50%)" }, { clipPath: closed, transform: "translateX(-50%) translateY(-44px)", opacity: 1, offset: .85 }, { clipPath: closed, transform: "translateX(-50%) translateY(-44px)", opacity: 0 }]
-      : [{ clipPath: open, opacity: 1 }, { clipPath: closed, opacity: 0 }], { duration: 300, easing: "cubic-bezier(.4, 0, .6, 1)", fill: "forwards" });
+    // всплывает над нижней панелью: чуть поднимается и проявляется (только прозрачность и сдвиг — плавно везде)
+    const shown = "translateX(-50%)", up = "translateX(-50%) translateY(12px) scale(.96)";
+    try { el.animate([{ transform: up, opacity: 0 }, { transform: shown, opacity: 1 }], { duration: 340, easing: "cubic-bezier(.2, .9, .25, 1.05)" }); }
+    catch (e) { /* без анимации */ }
+    hideAnim = () => el.animate([{ transform: shown, opacity: 1 }, { transform: up, opacity: 0 }], { duration: 220, easing: "ease-in", fill: "forwards" });
     setTimeout(hide, action ? 4000 : 2000);
   }
 
@@ -3688,7 +3668,7 @@ window.__appStart = () => {
     if (!c || !np) return;
     // лента уже едет к этому дню (повторное нажатие, «двойной» тап iPhone) — ничего не делаем,
     // иначе день появлялся заново, а таблетка прыгала назад и ехала ещё раз
-    if (pgAnim && pgAnim.goal && pgAnim.goal.w === np.w && pgAnim.goal.d === np.d) { DIAG.add("dbl", "повторное нажатие на день"); return; }
+    if (pgAnim && pgAnim.goal && pgAnim.goal.w === np.w && pgAnim.goal.d === np.d) return;
     const k = (np.w - c.p.w) * 7 + (np.d - c.p.d);
     if (!k) return;
     // Любой переход (соседний или дальний день, «Сегодня», другая неделя) — тем же движением, что и
@@ -3741,7 +3721,7 @@ window.__appStart = () => {
     if (act === "day") {
       const d = +el.dataset.d;
       const goal = pgAnim && pgAnim.goal;   // лента ещё едет — сравниваем с днём, к которому едет
-      if (goal && goal.w === pos[id].w && goal.d === d) DIAG.add("dbl", "повторное нажатие на день");   // лента уже едет туда
+      if (goal && goal.w === pos[id].w && goal.d === d) { /* лента уже едет туда — повторное нажатие не считаем */ }
       else if (pos[id] && (goal || pos[id].d !== d)) { haptic("select"); moveTo({ w: pos[id].w, d }); }
     } else if (act === "week") {
       const data = mem[id];
