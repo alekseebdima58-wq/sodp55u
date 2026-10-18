@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="f671291fbaa3">
+<meta name="app-ver" content="a8b154168fbc">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -2869,7 +2869,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v18.2 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v18.3 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -2907,7 +2907,23 @@ window.__appStart = () => {
 
   // Раз в 15 секунд: если статусы пар не поменялись — двигаем только шкалу и подписи,
   // чтобы не перезапускать анимации; если поменялись — перерисовываем день целиком.
+  // Наступили новые сутки (приложение висело открытым или свёрнутым ночью): кто смотрел «сегодня» —
+  // переводим на новое «сегодня», даже без сети. Кто сам ушёл на другой день — не трогаем.
+  let tickDate = samaraNow().date;
+  function rollDay() {
+    const d = samaraNow().date;
+    if (d === tickDate) return false;
+    const was = tickDate;
+    tickDate = d;
+    let moved = false;
+    for (const id of Object.keys(pos)) {
+      const data = mem[id], p = pos[id], w = data && data.weeks[p.w];
+      if (!w || addDays(w.monday, p.d) === was) { delete pos[id]; moved = true; }
+    }
+    return moved;
+  }
   function tick() {
+    if (rollDay() && (view === "schedule" || view === "teacher") && !scrolling) { opened.clear(); render(); return; }
     if (view !== "schedule" && view !== "teacher") return;
     if (scrolling) return;   // не перерисовываем посреди листания
     const id = view === "teacher" ? target : "g";
@@ -3011,6 +3027,7 @@ window.__appStart = () => {
     const el = ev.target.closest("[data-act]");
     if (!el || !app.contains(el)) return;
     const act = el.dataset.act;
+    if (navBusy && (act === "teacher" || act === "notif" || act === "back")) return;   // экран ещё едет — второй тап не считаем
     const id = view === "teacher" ? target : "g";
 
     if (act === "day") {
@@ -3142,6 +3159,7 @@ window.__appStart = () => {
     moveTo(def);   // рядом — плавная прокрутка ленты, далеко — сдвиг страницы
   }
   tabs.forEach((b) => b.addEventListener("click", () => {
+    if (navBusy) return;   // пока экран едет, вкладки не переключаем
     const t = b.dataset.tab;
     haptic("select");
     if (t === "schedule") {
@@ -3274,7 +3292,8 @@ window.__appStart = () => {
       fresh.appendChild(ghost);
       body.animate([{ clipPath: `inset(0px 0px ${d}px 0px round ${radius})` }, { clipPath: `inset(0px 0px 0px 0px round ${radius})` }], opt);
       // старая карточка убирается, как только её текст погас (раньше конца движения)
-      requestAnimationFrame(() => Promise.all(ghost.getAnimations({ subtree: true }).map((x) => x.finished)).then(cleanup, cleanup));
+      if (ghost.getAnimations) requestAnimationFrame(() => Promise.all(ghost.getAnimations({ subtree: true }).map((x) => x.finished)).then(cleanup, cleanup));
+      else setTimeout(cleanup, dur + 40);   // старый iPhone без getAnimations — убираем по времени
     } else {
       ghost.style.zIndex = "0";
       fresh.insertBefore(ghost, fresh.firstChild);
