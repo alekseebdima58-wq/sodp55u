@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="a76bb043938a">
+<meta name="app-ver" content="9569f4a0b417">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -82,9 +82,9 @@
 html[data-theme="dark"] {
   color-scheme: dark;
   --bg: #0E1014; --surface: #171A20; --surface2: #1F232B; --border: #262B34; --sep: #23272F; --strong: #2E333D;
-  --text: #ECEEF2; --text2: #B7BDC8; --muted: #8C93A0; --faint: #5B6271;
+  --text: #ECEEF2; --text2: #C3C8D1; --muted: #A3AAB6; --faint: #737B89;
   --accent: #6EA8FF; --on-accent: #0E1014; --tab-bg: #12151A; --tab-border: #20242C;
-  --past-bg: #13161B; --past-border: #1F232A; --past-title: #A9B0BB; --past-muted: #858C99;
+  --past-bg: #13161B; --past-border: #1F232A; --past-title: #B0B6C1; --past-muted: #9AA1AD;
   --dot-past: #2E333D; --done: #4A505C; --today-border: #3A4150;
   --tag-bg: #16261C; --tag-fg: #3DDC84; --warn-bg: #2A2417; --warn-fg: #FFB547;
   --red-bg: #2E1B1A; --red-fg: #FF8A7A; --acc-soft: #1D2737; --unread: #1A1E26;
@@ -100,9 +100,9 @@ html[data-theme="dark"] {
 html[data-theme="light"] {
   color-scheme: light;
   --bg: #F2F3F6; --surface: #FFFFFF; --surface2: #F0F2F5; --border: #E1E4EA; --sep: #ECEEF2; --strong: #D3D7DF;
-  --text: #14171C; --text2: #3D4452; --muted: #646B78; --faint: #A1A7B2;
+  --text: #14171C; --text2: #363C48; --muted: #565D69; --faint: #80868F;
   --accent: #2563D9; --on-accent: #FFFFFF; --tab-bg: #FFFFFF; --tab-border: #E1E4EA;
-  --past-bg: #F7F8FA; --past-border: #E8EAEE; --past-title: #545B67; --past-muted: #646B78;
+  --past-bg: #F7F8FA; --past-border: #E8EAEE; --past-title: #4A515C; --past-muted: #565D69;
   --dot-past: #D3D7DF; --done: #B8BEC8; --today-border: #AEB4BF;
   --tag-bg: #E2F4E9; --tag-fg: #0B7A3B; --warn-bg: #FDF1DC; --warn-fg: #9A5A00;
   --red-bg: #FDE7E4; --red-fg: #C0392B; --acc-soft: #E6EEFC; --unread: #F3F7FF;
@@ -115,6 +115,9 @@ html[data-theme="light"] {
   --hair: rgba(20, 23, 28, .04); --elev: 0 1px 2px rgba(20, 23, 28, .04), 0 6px 20px rgba(20, 23, 28, .05); --acc-rgb: 37, 99, 217;
   --glass: rgba(255, 255, 255, .94); --glass-border: rgba(20, 23, 28, .06); --glass-shadow: 0 10px 30px rgba(20, 23, 28, .12);
 }
+/* светлая тема: синий текст (ссылки, «сегодня», преподаватель) — чуть темнее, чтобы мелкие надписи читались */
+html[data-theme="light"] :is(.tlink, .flink, .wlink, .tag, .t-room, .wl.cur, .ymore summary) { color: #0059DB; }
+html[data-theme="light"] .day.today:not(.on) :is(.n, .s) { color: #0059DB; }
 .k-lec  { --k-fg: var(--lec-fg);  --k-bar: var(--lec-bar);  --k-rgb: var(--lec-rgb); }
 .k-prac { --k-fg: var(--prac-fg); --k-bar: var(--prac-bar); --k-rgb: var(--prac-rgb); }
 .k-lab  { --k-fg: var(--lab-fg);  --k-bar: var(--lab-bar);  --k-rgb: var(--lab-rgb); }
@@ -143,7 +146,7 @@ svg { flex: none; }
 /* ---------- шапка ---------- */
 .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 26px; font-weight: 600; letter-spacing: -.01em; line-height: 1.15; }
+h1 { margin: 6px 0 0; font-size: 27px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
 .top-actions { display: flex; gap: 8px; align-items: center; }
 .btn {
   height: 44px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--border);
@@ -180,7 +183,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .day .n { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .day .dots { display: flex; gap: 3px; height: 5px; }
 .day .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--k-bar); }
-.day.dim { color: var(--muted); background: transparent; opacity: .45; }
+.day.dim { color: var(--muted); background: transparent; opacity: .62; }
 .day.dim .dots i { background: var(--faint); }
 .day.today { border-color: var(--today-border); }
 .day.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
@@ -311,12 +314,6 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
   position: relative; isolation: isolate; flex: 0 0 100%; min-width: 0; align-self: flex-start;
   padding: 0 var(--side); display: flow-root;
 }
-/* Пока листаем — под днями проявляются скруглённые «карточки», как при переключении приложений */
-.pframe {
-  position: absolute; z-index: -1; top: 4px; bottom: 0; left: 8px; right: 8px; border-radius: 26px;
-  background: var(--bg); border: 1px solid var(--border); box-shadow: 0 10px 28px rgba(0, 0, 0, .22);
-  opacity: 0; pointer-events: none; will-change: opacity;
-}
 .page.cur.from-r { animation: inR .34s cubic-bezier(.22, 1, .36, 1) both; }
 .page.cur.from-l { animation: inL .34s cubic-bezier(.22, 1, .36, 1) both; }
 @keyframes inR { from { opacity: 0; transform: translate3d(30%, 0, 0); } }
@@ -328,7 +325,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
   border: 1px solid var(--border); color: var(--text2); display: grid; place-items: center;
 }
 .empty .h { font-size: 18px; font-weight: 600; }
-.empty .p { max-width: 260px; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.empty .p { max-width: 280px; font-size: 14px; line-height: 1.45; color: var(--muted); text-wrap: balance; }
 
 .sk {
   height: 76px; margin-top: 10px; border-radius: 18px;
@@ -360,7 +357,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 .item .chev { color: var(--faint); }
 .av {
   width: 40px; height: 40px; flex: none; border-radius: 13px; display: grid; place-items: center;
-  font-family: "Unbounded", "Onest", sans-serif; font-size: 13px; font-weight: 600;
+  font-size: 14px; font-weight: 700; letter-spacing: -.01em;
   background: hsl(var(--h) var(--av-s) var(--av-l)); color: hsl(var(--h) var(--avf-s) var(--avf-l));
 }
 .av.big { width: 56px; height: 56px; border-radius: 18px; font-size: 18px; }
@@ -420,7 +417,7 @@ h1 { margin: 6px 0 0; font-family: "Unbounded", "Onest", sans-serif; font-size: 
 /* Раскрывающаяся карточка уведомлений: шапка со сводкой, внутри — тумблеры */
 .ncard .nhead { min-height: 64px; }
 .ncard .nhead .sub { white-space: normal; line-height: 1.35; }
-.ncard .nhead .sub.off { color: var(--faint); }
+.ncard .nhead .sub.off { color: var(--muted); }
 .ncard .nhead .chev svg { transform: rotate(90deg); transition: transform .32s var(--ease-spring, ease); }
 .ncard.open .nhead .chev svg { transform: rotate(-90deg); }
 .nfold { overflow: hidden; }   /* содержимое выезжает сверху — не заезжает на шапку */
@@ -453,10 +450,11 @@ html.ptr-hold #app { will-change: transform; }
 .under *, .under *::before, .under *::after { animation: none !important; transition: none !important; }
 .under-dim { position: fixed; inset: 0; z-index: 2; pointer-events: none; background: rgba(0, 0, 0, .14); }
 html[data-theme="dark"] .under-dim { background: rgba(0, 0, 0, .42); }
+html.nav-anim #app, html.nav-anim .tabs { pointer-events: none; }   /* пока экран едет — нажатия не ловим */
 html.swiping #app { position: relative; z-index: 3; background: var(--bg); will-change: transform;
   box-shadow: -1px 0 0 rgba(255, 255, 255, .04), -14px 0 32px rgba(0, 0, 0, .28); }
 html[data-theme="light"].swiping #app { box-shadow: -14px 0 30px rgba(0, 0, 0, .14); }
-html.swiping body { overflow-x: hidden; }
+html.swiping, html.swiping body { overflow-x: clip; }   /* уехавший вбок экран не расширяет страницу (иначе телефон «отъезжает» и прыгает нижняя панель) */
 .nlink .alt { margin-top: 10px; text-align: center; font-size: 13px; color: var(--muted); }
 .nlink .alt .flink { font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { .ncard .nhead .chev svg { transition: none; } }
@@ -477,7 +475,7 @@ html.swiping body { overflow-x: hidden; }
 .pad { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 .lbl15 { font-size: 15px; font-weight: 500; }
 .seg3 { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--bg); }
-.seg3 button { height: 40px; padding: 0 4px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; }
+.seg3 button { height: 44px; padding: 0 4px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; }
 .seg3 button.on { background: var(--surface2); border-color: var(--border); color: var(--text); }
 html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 .foot { margin: 22px 0 0; text-align: center; font-size: 13px; line-height: 1.5; color: var(--muted); }
@@ -541,6 +539,8 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 .day.today:not(.on) .n, .day.today:not(.on) .s { color: var(--accent); opacity: 1; }
 .day.on { box-shadow: 0 6px 18px -6px rgba(var(--acc-rgb), .75); }
 .day.on .s { opacity: .85; }
+.day.dim .s { opacity: 1; }
+html[data-theme="light"] .day.dim { opacity: .78; }   /* прошедшие дни и так приглушены целиком — подпись не гасим второй раз */
 .dayhead { margin: 20px 2px 10px; gap: 3px; }
 .dayhead h2 { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
 .tag { background: rgba(var(--acc-rgb), .14); color: var(--accent); }
@@ -597,11 +597,20 @@ h1 { font-size: 24px; margin-top: 4px; }
 .sbar.small .whead { --wrfs: 17px; --wb: 34px; }
 .whead .eyebrow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .whead .eyebrow .wl { font-size: inherit; letter-spacing: inherit; }
-h1.wr { font-family: inherit; font-size: clamp(18px, 5.6vw, 22px); font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
+h1.wr { font-size: clamp(18px, 5.6vw, 22px); font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
 .whead .top-actions { gap: 6px; flex: none; }
 .whead .top-actions .wbtn, .whead .top-actions .icon-btn { width: var(--wb); height: var(--wb); }
 .wbtn { flex: none; border: 1px solid var(--hair); border-radius: 50%; background: var(--surface); box-shadow: var(--elev); color: var(--text); display: grid; place-items: center; padding: 0; }
 .wbtn:disabled { opacity: .3; cursor: default; }
+/* Зона нажатия — не меньше 44 точек (рекомендация Apple), хотя сами кнопки выглядят меньше:
+   невидимое поле вокруг кнопки. По бокам — не больше половины промежутка, чтобы соседние не путались */
+.wbtn, .icon-btn, .tlink, .flink { position: relative; }
+.wbtn::after { content: ""; position: absolute; inset: -2px -3px; border-radius: 50%; }
+.whead .wbtn::after, .whead .icon-btn::after {
+  content: ""; position: absolute; top: calc(min(0px, (var(--wb, 44px) - 44px) / 2)); bottom: calc(min(0px, (var(--wb, 44px) - 44px) / 2));
+  left: -3px; right: -3px; border-radius: 50%;
+}
+.tlink::after, .flink::after { content: ""; position: absolute; left: -4px; right: -4px; top: -10px; bottom: -10px; }
 .whead + .days, .whead + .offline + .days { margin-top: 14px; }
 
 /* свёрнутая карточка: тип — цветной точкой, как в раскрытой; аудитория — жирная, как в раскрытой */
@@ -630,7 +639,7 @@ html[data-theme="light"] {
   --hair: rgba(0, 0, 0, .05); --elev: none; --tab-bg: #FFFFFF; --tab-border: #E9EBEF;
   --accent: #0A6CFF; --acc-rgb: 10, 108, 255; --on-accent: #FFFFFF; --acc-soft: #E5EFFF;
   --lec-fg: #00733F; --lec-bar: #00C875; --lec-rgb: 0, 200, 117;
-  --prac-fg: #A35600; --prac-bar: #FF9500; --prac-rgb: 255, 149, 0;
+  --prac-fg: #8A4E00; --prac-bar: #FF9500; --prac-rgb: 255, 149, 0;
   --lab-fg: #6526E0; --lab-bar: #8E4DFF; --lab-rgb: 142, 77, 255;
   --oth-fg: #006C99; --oth-bar: #14A7E8; --oth-rgb: 20, 167, 232;
   --past-bg: #FAFAFB; --past-border: #F0F1F4;
@@ -666,7 +675,7 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
 /* --- цвета типов пар (из макета): полоска — насыщенный цвет, подложка — светлая заливка --- */
 html[data-theme="light"] {
   --lec-bar: #55B685; --lec-rgb: 85, 182, 133;  --lec-fg: #1F7A4C;  --lec-soft: #EFFDF5;
-  --prac-bar: #E9A23B; --prac-rgb: 233, 162, 59; --prac-fg: #965A00; --prac-soft: #FEFBED;
+  --prac-bar: #E9A23B; --prac-rgb: 233, 162, 59; --prac-fg: #8A4E00; --prac-soft: #FEFBED;
   --lab-bar: #845EEE; --lab-rgb: 132, 94, 238;  --lab-fg: #5B34D6;  --lab-soft: #F5F3FE;
   --oth-soft: #EDF7FC;
 }
@@ -750,6 +759,11 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
 .hero h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
 .hr { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
 .hr b { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+/* длинное место («Лаборатория автоматики №12…») — мельче и не больше двух строк; нет аудитории — тихо */
+.hr b.lg { font-size: 17px; letter-spacing: -.01em; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hr b.none { font-size: 15px; font-weight: 600; letter-spacing: 0; color: var(--muted); }
+/* очень длинное название предмета — не больше трёх строк в «Сейчас» и в свёрнутой карточке (полностью — в раскрытой) */
+.hero h3, .cc h3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .hr span { font-size: 13px; color: var(--muted); }
 .hn {
   grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; min-width: 0;
@@ -802,21 +816,23 @@ body.has-ibar #app, body.has-ibar .snap { padding-bottom: calc(170px + max(env(s
 
 /* --- переход по нажатию на день: сдвигается только содержимое, рамки страницы не трогаем --- */
 .page.cur.from-r, .page.cur.from-l { animation: none; }
-.page.cur.from-r > :not(.pframe) { animation: dayInR .28s cubic-bezier(.2, .8, .2, 1) both; }
-.page.cur.from-l > :not(.pframe) { animation: dayInL .28s cubic-bezier(.2, .8, .2, 1) both; }
+.page.cur.from-r > * { animation: dayInR .28s cubic-bezier(.2, .8, .2, 1) both; }
+.page.cur.from-l > * { animation: dayInL .28s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes dayInR { from { opacity: 0; transform: translate3d(24px, 0, 0); } }
 @keyframes dayInL { from { opacity: 0; transform: translate3d(-24px, 0, 0); } }
 
 button.offline { border: 0; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; }
-button.offline u { text-underline-offset: 2px; }
+button.offline u { text-underline-offset: 2px; flex: none; margin-left: auto; }
+button.offline span { min-width: 0; text-wrap: balance; }
 
 /* --- экран установки --- */
 .iwrap { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, .55); display: flex; align-items: flex-end; justify-content: center; animation: fadeIn .2s ease both; }
 .isheet {
   position: relative; width: 100%; max-width: 520px; max-height: 88vh; overflow: auto; margin: 0 8px calc(8px + env(safe-area-inset-bottom, 0px));
   padding: 26px 20px 20px; border-radius: 30px; background: var(--surface); border: 1px solid var(--border);
-  text-align: center; animation: rise .5s var(--ease-spring) both;
+  text-align: center; animation: sheetUp .46s cubic-bezier(.32, .72, 0, 1) both;   /* выезжает снизу, как листы в iOS */
 }
+@keyframes sheetUp { from { transform: translateY(105%); } }
 .iclose { position: absolute; top: 10px; right: 10px; }
 .iprev { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 10px 26px rgba(0, 0, 0, .35); }
 .isheet h3 { margin: 14px 0 4px; font-size: 20px; font-weight: 700; }
@@ -845,7 +861,7 @@ button.offline u { text-underline-offset: 2px; }
 .vbox { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 420px; max-height: 100%; animation: rise .45s var(--ease-spring) both; }
 .vtop { display: flex; align-items: center; gap: 10px; }
 .vseg { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(255, 255, 255, .1); }
-.vseg button { height: 36px; border: 0; border-radius: 10px; background: transparent; color: rgba(255, 255, 255, .7); font-size: 14px; font-weight: 600; }
+.vseg button { height: 40px; border: 0; border-radius: 10px; background: transparent; color: rgba(255, 255, 255, .7); font-size: 14px; font-weight: 600; }
 .vseg button.on { background: rgba(255, 255, 255, .18); color: #fff; }
 .vtop .ix { color: #fff; background: rgba(255, 255, 255, .1); }
 .vbox video { display: block; width: 100%; height: auto; max-height: calc(100vh - 120px); object-fit: contain; border-radius: 22px; background: #000; }
@@ -855,7 +871,7 @@ button.offline u { text-underline-offset: 2px; }
 .ivid { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 14px 14px; }
 .isheet .ivid { padding: 16px 0 0; }
 .ivseg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 100%; max-width: 240px; padding: 4px; border-radius: 14px; background: var(--surface2); }
-.ivseg button { height: 34px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 13.5px; font-weight: 600; }
+.ivseg button { height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 13.5px; font-weight: 600; }
 .ivseg button.on { background: var(--bg); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
 .ivid video { display: block; width: 62%; max-width: 230px; height: auto; aspect-ratio: 9 / 16; border-radius: 20px; background: #000; object-fit: cover; }
 
@@ -904,7 +920,7 @@ button.offline u { text-underline-offset: 2px; }
 .sfx .ibig { display: grid; place-items: center; height: 42px; margin-top: 8px; text-decoration: none; font-size: 15px; background: var(--bg); }
 .vsteps li.on b { background: var(--accent); color: var(--on-accent); }
 
-.foot .ver { font-size: 11px; opacity: .55; font-variant-numeric: tabular-nums; }
+.foot .ver { font-size: 11px; opacity: .85; font-variant-numeric: tabular-nums; }
 
 /* --- таблетка выбранного дня: отдельный слой, едет плавно (видеокарта) --- */
 .days { position: relative; }
@@ -968,7 +984,7 @@ button.offline u { text-underline-offset: 2px; }
 /* --- сквиркл: плавные углы как у иконок iOS; радиусы крупнее, потому что сквиркл «съедает» скругление --- */
 @supports (corner-shape: squircle) {
   .card, .cc, .hero, .days, .day, .tabs, .tab, .list, .tcard, .search, .kind, .seg3, .seg3 button, .nsel,
-  .btn:not(.icon-btn), .empty .ic, .offline, .tag, .toast, .pframe { corner-shape: squircle; }
+  .btn:not(.icon-btn), .empty .ic, .offline, .tag, .toast { corner-shape: squircle; }
   .card { border-radius: 30px; }
   .cc { border-radius: 26px; }
   .hero { border-radius: 36px; }
@@ -985,7 +1001,6 @@ button.offline u { text-underline-offset: 2px; }
   .empty .ic { border-radius: 28px; }
   .tag, .offline, .toast { border-radius: 14px; }
   .ctlchip { corner-shape: squircle; border-radius: 11px; }
-  .pframe { border-radius: 36px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1239,7 +1254,12 @@ window.__appStart = () => {
     room = (room || "").trim();
     if (!room) return "";
     const m = /^(\d+[\wа-яА-ЯёЁ\/-]*)\s*(.*)$/.exec(room);
-    if (!m) return room;
+    if (!m) {   // «Спортзал (Корпус 1)» → «Спортзал · корп. 1» — так же, как у аудиторий с номером
+      const n = /^(.*?)\s*\((.*)\)\s*$/.exec(room);
+      if (!n || !n[1]) return room;
+      const rest = n[2].replace(/\s*г\.\s*Самара/i, "").replace(/^корпус\s*/i, "корп. ").replace(/^,\s*|,\s*$/g, "").trim();
+      return rest ? `${n[1]} · ${rest}` : n[1];
+    }
     let rest = m[2].trim().replace(/^\(|\)$/g, "").trim();
     rest = rest.replace(/\s*г\.\s*Самара/i, "").replace(/^корпус\s*/i, "корп. ").trim();
     return rest ? `ауд. ${m[1]} · ${rest}` : `ауд. ${m[1]}`;
@@ -1338,6 +1358,22 @@ window.__appStart = () => {
     }
     return pending[id];
   }
+  // Расписания преподавателей подгружаем заранее, в фоне и по одному (каждое — пара килобайт):
+  // экран преподавателя тогда открывается сразу готовым, без мелькания заготовки
+  let prefetched = false;
+  function prefetchTeachers() {
+    if (prefetched || !index || !Array.isArray(index.teachers) || navigator.onLine === false) return;
+    const c = navigator.connection;
+    if (c && (c.saveData || /2g/.test(c.effectiveType || ""))) return;
+    prefetched = true;
+    const ids = index.teachers.map((t) => t.id).filter((id) => /^t\d{1,3}$/.test(id) && !mem[id]);
+    let i = 0;
+    const next = () => {
+      if (i >= ids.length || document.hidden) { if (i < ids.length) prefetched = false; return; }
+      load(ids[i++]).catch(() => {}).then(() => setTimeout(next, 120));
+    };
+    next();
+  }
   function teacherName(id) {
     const t = index && index.teachers.find((x) => x.id === id);
     return t ? t.name : "";
@@ -1394,7 +1430,7 @@ window.__appStart = () => {
   let query = "";
   let liveSig = "";
   let renderToken = 0;
-  let enterNext = true;
+  let enterNext = false;   // карточки дня больше не «разлетаются» при открытии — экраны появляются одинаково
   let slideDir = 0;           // 1 — пришли свайпом влево (следующий день), -1 — вправо
   const pos = {};             // id -> { w, d }
   const keepMonday = {};      // после тихого обновления: какую неделю показывать (по понедельнику)
@@ -1420,18 +1456,96 @@ window.__appStart = () => {
       return c;
     } catch (e) { return null; }
   }
+  // ---- переходы между экранами — везде одинаково, как в iOS ----
+  // • вглубь (преподаватель, уведомления): новый экран выезжает справа поверх прошлого,
+  //   прошлый чуть уезжает влево и темнеет;
+  // • назад (кнопкой, жестом или кнопкой Telegram): ровно обратное движение;
+  // • вкладки: мгновенная смена с короткой мягкой проявкой, без «разлетающихся» карточек.
+  // Всё движение — сдвигами, которые считает видеокарта; новый экран рисуется заранее, за краем.
+  const navRM = () => !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const navDPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  const navSnap = (v) => Math.round(v * navDPR) / navDPR;
+  let navBusy = false, navReady = false;   // navReady — первый экран уже показан (при запуске без выезда)
+  function navLayers(entry) {
+    ROOT.classList.add("swiping", "nav-anim");
+    const under = document.createElement("div");
+    under.className = "under";
+    under.setAttribute("aria-hidden", "true");
+    under.inert = true;
+    if (entry && entry.snap) under.appendChild(entry.snap);
+    const dim = document.createElement("div");
+    dim.className = "under-dim";
+    document.body.append(under, dim);
+    under.scrollTop = (entry && entry.y) || 0;
+    const w = app.getBoundingClientRect().width || innerWidth;
+    const set = (p) => {   // 0 — новый экран на месте, 1 — уехал вправо целиком
+      app.style.transform = p > 0.0005 ? `translate3d(${navSnap(p * w)}px,0,0)` : "";
+      under.style.transform = `translate3d(${navSnap(-0.3 * w * (1 - p))}px,0,0)`;
+      dim.style.opacity = String(1 - p);
+    };
+    const clear = () => {
+      ROOT.classList.remove("swiping", "nav-anim");
+      app.style.transform = "";
+      if (under.firstChild) under.firstChild.remove();   // снимок остаётся в стеке — для жеста «назад»
+      under.remove(); dim.remove();
+    };
+    return { set, clear };
+  }
+  function navRun(L, from, to, dur, done) {
+    const t0 = performance.now();
+    // плавный разгон и мягкая остановка (как у системных переходов iPhone)
+    const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2) * 0.35 + (1 - Math.pow(1 - k, 3)) * 0.65;
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / dur);
+      L.set(from + (to - from) * ease(k));
+      if (k < 1) requestAnimationFrame(step); else done();
+    };
+    requestAnimationFrame(step);
+  }
+  function fadeIn() {   // вкладки и первый показ: одна и та же короткая проявка
+    if (navRM() || !app.animate) return;
+    try { app.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: "ease-out" }); } catch (e) { /* старый браузер */ }
+  }
   function go(v, t, push) {
+    const anim = push && navReady && !navBusy && !navRM() && !document.hidden;
     if (push) stack.push({ view, target, y: window.scrollY, snap: snapshot() });
     else stack = [];
     view = v;
     if (t) target = t;
-    enterNext = true;
+    enterNext = false;
     opened.clear();
     syncBack();
     syncTabs();
     if (v === "schedule") setTimeout(showInstallBar, 600); else hideInstallBar(false);   // плашка — только на расписании
-    render();
+    if (!anim) {
+      render();
+      window.scrollTo(0, 0);
+      if (!push) fadeIn();
+      return;
+    }
+    // новый экран рисуем за правым краем, пока на месте виден снимок прошлого; данные ждём
+    // не дольше 0,45 с — чтобы выезжал уже готовый экран, а не заготовка
+    navBusy = true;
+    const L = navLayers(stack[stack.length - 1]);
+    L.set(1);
+    const r = render();
     window.scrollTo(0, 0);
+    Promise.race([Promise.resolve(r).catch(() => {}), new Promise((res) => setTimeout(res, 450))])
+      .then(() => new Promise((res) => requestAnimationFrame(res)))
+      .then(() => navRun(L, 1, 0, 380, () => { L.clear(); navBusy = false; }));
+  }
+  // «Назад» кнопкой (в приложении или в Telegram): тот же сдвиг, что и у жеста
+  function goBack() {
+    const prev = stack[stack.length - 1];
+    if (!prev || !prev.snap || navBusy || navRM() || document.hidden) return back();
+    navBusy = true;
+    haptic("light");
+    const L = navLayers(prev);
+    L.set(0);
+    navRun(L, 0, 1, 330, () => {
+      // настоящий прошлый экран рисуем, пока его закрывает снимок, и только потом убираем снимок
+      Promise.resolve(back(true)).catch(() => {}).then(() => requestAnimationFrame(() => { L.clear(); navBusy = false; }));
+    });
   }
   function back(instant) {
     instant = instant === true;   // true — после свайпа: экран уже «приехал», без анимации появления
@@ -1440,11 +1554,11 @@ window.__appStart = () => {
     if (!instant) haptic("light");
     view = prev.view;
     target = prev.target;
-    enterNext = !instant;
+    enterNext = false;
     syncBack();
     syncTabs();
     // возвращаемся туда же, где были на прошлом экране
-    return Promise.resolve(render()).then(() => { if (prev.y) window.scrollTo(0, prev.y); });
+    return Promise.resolve(render()).then(() => { if (prev.y) window.scrollTo(0, prev.y); if (!instant) fadeIn(); });
   }
 
   function pickDefault(data) {
@@ -1582,7 +1696,7 @@ window.__appStart = () => {
     const same = (h.same || []).map((o) => `<div class="hn ${o.col}"><i></i><span class="x">Одновременно · ${rm(o)}${esc(o.subject)}</span></div>`).join("");
     const next = same + (nx ? `<div class="hn ${nx.col}"><i></i><span class="x">Дальше <b>${esc(nx.start)}</b> · ${rm(nx)}${esc(nx.subject)}</span></div>` : "");
     const info = `<div class="hb"><span class="hl">${esc(label)}</span><h3>${esc(h.main.subject)}</h3>
-        <div class="hr"><b>${esc(roomMain || "аудитория не указана")}</b><span>${esc(sub)}</span></div></div>`;
+        <div class="hr"><b class="${!roomMain ? "none" : roomMain.length > 14 ? "lg" : ""}">${esc(roomMain || "Аудитория не указана")}</b><span>${esc(sub)}</span></div></div>`;
     // ring: ровная дуга без свечения, pathLength=100 — дуга ровно p%
     const vis = `<div class="ring" aria-hidden="true"><svg viewBox="0 0 80 80"><circle class="trk" cx="40" cy="40" r="34" pathLength="100"/>
         ${h.p > 0 ? `<circle class="arc" data-hfill cx="40" cy="40" r="34" pathLength="100" stroke-dasharray="100" style="stroke-dashoffset:${100 - h.p}"/>` : ""}</svg>
@@ -1621,8 +1735,10 @@ window.__appStart = () => {
       <div class="sk" style="height:120px;margin-top:22px"></div><div class="sk"></div><div class="sk"></div>`;
   }
   function errorHTML() {
-    return `<div class="empty fade"><div class="ic">${I.wifi}</div><div class="h">Не удалось загрузить</div>
-      <div class="p">Проверь интернет и попробуй ещё раз.</div>
+    // без сети — про интернет; сеть есть, а сервер не ответил — так и говорим, чтобы не искать проблему у себя
+    const off = navigator.onLine === false;
+    return `<div class="empty fade"><div class="ic">${I.wifi}</div><div class="h">${off ? "Нет интернета" : "Не удалось загрузить расписание"}</div>
+      <div class="p">${off ? "Подключись к сети — расписание загрузится и дальше будет открываться даже без интернета." : "Сервер расписания не ответил. Попробуй ещё раз через минуту."}</div>
       <button class="btn" data-act="retry" style="margin-top:8px">Повторить</button></div>`;
   }
 
@@ -1737,14 +1853,13 @@ window.__appStart = () => {
 
     // Текущий день и по PAGER_SPAN соседей с каждой стороны — лежат за краями экрана.
     // Запас нужен для быстрых свайпов подряд: лента успевает уехать на 2–3 дня, пока не «переложилась».
-    const fr = `<div class="pframe" aria-hidden="true"></div>`;
     const side = (dir) => { const out = []; let q = p; for (let k = 0; k < PAGER_SPAN && (q = neighborPos(data, q.w, q.d, dir)); k++) out.push(q); return out; };
     // Выбранный день и по одному соседу с каждой стороны — сразу, одним куском. Достраивать ленту
     // во время касания нельзя: iPhone в этот момент не даёт поправить прокрутку, и дни накладываются.
-    const page = (q, cls) => `<div class="page ${cls}" aria-hidden="true" inert>${fr}${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
+    const page = (q, cls) => `<div class="page ${cls}" aria-hidden="true" inert>${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
     let html = `<div class="pager" data-pager>`;
     html += side(-1).reverse().map((q) => page(q, "prev")).join("");
-    html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${fr}${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
+    html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
     html += side(1).map((q) => page(q, "next")).join("");
     html += `</div>`;
     liveSig = m.sig;
@@ -1754,7 +1869,7 @@ window.__appStart = () => {
   // ---------------- экраны ----------------
   function render() {
     const token = ++renderToken;
-    if (app.style.transform && window.resetEdgeSwipe && !document.documentElement.classList.contains("ptr-busy")) window.resetEdgeSwipe();   // экран не должен остаться сдвинутым (кроме самого свайпа)
+    if (app.style.transform && window.resetEdgeSwipe && !ROOT.classList.contains("ptr-busy") && !ROOT.classList.contains("nav-anim")) window.resetEdgeSwipe();   // экран не должен остаться сдвинутым (кроме самого свайпа)
     app.classList.remove("fill");
     if (view === "settings") return renderSettings();
     if (view === "teachers") return renderTeachers(token);
@@ -2297,7 +2412,7 @@ window.__appStart = () => {
       head = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div></div>
           <div class="top-actions">${todayBtn}</div></div>
         <div class="tcard"><div class="av big" style="--h:${hue(name)}" aria-hidden="true">${esc(initials(name))}</div>
-          <div style="min-width:0"><h1 class="nm" style="font-family:inherit">${esc(name)}</h1>
+          <div style="min-width:0"><h1 class="nm">${esc(name)}</h1>
           <div class="sub">${subj.length ? esc(subj.join(", ")) : "Расписание преподавателя"}</div></div></div>`;
     } else {
       const bell = `<button class="btn icon-btn bell" data-act="notif" aria-label="Изменения в расписании${hasUnseen() ? ", есть новые" : ""}">${I.bell}${hasUnseen() ? `<span class="badge"></span>` : ""}</button>`;
@@ -2305,7 +2420,7 @@ window.__appStart = () => {
         <div class="top-actions">${s.prevW}${s.nextW}${bell}</div></div>`;
     }
     const off = data._offline
-      ? `<button class="offline" data-act="retry-net" title="${esc(lastNetError)}">${navigator.onLine === false ? "Нет сети" : "Не удалось обновить"} · показано сохранённое · <u>Повторить</u></button>`
+      ? `<button class="offline" data-act="retry-net" title="${esc(lastNetError)}"><span>${navigator.onLine === false ? "Нет сети" : "Не удалось обновить"} — показано сохранённое</span><u>Повторить</u></button>`
       : staleHTML();
     // Липкая полоса: у группы — шапка недели + дни, у преподавателя — строка недели + дни
     app.innerHTML = isTeacher
@@ -2352,6 +2467,7 @@ window.__appStart = () => {
     return html;
   }
   async function renderTeachers(token) {
+    setTimeout(prefetchTeachers, 300);
     if (!index) app.innerHTML = skeletonHTML();
     try {
       if (!index) index = await fetchJSON("data/index.json");
@@ -2603,7 +2719,10 @@ window.__appStart = () => {
   }
   function hideInstallBar(forever) {
     const el = document.querySelector(".ibar");
-    if (el) el.remove();
+    if (el) {
+      if (navRM() || !el.animate) el.remove();
+      else { try { el.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(12px)" }], { duration: 200, easing: "ease-in", fill: "forwards" }); } catch (e) { /* ниже */ } setTimeout(() => el.remove(), 210); }
+    }
     document.body.classList.remove("has-ibar");
     if (forever) store.set("installBar", "0");
   }
@@ -2658,7 +2777,7 @@ window.__appStart = () => {
   function showInstallSheet() {
     if (STANDALONE) return;
     hideInstallBar(false);
-    let wrap = document.querySelector(".iwrap");
+    let wrap = document.querySelector(".iwrap:not(.closing)");
     if (!wrap) {
       wrap = document.createElement("div");
       wrap.className = "iwrap";
@@ -2680,15 +2799,15 @@ window.__appStart = () => {
   // ---- видео-инструкция: свой ролик для iPhone и Android, можно переключить ----
   function showInstallVideo(os) {
     os = os || (IOS ? "ios" : "android");
-    let w = document.querySelector(".vwrap");
+    let w = document.querySelector(".vwrap:not(.closing)");
     if (!w) {
       w = document.createElement("div");
       w.className = "vwrap";
       w.addEventListener("click", (ev) => {
         const b = ev.target.closest("[data-vs]");
-        if (b && b.dataset.vs === "close") { w.remove(); return; }
+        if (b && b.dataset.vs === "close") { dismiss(w, w.querySelector(".vbox"), false); return; }
         if (b && b.dataset.vs !== os) { haptic("select"); showInstallVideo(b.dataset.vs); return; }
-        if (ev.target === w) w.remove();
+        if (ev.target === w) dismiss(w, w.querySelector(".vbox"), false);
       });
       document.body.appendChild(w);
     }
@@ -2701,7 +2820,22 @@ window.__appStart = () => {
     const v = w.querySelector("video");
     try { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* автозапуск запрещён — есть кнопка ▶ */ }
   }
-  function closeInstallSheet() { const w = document.querySelector(".iwrap"); if (w) w.remove(); }
+  // Закрытие окон — тоже плавно, обратным движением (раньше они просто исчезали)
+  function dismiss(wrap, panel, down) {
+    if (!wrap || wrap.classList.contains("closing")) return;
+    wrap.classList.add("closing");
+    const done = () => wrap.remove();
+    if (navRM() || !wrap.animate) { done(); return; }
+    try {
+      wrap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, easing: "ease-in", fill: "forwards" });
+      const a = panel && panel.animate(down
+        ? [{ transform: "none" }, { transform: "translateY(105%)" }]
+        : [{ transform: "none", opacity: 1 }, { transform: "translateY(16px) scale(.97)", opacity: 0 }],
+        { duration: 260, easing: "cubic-bezier(.4, 0, 1, 1)", fill: "forwards" });
+      setTimeout(done, 270);
+    } catch (e) { done(); }
+  }
+  function closeInstallSheet() { const w = document.querySelector(".iwrap:not(.closing)"); if (w) dismiss(w, w.querySelector(".isheet"), true); }
 
   function renderSettings() {
     const pref = themePref();
@@ -2721,7 +2855,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v17.8 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v18.1 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -2827,7 +2961,7 @@ window.__appStart = () => {
       if (Math.abs(k) === 1 && hasNeighbor(k)) { quietCommit = true; slideTo(pg, k, 0); return; }
       const slot = pg.querySelector(dir > 0 ? ":scope > .page.next" : ":scope > .page.prev");
       if (slot) {
-        slot.innerHTML = `<div class="pframe" aria-hidden="true"></div>` + dayBodyHTML(c.data, np.w, np.d, view === "teacher", false);
+        slot.innerHTML = dayBodyHTML(c.data, np.w, np.d, view === "teacher", false);
         slot._ci = null;
         pillGoal = np.w === c.p.w ? np.d : null;   // таблетка едет прямо к нужному дню (в той же неделе)
         haptic("select");
@@ -2883,7 +3017,7 @@ window.__appStart = () => {
     } else if (act === "open") {
       toggleCard(el.dataset.key);
     } else if (act === "back") {
-      back();
+      goBack();
     } else if (act === "notif") {
       haptic("light");
       go("notif", null, true);
@@ -3245,8 +3379,6 @@ window.__appStart = () => {
     const t = sx ? `translate3d(${sx}px,0,0)` : "";
     pagerPages(pg).forEach((el) => { el.style.transform = t; });
     const W = pg.clientWidth || 1, off = -x / W;            // -1 … 1, плюс — к следующему дню
-    const o = REDUCED ? 0 : Math.min(1, Math.abs(off) * 5);
-    pg.querySelectorAll(".pframe").forEach((el) => { el.style.opacity = o ? o.toFixed(2) : ""; });
     cascade(pg, off);
     pillFollow(off);
     if (Math.abs(off) < 0.02) previewChips(0);
@@ -3501,7 +3633,7 @@ window.__appStart = () => {
     try { tg.ready(); } catch (e) { /* вне Telegram */ }
     try { tg.expand(); } catch (e) { /* вне Telegram */ }
     if (tgAtLeast("7.7")) { try { tg.disableVerticalSwipes(); } catch (e) { /* старый клиент */ } }
-    if (tgAtLeast("6.1")) { try { tg.BackButton.onClick(back); } catch (e) { /* старый клиент */ } }
+    if (tgAtLeast("6.1")) { try { tg.BackButton.onClick(goBack); } catch (e) { /* старый клиент */ } }
     try { tg.onEvent("themeChanged", applyTheme); } catch (e) { /* старый клиент */ }
   }
   if (window.matchMedia) {
@@ -3539,6 +3671,8 @@ window.__appStart = () => {
     }
     syncBadge();
     pushVerify();
+    setTimeout(() => { navReady = true; }, 0);
+    setTimeout(prefetchTeachers, 3000);
     setTimeout(() => checkAppVersion(true), 2500);
     resumeLink();
     if (QS.get("install") === "1" && !inTG) {
@@ -3752,15 +3886,15 @@ window.__appStart = () => {
       if (animating) return;
       const was = sx !== null && mode === 1;
       sx = null; mode = 0; unlockPager();
-      if (was) { vx = 0; settle(false); } else if (app.style.transform && !document.documentElement.classList.contains("ptr-busy")) cleanup();
+      if (was) { vx = 0; settle(false); } else if (app.style.transform && !ROOT.classList.contains("ptr-busy") && !ROOT.classList.contains("nav-anim")) cleanup();
     };
-    window.resetEdgeSwipe = () => { if (animating || mode === 1) return; sx = null; unlockPager(); cleanup(); };
+    window.resetEdgeSwipe = () => { if (animating || mode === 1 || ROOT.classList.contains("nav-anim")) return; sx = null; unlockPager(); cleanup(); };
     document.addEventListener("touchstart", (e) => {
       if (animating) return;
       if (sx !== null) { abort(); return; }
       const t = e.touches[0];
       if (e.touches.length !== 1 || !stack.length || t.clientX > 24 || document.querySelector(".vbox, .isheet")
-        || document.documentElement.classList.contains("ptr-busy")) return;
+        || ROOT.classList.contains("ptr-busy") || ROOT.classList.contains("nav-anim")) return;
       sx = t.clientX; sy = t.clientY; dx = 0; mode = 0; vx = 0; lastX = t.clientX; lastT = performance.now();
       const pg = e.target.closest && e.target.closest("[data-pager]");
       if (pg) { lockedPager = pg; pg.style.overflowX = "hidden"; }   // у края — жест «назад», а не листание дней
