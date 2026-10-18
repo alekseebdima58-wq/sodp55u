@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="81a511d38440">
+<meta name="app-ver" content="1dc718f73df5">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -516,7 +516,7 @@ html.swiping, html.swiping body { overflow-x: clip; }   /* уехавший вб
 
 /* дни — одна дорожка, выбранный день — плотная капсула */
 .days { gap: 2px; margin-top: 12px; padding: 4px; border-radius: 22px;   border: 1px solid var(--border); }
-.day { height: 56px; border-radius: 18px; border-color: transparent; background: transparent; }
+.day { height: auto; min-height: 56px; border-radius: 18px; border-color: transparent; background: transparent; }
 .day .s { font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; opacity: .65; }
 .day .n { font-size: 18px; }
 .day.today { border-color: transparent; }
@@ -695,7 +695,7 @@ html[data-theme="light"] .tabs {
 .sbar.small .whead .eyebrow { max-height: 0; opacity: 0; }
 .sbar .whead .top-actions { transition: margin .25s ease; }
 .sbar.small .days { margin-top: 8px; }
-.sbar.small .day { height: 48px; }
+.sbar.small .day { min-height: 48px; }
 .sbar .week { margin-top: 0; }
 .tcard + .sbar, .tcard + .offline + .sbar { margin-top: 6px; }
 .sbar .week + .days { margin-top: 12px; }
@@ -891,21 +891,20 @@ button.offline span { min-width: 0; text-wrap: balance; }
 .days:has(.pill.ready) .day.on { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
 .day { transition: color .18s ease, opacity .18s ease; }
 @supports (corner-shape: squircle) { .days .pill { corner-shape: squircle; border-radius: 26px; } }
-.sbar .days .day { transition: height .45s var(--ease-spring), color .18s ease, opacity .18s ease; }
+.sbar .days .day { transition: min-height .45s var(--ease-spring), color .18s ease, opacity .18s ease; }
 /* слой «выбранных» цифр: копия строки дней поверх, видна только внутри таблетки (clip-path двигаем вместе с ней) */
 .days:has(.days-on) .day.on { color: var(--text) !important; }
 .days:has(.days-on) .day.on .dots i { background: var(--k-bar) !important; }
 .days:has(.days-on) .day.on .s { opacity: .65; }
 .days-on { position: absolute; z-index: 2; left: 0; top: 4px; bottom: 4px; width: 0; overflow: hidden; border-radius: 18px; pointer-events: none; will-change: transform; }
-.days-on-in { position: absolute; left: 0; top: -4px; bottom: -4px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: center;
+.days-on-in { position: absolute; left: 0; top: -4px; bottom: -4px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: 100%; align-items: stretch;
   color: var(--on-accent); will-change: transform; }
 @supports (corner-shape: squircle) { .days-on { corner-shape: squircle; border-radius: 26px; } }
-.days-on .day-o { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 56px; font: inherit; }
+.days-on .day-o { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 0; font: inherit; }
 .days-on .s { font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; opacity: .9; }
 .days-on .n { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .days-on .dots { display: flex; gap: 3px; height: 5px; }
 .days-on .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--on-accent); }
-.sbar.small .days-on .day-o { height: 48px; }
 
 /* --- выбор иконки --- */
 .icpick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
@@ -1292,7 +1291,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v18.13";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.0";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -3796,7 +3795,8 @@ window.__appStart = () => {
     const a = pgAnim;
     if (!a) return;
     pgAnim = null;
-    const k = Math.max(0, Math.min(1, (performance.now() - a.t0) / a.T));
+    const ct = a.anims[0] && a.anims[0].currentTime;
+    const k = Math.max(0, Math.min(1, ((ct != null ? ct : performance.now() - a.t0)) / a.T));
     setPagerX(a.pg, a.from + a.dist * pagerCurve(k, a.a));
     a.anims.forEach((x) => x.cancel());
   }
@@ -3814,20 +3814,23 @@ window.__appStart = () => {
     const W = pg.clientWidth || 390, D = Math.abs(dist), sg = Math.sign(dist);
     let v0 = v || 0;                                   // px/мс, как у пальца (плюс — вправо)
     const tMax = 200 + 220 * Math.min(1, D / W);       // целый день — 0,42 с, остаток пути — быстрее
-    let T = v0 * sg > 0.05 ? Math.max(180, Math.min(tMax, 2 * D / (v0 * sg))) : tMax;
+    let T = v0 * sg > 0.05 ? Math.max(140, Math.min(tMax, 2 * D / (v0 * sg))) : tMax;
     if (!v) v0 = sg * 0.8 * D / T;                     // по нажатию — трогается сразу, без «раскачки»
-    if (v0 * sg * T > 2.8 * D) v0 = sg * 2.8 * D / T;  // быстрее нельзя — проскочил бы мимо дня
+    if (v0 * sg * T > 3 * D) v0 = sg * 3 * D / T;      // быстрее нельзя — проскочил бы мимо дня
     const a3 = v0 * T;                                 // начальная скорость в долях пути
     // отсчёт — с последнего движения пальца: первый кадр после отпускания не «замирает»
-    const now0 = performance.now(), t0 = since ? Math.max(now0 - 34, Math.min(now0, since)) : now0;
+    // since — время кадра, в котором показано последнее положение пальца: движение продолжается
+    // ровно с него, и следующий кадр сдвигается на один кадр пути — без «прыжка» и без «замирания»
+    const now0 = performance.now(), t0 = since && now0 - since < 50 ? since : 0;
     // Эта кривая — ровно cubic-bezier(1/3, a/3, 2/3, 1): отдаём её браузеру целиком, и дни, таблетка
     // и цифры в ней едут в отдельном потоке видеокарты с частотой экрана (60 или 120 кадров)
     const a = a3 / dist;
     const pill = pillEl(), on = pill && pill.parentNode.querySelector(".days-on");
     const anims = gpuMove([...pagerPages(pg), pill, on, on && on.firstElementChild], () => setPagerX(pg, to), T,
-      `cubic-bezier(0.3333, ${(a / 3).toFixed(4)}, 0.6667, 1)`, t0 - now0);
-    tok = pgAnim = { pg, from, dist, a, T, t0, anims };
-    animsDone(anims, T - (now0 - t0)).then(finish, () => { /* подхватили пальцем — pagerStop уже всё сделал */ });
+      `cubic-bezier(0.3333, ${(a / 3).toFixed(4)}, 0.6667, 1)`);
+    if (t0) anims.forEach((x) => { try { x.startTime = t0; } catch (e) { /* не умеет — начнёт со следующего кадра */ } });
+    tok = pgAnim = { pg, from, dist, a, T, t0: t0 || now0, anims };
+    animsDone(anims, T - (t0 ? now0 - t0 : 0)).then(finish, () => { /* подхватили пальцем — pagerStop уже всё сделал */ });
   }
   // уехать на соседний день (dir = ±1) и сменить его (новый день встаёт ровно туда же — подмена незаметна)
   function slideTo(pg, dir, v, np, since) {
@@ -3877,9 +3880,20 @@ window.__appStart = () => {
     if (x < minX) x = minX - (minX - x) / 3;
     if (x > maxX) x = maxX + (x - maxX) / 3;
     setPagerX(d.pg, x);
-    const now = performance.now(), dt = Math.max(1, now - d.lt);
-    d.vx = 0.7 * ((t.clientX - d.lx) / dt) + 0.3 * d.vx;   // px/мс, плюс — палец вправо
+    // скорость пальца — по всем касаниям за последние ~80 мс (как в iOS), а не по одному-двум:
+    // при быстром броске касаний мало, и прежний расчёт занижал скорость — после отпускания день «тормозил»
+    const now = e.timeStamp || performance.now();
+    (d.hist || (d.hist = [])).push([now, t.clientX]);
+    // запоминаем кадр, в котором это положение появилось на экране
+    if (!d.raf) d.raf = requestAnimationFrame((ts) => { d.raf = 0; d.shownAt = ts; d.shownX = pgX; });
+    while (d.hist.length > 2 && now - d.hist[0][0] > 100) d.hist.shift();
     d.lx = t.clientX; d.lt = now;
+  }
+  function fingerSpeed(d, now) {   // px/мс, плюс — палец вправо
+    const h = (d.hist || []).filter((p) => now - p[0] <= 80);
+    if (h.length < 2) return 0;
+    const [t0, x0] = h[0], [t1, x1] = h[h.length - 1];
+    return t1 - t0 >= 8 ? (x1 - x0) / (t1 - t0) : 0;
   }
   function pagerUp(e) {
     const d = pgDrag;
@@ -3888,13 +3902,24 @@ window.__appStart = () => {
     pagerTouch = false;
     if (d.mode !== 1) { if (pgX && !pgAnim) slideTo(d.pg, 0, 0); else if (!pgAnim) pagerLayers(d.pg, false); return; }
     const W = d.pg.clientWidth || 1;
-    if (performance.now() - d.lt > 90) d.vx = 0;          // палец остановился — броска нет
+    // палец мог сдвинуться ещё немного между последним движением и отпусканием — учитываем
+    const ct = e.changedTouches && e.changedTouches[0], upT = e.timeStamp || performance.now();
+    if (ct && Math.abs(ct.clientX - d.lx) >= 1 && Math.abs(ct.clientX - d.lx) < 80) {
+      let x = d.base + (ct.clientX - d.x);
+      const minX = hasNeighbor(1) ? -W : 0, maxX = hasNeighbor(-1) ? W : 0;
+      if (x < minX) x = minX - (minX - x) / 3;
+      if (x > maxX) x = maxX + (x - maxX) / 3;
+      setPagerX(d.pg, x);
+      d.hist.push([upT, ct.clientX]); d.lx = ct.clientX; d.lt = upT;
+    }
+    d.vx = upT - d.lt > 90 ? 0 : fingerSpeed(d, d.lt);   // палец остановился — броска нет
     const off = -pgX / W;                                   // плюс — тянем к следующему дню
     let dir = 0;
     if (d.vx < -0.3 || (off > 0.35 && d.vx < 0.25)) dir = 1;
     else if (d.vx > 0.3 || (off < -0.35 && d.vx > -0.25)) dir = -1;
     if (dir && !hasNeighbor(dir)) dir = 0;
-    slideTo(d.pg, dir, d.vx, null, d.vx ? d.lt : 0);
+    if (d.raf) { cancelAnimationFrame(d.raf); d.raf = 0; }
+    slideTo(d.pg, dir, d.vx, null, d.vx && d.shownX === pgX ? d.shownAt : 0);
   }
 
   // ---- таблетка выбранного дня: плавно едет за листанием и к нажатому дню ----
