@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="73148fbe1ba6">
+<meta name="app-ver" content="35d27efe87ac">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1018,6 +1018,64 @@ button.offline span { min-width: 0; text-wrap: balance; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ================= «Жидкое стекло» (как в iOS 26) =================
+   Плавающие элементы — нижняя панель, кнопки шапки, полоса дней, плашки — из «стекла»:
+   просвечивают и размывают то, что под ними, сверху блик, по краю — светлая кромка. */
+.tabs {
+  left: 20px; right: 20px; max-width: 440px; padding: 5px; border-radius: 34px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .02) 58%), rgba(20, 22, 28, .42);
+  -webkit-backdrop-filter: blur(26px) saturate(200%) brightness(1.06); backdrop-filter: blur(26px) saturate(200%) brightness(1.06);
+  border: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .26), inset 0 -1px 0 rgba(255, 255, 255, .05), 0 18px 40px rgba(0, 0, 0, .5);
+}
+html[data-theme="light"] .tabs {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(255, 255, 255, .38) 60%), rgba(244, 246, 250, .4);
+  box-shadow: inset 0 1px 0 #FFFFFF, 0 16px 36px rgba(20, 30, 60, .16), 0 2px 6px rgba(20, 30, 60, .06);
+}
+/* светлая кромка стекла: ярче сверху-слева и снизу-справа, как блик на линзе */
+.tabs::before, .lg::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(155deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .08) 35%, rgba(255, 255, 255, .03) 65%, rgba(255, 255, 255, .28));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+html[data-theme="light"] .tabs::before, html[data-theme="light"] .lg::before {
+  background: linear-gradient(155deg, #FFFFFF, rgba(255, 255, 255, .6) 40%, rgba(255, 255, 255, .5) 70%, #FFFFFF);
+}
+/* выбранная вкладка — «линза» из стекла внутри панели */
+.tab { min-height: 54px; border-radius: 28px; }
+.tab.on { background: rgba(255, 255, 255, .12); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), inset 0 0 0 1px rgba(255, 255, 255, .06); }
+html[data-theme="light"] .tab.on { background: rgba(255, 255, 255, .85); box-shadow: inset 0 1px 0 #FFFFFF, 0 2px 8px rgba(20, 30, 60, .12); }
+/* круглые кнопки шапки — стеклянные */
+.whead .wbtn, .whead .icon-btn.bell, .btn.icon-btn[data-act="back"] {
+  position: relative; background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .03)), rgba(255, 255, 255, .04);
+  border: 0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 4px 14px rgba(0, 0, 0, .35);
+  -webkit-backdrop-filter: blur(16px) saturate(180%); backdrop-filter: blur(16px) saturate(180%);
+}
+html[data-theme="light"] .whead .wbtn, html[data-theme="light"] .whead .icon-btn.bell, html[data-theme="light"] .btn.icon-btn[data-act="back"] {
+  background: linear-gradient(180deg, #FFFFFF, rgba(255, 255, 255, .7)); box-shadow: inset 0 1px 0 #FFFFFF, 0 0 0 1px rgba(20, 30, 60, .06), 0 4px 12px rgba(20, 30, 60, .1);
+}
+/* полоса дней — стеклянная капсула; выбранный день — капля с бликом */
+.days { position: relative; background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02)), var(--surface); border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 8px 24px rgba(0, 0, 0, .35); }
+.sbar.stuck .days { background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .02)), var(--surface); }
+html[data-theme="light"] .days, html[data-theme="light"] .sbar.stuck .days {
+  background: linear-gradient(180deg, #FFFFFF, rgba(255, 255, 255, .85)), var(--surface);
+  box-shadow: inset 0 1px 0 #FFFFFF, 0 0 0 1px rgba(20, 30, 60, .05), 0 8px 22px rgba(20, 30, 60, .08);
+}
+.days .pill { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -2px 6px rgba(0, 0, 0, .12), 0 6px 18px rgba(var(--acc-rgb), .45); }
+.days .pill::after { content: ""; position: absolute; left: 18%; right: 18%; top: 3px; height: 38%; border-radius: 999px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .38), rgba(255, 255, 255, 0)); }
+/* плашка «Установить» — тем же стеклом */
+.ibar { background: linear-gradient(180deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .02) 58%), rgba(20, 22, 28, .5); border: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), 0 16px 36px rgba(0, 0, 0, .45); }
+html[data-theme="light"] .ibar { background: linear-gradient(180deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, .5)), rgba(244, 246, 250, .5); box-shadow: inset 0 1px 0 #FFFFFF, 0 14px 32px rgba(20, 30, 60, .14); }
+@supports (corner-shape: squircle) { .tabs { border-radius: 42px; } .tab { border-radius: 34px; } }
+/* телефон без размытия — стекло делаем плотнее, чтобы подписи читались */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tabs, .ibar { background: var(--glass); }
 }
 </style>
 </head>
@@ -2873,7 +2931,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v18.5 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v18.6 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
