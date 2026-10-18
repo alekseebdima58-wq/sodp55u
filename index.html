@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="1dc718f73df5">
+<meta name="app-ver" content="9e2b7bbb227f">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1291,7 +1291,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.0";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.0.1";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -3336,6 +3336,9 @@ window.__appStart = () => {
   function moveTo(np) {
     const c = curPos();
     if (!c || !np) return;
+    // лента уже едет к этому дню (повторное нажатие, «двойной» тап iPhone) — ничего не делаем,
+    // иначе день появлялся заново, а таблетка прыгала назад и ехала ещё раз
+    if (pgAnim && pgAnim.goal && pgAnim.goal.w === np.w && pgAnim.goal.d === np.d) return;
     const k = (np.w - c.p.w) * 7 + (np.d - c.p.d);
     if (!k) return;
     // Любой переход (соседний или дальний день, «Сегодня», другая неделя) — тем же движением, что и
@@ -3343,13 +3346,14 @@ window.__appStart = () => {
     const pg = pagerEl();
     if (pg && !pgAnim && !REDUCED) {
       const dir = Math.sign(k);
-      if (Math.abs(k) === 1 && hasNeighbor(k)) { quietCommit = true; slideTo(pg, k, 0); return; }
+      if (Math.abs(k) === 1 && hasNeighbor(k)) { quietCommit = true; slideTo(pg, k, 0); if (pgAnim) pgAnim.goal = np; return; }
       const slot = pg.querySelector(dir > 0 ? ":scope > .page.next" : ":scope > .page.prev");
       if (slot) {
         slot.innerHTML = dayBodyHTML(c.data, np.w, np.d, view === "teacher", false);
         pillGoal = np.w === c.p.w ? np.d : null;   // таблетка едет прямо к нужному дню (в той же неделе)
         haptic("select");
         slideTo(pg, dir, 0, np);
+        if (pgAnim) pgAnim.goal = np;
         return;
       }
     }
@@ -3386,7 +3390,8 @@ window.__appStart = () => {
 
     if (act === "day") {
       const d = +el.dataset.d;
-      if (pos[id] && pos[id].d !== d) { haptic("select"); moveTo({ w: pos[id].w, d }); }
+      const goal = pgAnim && pgAnim.goal;   // лента ещё едет — сравниваем с днём, к которому едет
+      if (pos[id] && (goal ? !(goal.w === pos[id].w && goal.d === d) : pos[id].d !== d)) { haptic("select"); moveTo({ w: pos[id].w, d }); }
     } else if (act === "week") {
       const data = mem[id];
       const w = pos[id].w + (+el.dataset.dir);
