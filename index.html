@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="c3d61f1903b8">
+<meta name="app-ver" content="3eeacb1c7225">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -92,39 +92,32 @@
 /* ---------- палитра ---------- */
 html[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0E1014; --surface: #171A20; --surface2: #1F232B; --border: #262B34; --sep: #23272F; --strong: #2E333D;
+
   --text: #ECEEF2; --text2: #C3C8D1; --muted: #A3AAB6; --faint: #737B89;
-  --accent: #6EA8FF; --on-accent: #0E1014; --tab-bg: #12151A; --tab-border: #20242C;
-  --past-bg: #13161B; --past-border: #1F232A; --past-title: #B0B6C1; --past-muted: #9AA1AD;
-  --dot-past: #2E333D; --done: #4A505C; --today-border: #3A4150;
+
+    --past-title: #B0B6C1; --past-muted: #9AA1AD;
+   --done: #4A505C; --today-border: #3A4150;
   --tag-bg: #16261C; --tag-fg: #3DDC84; --warn-bg: #2A2417; --warn-fg: #FFB547;
-  --red-bg: #2E1B1A; --red-fg: #FF8A7A; --acc-soft: #1D2737; --unread: #1A1E26;
-  --tint-a: .09; --track-a: .32; --badge-a: .15;
-  --lec-fg: #6FDBA4; --lec-bar: #4CC38A; --lec-rgb: 76,195,138;
-  --prac-fg: #F2B85C; --prac-bar: #E8A33D; --prac-rgb: 232,163,61;
-  --lab-fg: #B39BFF; --lab-bar: #8B5CF6; --lab-rgb: 139,92,246;
-  --oth-fg: #7CC8E8; --oth-bar: #4DB3DE; --oth-rgb: 77,179,222;
+  --red-bg: #2E1B1A; --red-fg: #FF8A7A;  --unread: #1A1E26;
+   --track-a: .32; --badge-a: .15;
+
   --av-s: 30%; --av-l: 19%; --avf-s: 85%; --avf-l: 76%;
-  --hair: rgba(255, 255, 255, .055); --elev: none; --acc-rgb: 110, 168, 255;
-  --glass: rgba(22, 25, 31, .94); --glass-border: rgba(255, 255, 255, .07); --glass-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+   --elev: none;
+    --glass-shadow: 0 12px 32px rgba(0, 0, 0, .45);
 }
 html[data-theme="light"] {
   color-scheme: light;
-  --bg: #F2F3F6; --surface: #FFFFFF; --surface2: #F0F2F5; --border: #E1E4EA; --sep: #ECEEF2; --strong: #D3D7DF;
+
   --text: #14171C; --text2: #363C48; --muted: #565D69; --faint: #80868F;
-  --accent: #2563D9; --on-accent: #FFFFFF; --tab-bg: #FFFFFF; --tab-border: #E1E4EA;
-  --past-bg: #F7F8FA; --past-border: #E8EAEE; --past-title: #4A515C; --past-muted: #565D69;
+
+    --past-title: #4A515C; --past-muted: #565D69;
   --dot-past: #D3D7DF; --done: #B8BEC8; --today-border: #AEB4BF;
   --tag-bg: #E2F4E9; --tag-fg: #0B7A3B; --warn-bg: #FDF1DC; --warn-fg: #9A5A00;
-  --red-bg: #FDE7E4; --red-fg: #C0392B; --acc-soft: #E6EEFC; --unread: #F3F7FF;
-  --tint-a: .07; --track-a: .32; --badge-a: .12;
-  --lec-fg: #13804A; --lec-bar: #3DBE7A; --lec-rgb: 61,190,122;
-  --prac-fg: #985800; --prac-bar: #E59A2B; --prac-rgb: 229,154,43;
-  --lab-fg: #6B46D6; --lab-bar: #8B5CF6; --lab-rgb: 139,92,246;
-  --oth-fg: #1F6F99; --oth-bar: #3A9FD0; --oth-rgb: 58,159,208;
+  --red-bg: #FDE7E4; --red-fg: #C0392B;  --unread: #F3F7FF;
+   --track-a: .32; --badge-a: .12;
+
   --av-s: 80%; --av-l: 94%; --avf-s: 55%; --avf-l: 38%;
-  --hair: rgba(20, 23, 28, .04); --elev: 0 1px 2px rgba(20, 23, 28, .04), 0 6px 20px rgba(20, 23, 28, .05); --acc-rgb: 37, 99, 217;
-  --glass: rgba(255, 255, 255, .94); --glass-border: rgba(20, 23, 28, .06); --glass-shadow: 0 10px 30px rgba(20, 23, 28, .12);
+
 }
 /* светлая тема: синий текст (ссылки, «сегодня», преподаватель) — чуть темнее, чтобы мелкие надписи читались */
 html[data-theme="light"] :is(.tlink, .flink, .wlink, .tag, .t-room, .wl.cur, .ymore summary) { color: #0059DB; }
@@ -157,7 +150,7 @@ svg { flex: none; }
 /* ---------- шапка ---------- */
 .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-h1 { margin: 6px 0 0; font-size: 27px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
 .top-actions { display: flex; gap: 8px; align-items: center; }
 .btn {
   height: 44px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--border);
@@ -172,37 +165,37 @@ h1 { margin: 6px 0 0; font-size: 27px; font-weight: 700; letter-spacing: -.02em;
 
 /* ---------- неделя и дни ---------- */
 .week {
-  display: flex; align-items: center; gap: 4px; margin-top: 12px; padding: 2px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  display: flex; align-items: center;
+    border-radius: 16px;
 }
 .week button {
-  width: 44px; height: 44px; flex: none; border: 0; border-radius: 12px; background: transparent;
+    flex: none; border: 0;
   color: var(--text); display: grid; place-items: center; padding: 0;
 }
 .week button:disabled { opacity: .3; cursor: default; }
-.week .mid { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.wl { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); min-height: 13px; }
+.week .mid { flex: 1; min-width: 0; display: flex; flex-direction: column;   }
+.wl {  font-weight: 600;  text-transform: uppercase; color: var(--muted); min-height: 13px; }
 .wl.cur { color: var(--accent); }
-.wr { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.wr {   font-variant-numeric: tabular-nums; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));   }
 .day {
-  height: 58px; padding: 0; border-radius: 14px; border: 1px solid var(--border); background: var(--surface);
+   padding: 0;  border: 1px solid var(--border);
   color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  transition: background .2s, border-color .2s, opacity .2s;
+
 }
-.day .s { font-size: 12px; font-weight: 500; opacity: .8; }
-.day .n { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.day .n {  font-weight: 700; font-variant-numeric: tabular-nums; }
 .day .dots { display: flex; gap: 3px; height: 5px; }
 .day .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--k-bar); }
 .day.dim { color: var(--muted); background: transparent; opacity: .62; }
 .day.dim .dots i { background: var(--faint); }
-.day.today { border-color: var(--today-border); }
+
 .day.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .day.on .dots i { background: var(--on-accent); }
-.dayhead { display: flex; flex-direction: column; gap: 2px; margin: 14px 0 8px; }
+.dayhead { display: flex; flex-direction: column;   }
 .dayhead .t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.dayhead h2 { margin: 0; font-size: 17px; font-weight: 600; }
-.tag { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--tag-bg); color: var(--tag-fg); }
+.dayhead h2 { margin: 0;   }
+.tag { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px;   }
 .summary { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* ---------- лента пар ---------- */
@@ -252,15 +245,15 @@ h1 { margin: 6px 0 0; font-size: 27px; font-weight: 700; letter-spacing: -.02em;
 }
 
 .card {
-  min-width: 0; margin: 3px 0; padding: 12px 14px; border-radius: 18px;
-  background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;
+  min-width: 0; margin: 3px 0;
+  background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column;
   text-align: left;
 }
 .row.live .card {
   background: linear-gradient(rgba(var(--k-rgb), var(--tint-a)), rgba(var(--k-rgb), var(--tint-a))), var(--surface);
-  border-color: rgba(var(--k-rgb), .45);
+
 }
-.row.next .card { border-color: rgba(var(--k-rgb), .3); }
+
 .row.past .card { background: var(--past-bg); border-color: var(--past-border); }
 .row.past .card h3 { color: var(--past-title); }
 .card.opened { cursor: pointer; }
@@ -268,23 +261,23 @@ h1 { margin: 6px 0 0; font-size: 27px; font-weight: 700; letter-spacing: -.02em;
 .status { min-width: 0; font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row.live .status, .row.next .status { color: var(--k-fg); }
 .kind {
-  flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 5px; border-radius: 8px;
-  background: rgba(var(--k-rgb), var(--badge-a)); color: var(--k-fg); font-size: 12px; font-weight: 600;
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600;
 }
-.kind::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--k-bar); }
-.card h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
-.meta { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; font-size: 13px; color: var(--text2); min-width: 0; }
+.kind::before { content: "";     }
+.card h3 { margin: 0;  font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.meta { display: flex; flex-direction: column; align-items: flex-start;   color: var(--text2); min-width: 0; }
 .meta > span, .tlink { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
 .meta .x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tlink { border: 0; background: none; padding: 4px 0; margin: -4px 0; color: var(--accent); }
 
 .cc {
-  min-width: 0; width: 100%; margin: 3px 0; padding: 10px 14px; border-radius: 16px; text-align: left;
+  min-width: 0; width: 100%; margin: 3px 0;   text-align: left;
   background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 3px;
 }
 .cc h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 20px; overflow-wrap: anywhere; }
 .cc .ln { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; line-height: 16px; color: var(--muted); }
-.cc .ln .bar { width: 4px; height: 12px; flex: none; border-radius: 2px; background: var(--k-bar); }
+.cc .ln .bar {   flex: none;  background: var(--k-bar); }
 .cc .ln .x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row.past .cc { background: var(--past-bg); border-color: var(--past-border); }
 .row.past .cc h3 { color: var(--past-title); }
@@ -301,19 +294,12 @@ h1 { margin: 6px 0 0; font-size: 27px; font-weight: 700; letter-spacing: -.02em;
   border-radius: 50%; background: var(--text); border: 2px solid var(--bg); transition: top .6s ease;
 }
 .bnow { position: absolute; right: 0; top: var(--p); margin-top: -8px; font-size: 12px; font-weight: 700; line-height: 16px; transition: top .6s ease; }
-.blbl { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.blbl { display: flex; align-items: center; gap: 6px;  color: var(--muted); }
 .brk.active .blbl { color: var(--text); font-weight: 600; }
 
 /* появление ленты при смене дня/недели */
-.tl.enter .dot { animation: pop .45s cubic-bezier(.34, 1.56, .64, 1) both; animation-delay: calc(var(--i) * 90ms); }
-.tl.enter .card, .tl.enter .cc { animation: rise .35s ease both; animation-delay: calc(var(--i) * 60ms); }
-.tl.enter .fill { animation: grow .9s cubic-bezier(.22, 1, .36, 1) both; animation-delay: calc(var(--i) * 90ms + 250ms); }
-.tl.enter .mark { animation: slide .9s cubic-bezier(.22, 1, .36, 1) both; animation-delay: calc(var(--i) * 90ms + 250ms); }
-.tl.enter .nowlbl { animation: slide .9s cubic-bezier(.22, 1, .36, 1) both, fade .4s ease both; animation-delay: calc(var(--i) * 90ms + 250ms), calc(var(--i) * 90ms + 850ms); }
-@keyframes pop { from { transform: scale(0); } }
-@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
-@keyframes grow { from { height: 0; } }
-@keyframes slide { from { top: 0; } }
+
+
 /* Листание дней ведёт приложение само (как в приложениях iOS): лента идёт за пальцем 1:1,
    короткий быстрый бросок перелистывает день, медленный короткий — возвращает. Вертикальная прокрутка — родная. */
 .pager {
@@ -325,14 +311,10 @@ h1 { margin: 6px 0 0; font-size: 27px; font-weight: 700; letter-spacing: -.02em;
   position: relative; isolation: isolate; flex: 0 0 100%; min-width: 0; align-self: flex-start;
   padding: 0 var(--side); display: flow-root;
 }
-.page.cur.from-r { animation: inR .34s cubic-bezier(.22, 1, .36, 1) both; }
-.page.cur.from-l { animation: inL .34s cubic-bezier(.22, 1, .36, 1) both; }
-@keyframes inR { from { opacity: 0; transform: translate3d(30%, 0, 0); } }
-@keyframes inL { from { opacity: 0; transform: translate3d(-30%, 0, 0); } }
 
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 48px 24px 24px; }
 .empty .ic {
-  width: 64px; height: 64px; margin-bottom: 6px; border-radius: 20px; background: var(--surface);
+  width: 64px; height: 64px; margin-bottom: 6px;  background: var(--surface);
   border: 1px solid var(--border); color: var(--text2); display: grid; place-items: center;
 }
 .empty .h { font-size: 18px; font-weight: 600; }
@@ -347,19 +329,19 @@ h1 { margin: 6px 0 0; font-size: 27px; font-weight: 700; letter-spacing: -.02em;
 
 /* ---------- преподаватели ---------- */
 .search {
-  display: flex; align-items: center; gap: 10px; height: 48px; margin-top: 16px; padding: 0 14px;
-  border-radius: 14px; background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  display: flex; align-items: center; gap: 10px;  margin-top: 16px; padding: 0 14px;
+   background: var(--surface); border: 1px solid var(--border); color: var(--muted);
 }
 .search input {
   flex: 1; min-width: 0; height: 44px; border: 0; outline: none; background: transparent;
   color: var(--text); font: inherit; font-size: 15px;
 }
 .search input::placeholder { color: var(--muted); }
-.sec { margin: 20px 4px 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.list { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
+.sec {  font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.list { background: var(--surface); border: 1px solid var(--border);  overflow: hidden; }
 .item {
   width: 100%; min-height: 60px; display: flex; align-items: center; gap: 12px; padding: 10px 14px;
-  border: 0; border-top: 1px solid var(--sep); background: transparent; color: var(--text); text-align: left;
+  border: 0;  background: transparent; color: var(--text); text-align: left;
 }
 .list > .item:first-child { border-top: 0; }
 .item .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -367,15 +349,15 @@ h1 { margin: 6px 0 0; font-size: 27px; font-weight: 700; letter-spacing: -.02em;
 .item .sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .item .chev { color: var(--faint); }
 .av {
-  width: 40px; height: 40px; flex: none; border-radius: 13px; display: grid; place-items: center;
+  width: 40px; height: 40px; flex: none;  display: grid; place-items: center;
   font-size: 14px; font-weight: 700; letter-spacing: -.01em;
   background: hsl(var(--h) var(--av-s) var(--av-l)); color: hsl(var(--h) var(--avf-s) var(--avf-l));
 }
-.av.big { width: 56px; height: 56px; border-radius: 18px; font-size: 18px; }
+.av.big { width: 56px; height: 56px;  font-size: 18px; }
 .nothing { padding: 18px 14px; font-size: 14px; color: var(--muted); }
 .tcard {
   display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 16px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 22px;
+  background: var(--surface); border: 1px solid var(--border);
 }
 .tcard .nm { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.3; }
 .tcard .sub { margin-top: 4px; font-size: 13px; color: var(--muted); line-height: 1.4; }
@@ -386,23 +368,13 @@ h1 { margin: 6px 0 0; font-size: 27px; font-weight: 700; letter-spacing: -.02em;
   position: absolute; top: 9px; right: 10px; width: 8px; height: 8px; border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 0 2px var(--surface);
 }
-.nitem { align-items: flex-start; padding: 14px; }
-.nitem.unread { background: var(--unread); }
-.nitem.unread .nm { font-weight: 700; }
+
 .tile { width: 40px; height: 40px; flex: none; border-radius: 12px; display: grid; place-items: center; }
 .t-cancel { background: var(--red-bg); color: var(--red-fg); }
 .t-add { background: var(--tag-bg); color: var(--tag-fg); }
 .t-room { background: var(--acc-soft); color: var(--accent); }
 .t-other { background: var(--warn-bg); color: var(--warn-fg); }
-.nitem .nm { font-weight: 600; line-height: 1.3; }
-.nitem .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.nitem .when { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.nitem .desc { font-size: 13px; line-height: 1.4; color: var(--text2); white-space: normal; }
-.kv { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 14px; border-top: 1px solid var(--sep); }
-.list > .kv:first-child { border-top: 0; }
-.kv .k { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; }
-.kv .v { flex: none; font-size: 14px; color: var(--muted); }
-.kv .v.on { color: var(--text); font-weight: 600; }
+
 .srow { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px; border-top: 1px solid var(--sep); }
 .list > .srow:first-child { border-top: 0; }
 .srow .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -471,12 +443,12 @@ html.swiping, html.swiping body { overflow-x: clip; }   /* уехавший вб
 @media (prefers-reduced-motion: reduce) { .ncard .nhead .chev svg { transition: none; } }
 .nstatus.ok { color: var(--tag-fg); }
 .nstatus.err { color: var(--red-fg); }
-.hint { margin: 12px 4px 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+
 /* Пустой экран уведомлений: всё по центру, блок — посередине свободного места */
 #app.fill, .snap.fill { display: flex; flex-direction: column; }
 .nempty { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 16px 0 6vh; }
 .nempty .empty { padding: 0 16px; }
-.nempty .hint { max-width: 330px; margin: 24px auto 0; text-wrap: balance; }
+
 .nempty .empty .p { text-wrap: balance; }
 .nempty .btn.wide { max-width: 360px; margin-top: 24px; }
 .nfoot { margin-top: 16px; }
@@ -485,10 +457,10 @@ html.swiping, html.swiping body { overflow-x: clip; }   /* уехавший вб
 /* ---------- настройки ---------- */
 .pad { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 .lbl15 { font-size: 15px; font-weight: 500; }
-.seg3 { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--bg); }
-.seg3 button { height: 44px; padding: 0 4px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; }
+.seg3 { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr); gap: 4px; padding: 4px;  background: var(--bg); }
+.seg3 button { height: 44px; padding: 0 4px;  border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; }
 .seg3 button.on { background: var(--surface2); border-color: var(--border); color: var(--text); }
-html[data-theme="light"] .seg3 button.on { background: var(--surface); }
+
 .foot { margin: 22px 0 0; text-align: center; font-size: 13px; line-height: 1.5; color: var(--muted); }
 .flink { border: 0; background: none; padding: 6px 2px; margin: -6px 0; color: var(--accent); font-weight: 600; }
 .toast {
@@ -500,7 +472,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 /* Во весь экран сверху — часы телефона и кнопки Telegram «Закрыть» / «⋯». Под ними сплошная полоса
    цвета фона (с мягким краем), чтобы прокрученный текст не залезал под них. */
 .topveil { display: none; }
-#splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--bg); transition: opacity .3s ease; }
+#splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--bg);  }
 #splash[hidden] { display: none; }
 /* иконка стоит неподвижно — ровно как на картинке-заставке iPhone, без «моргания» при подмене */
 #splash img { width: 112px; height: 112px; border-radius: 25px; margin-top: -48px;
@@ -508,7 +480,7 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 /* уход: заставка гаснет целиком (иконка вместе с фоном) — без чёрной паузы между иконкой и расписанием */
 #splash { transition: opacity .22s ease-out; }
 #splash.out { opacity: 0; pointer-events: none; }
-@keyframes splashIn { from { opacity: 0; transform: scale(.88); } }
+
 /* iOS 26 размывает полосу чуть ниже статус-бара (и под кнопками Telegram во весь экран).
    Сплошная подложка закрывает эту полосу, а контент начинается ниже — подпись «СОДП-55у» не попадает под размытие. */
 .fs { --top-gap: 16px; }
@@ -517,17 +489,16 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 
 /* ---------- нижняя панель ---------- */
 .tabs {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-  background: var(--tab-bg); border-top: 1px solid var(--tab-border);
-  padding: 8px 8px max(12px, env(safe-area-inset-bottom), var(--safe-bottom, 0px));
+  position: fixed;   bottom: 0; z-index: 10;
+   border-top: 1px solid var(--tab-border);
+
 }
 .tabs .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tab {
-  min-height: 48px; border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 500;
+   border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 500;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
 }
 .tab.on { color: var(--accent); font-weight: 600; }
-
 
 /* ================= Оформление 2.0 =================
    Меньше рамок: блоки отделяются тоном фона и мягкой тенью. Крупнее заголовки и номер аудитории,
@@ -544,13 +515,13 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 .wr { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
 
 /* дни — одна дорожка, выбранный день — плотная капсула */
-.days { gap: 2px; margin-top: 12px; padding: 4px; border-radius: 22px; background: var(--surface); box-shadow: var(--elev); border: 1px solid var(--hair); }
+.days { gap: 2px; margin-top: 12px; padding: 4px; border-radius: 22px;   border: 1px solid var(--hair); }
 .day { height: 56px; border-radius: 18px; border-color: transparent; background: transparent; }
 .day .s { font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; opacity: .65; }
 .day .n { font-size: 18px; }
 .day.today { border-color: transparent; }
 .day.today:not(.on) .n, .day.today:not(.on) .s { color: var(--accent); opacity: 1; }
-.day.on { box-shadow: 0 6px 18px -6px rgba(var(--acc-rgb), .75); }
+
 .day.on .s { opacity: .85; }
 .day.dim .s { opacity: 1; }
 html[data-theme="light"] .day.dim { opacity: .78; }   /* прошедшие дни и так приглушены целиком — подпись не гасим второй раз */
@@ -561,11 +532,10 @@ html[data-theme="light"] .day.dim { opacity: .78; }   /* прошедшие дн
 /* карточки пар */
 .card { padding: 14px 16px; border-radius: 22px; border-color: var(--hair); box-shadow: var(--elev); gap: 9px; }
 .card h3 { font-size: 17px; letter-spacing: -.005em; }
-.row.live .card { border-color: rgba(var(--k-rgb), .38); box-shadow: 0 14px 34px -18px rgba(var(--k-rgb), .7), var(--elev); }
+
 .row.next .card { border-color: rgba(var(--k-rgb), .22); }
 .row.past .card, .row.past .cc { border-color: transparent; box-shadow: none; }
-.kind { border-radius: 999px; padding: 4px 10px 4px 7px; }
-.kind::before { width: 6px; height: 6px; border-radius: 50%; }
+
 .meta { gap: 5px; font-size: 13.5px; }
 .meta > span:first-child { color: var(--text); font-weight: 600; }   /* аудитория — то, куда идти */
 .cc { border-radius: 18px; border-color: var(--hair); box-shadow: var(--elev); padding: 11px 14px; }
@@ -586,14 +556,13 @@ html[data-theme="light"] .day.dim { opacity: .78; }   /* прошедшие дн
 
 /* нижняя панель — плавающая капсула над полоской «домой» */
 .tabs {
-  left: 12px; right: 12px; bottom: max(10px, env(safe-area-inset-bottom), var(--safe-bottom, 0px));
-  max-width: 496px; margin: 0 auto; padding: 6px; border-radius: 28px;
-  background: var(--glass); border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
+    bottom: max(10px, env(safe-area-inset-bottom), var(--safe-bottom, 0px));
+   margin: 0 auto;
+  background: var(--glass);
 }
-.tab { min-height: 52px; border-radius: 22px; transition: background .2s, color .2s; }
-.tab.on { background: rgba(var(--acc-rgb), .14); }
-html[data-theme="light"] .tab.on { color: #1E54C4; }   /* контраст подписи ≥ 4.5:1 на подсветке */
+.tab {   transition: background .2s, color .2s; }
 
+   /* контраст подписи ≥ 4.5:1 на подсветке */
 
 /* шапка: над заголовком везде название группы; у расписания заголовок — неделя, рядом стрелки и колокольчик */
 h1 { font-size: 24px; margin-top: 4px; }
@@ -631,7 +600,6 @@ h1.wr { font-size: clamp(18px, 5.6vw, 22px); font-weight: 700; letter-spacing: -
 .cc .rm { font-weight: 600; color: var(--text); }
 .row.past .cc .rm, .row.past .meta > span:first-child { color: var(--past-title); }
 
-
 /* ================= Стиль «Глубокий чёрный» =================
    Тёмная тема: чистый чёрный фон (на OLED-экране iPhone чёрные точки не светятся), неоновые цвета пар и свечение.
    Светлая — зеркально: чистый белый фон, насыщенные цвета, вместо свечения цветная тень. */
@@ -639,9 +607,7 @@ html[data-theme="dark"] {
   --bg: #000000; --surface: #0D0E11; --surface2: #15171B; --border: #1C1F24; --sep: #17191D; --strong: #2A2D33;
   --hair: rgba(255, 255, 255, .09); --tab-bg: #08090B; --tab-border: #17191D;
   --accent: #4DA3FF; --acc-rgb: 77, 163, 255; --on-accent: #000000; --acc-soft: #0F1D30;
-  --lec-fg: #5CFFB4; --lec-bar: #1FF29A; --lec-rgb: 31, 242, 154;
-  --prac-fg: #FFC861; --prac-bar: #FFB02E; --prac-rgb: 255, 176, 46;
-  --lab-fg: #CDB0FF; --lab-bar: #A36CFF; --lab-rgb: 163, 108, 255;
+
   --oth-fg: #7FDBFF; --oth-bar: #33C8FF; --oth-rgb: 51, 200, 255;
   --past-bg: #07080A; --past-border: #121418; --dot-past: #24272D;
   --glass: rgba(8, 9, 11, .96); --glass-border: rgba(255, 255, 255, .08); --tint-a: .06;
@@ -651,9 +617,7 @@ html[data-theme="light"] {
   --bg: #FFFFFF; --surface: #F5F6F8; --surface2: #ECEEF2; --border: #E6E8EC; --sep: #E9EBEF; --strong: #D5D8DE;
   --hair: rgba(0, 0, 0, .05); --elev: none; --tab-bg: #FFFFFF; --tab-border: #E9EBEF;
   --accent: #0A6CFF; --acc-rgb: 10, 108, 255; --on-accent: #FFFFFF; --acc-soft: #E5EFFF;
-  --lec-fg: #00733F; --lec-bar: #00C875; --lec-rgb: 0, 200, 117;
-  --prac-fg: #8A4E00; --prac-bar: #FF9500; --prac-rgb: 255, 149, 0;
-  --lab-fg: #6526E0; --lab-bar: #8E4DFF; --lab-rgb: 142, 77, 255;
+
   --oth-fg: #006C99; --oth-bar: #14A7E8; --oth-rgb: 20, 167, 232;
   --past-bg: #FAFAFB; --past-border: #F0F1F4;
   --glass: rgba(255, 255, 255, .96); --glass-border: rgba(0, 0, 0, .06); --glass-shadow: 0 10px 30px rgba(0, 0, 0, .10);
@@ -663,7 +627,7 @@ html[data-theme="light"] {
 .row.live .card { border-color: rgba(var(--k-rgb), .6); box-shadow: var(--glow-card) rgba(var(--k-rgb), var(--glow-a)); }
 .row.live .fill, .row.live .mark, .row.live .dot { box-shadow: var(--glow-line) rgba(var(--k-rgb), .85); }
 .day.on { box-shadow: var(--glow-day) rgba(var(--acc-rgb), .9); }
-.kind { box-shadow: inset 0 0 0 1px rgba(var(--k-rgb), .4); }
+
 html[data-theme="light"] .tab.on { color: #0050CC; }
 html[data-theme="light"] .seg3 { background: var(--surface2); }
 html[data-theme="light"] .seg3 button.on { background: #FFFFFF; border-color: transparent; box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
@@ -680,7 +644,7 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
   .seg3 button { font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+
 }
 
 /* ================= Современный вид 2026 ================= */
@@ -709,19 +673,12 @@ html[data-theme="light"] .row.live .card { background: var(--k-soft); }
 html[data-theme="light"] .hero { background: radial-gradient(130% 150% at 0% 0%, rgba(var(--k-rgb), .16), rgba(var(--k-rgb), 0) 70%), var(--k-soft); }
 
 /* --- «жидкое стекло»: нижняя панель просвечивает и размывает то, что под ней --- */
-.tabs {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, 0) 55%),
-              color-mix(in srgb, var(--tab-bg) 58%, transparent);
-  -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, .1);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 14px 36px rgba(0, 0, 0, .55);
-}
+
 html[data-theme="light"] .tabs {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .7), rgba(255, 255, 255, 0) 60%), rgba(255, 255, 255, .62);
+
   border-color: rgba(0, 0, 0, .06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 10px 30px rgba(0, 0, 0, .12);
+
 }
-.tab.on { background: rgba(var(--acc-rgb), .16); box-shadow: inset 0 0 0 1px rgba(var(--acc-rgb), .18); }
 
 /* --- липкая шапка: дни прилипают сверху на стекле, заголовок недели сжимается --- */
 .sbar {
@@ -732,7 +689,7 @@ html[data-theme="light"] .tabs {
 /* фон шапки — сплошной: при прокрутке текст ленты не должен просвечивать под «СОДП-55у» и днями */
 .sbar { background: var(--bg); }
 .sbar.stuck { box-shadow: 0 1px 0 var(--hair); }
-.sbar.stuck .days { background: var(--surface); }
+
 .sbar .eyebrow { max-height: 18px; transition: max-height .25s ease, opacity .2s ease; }
 .sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day { transition: font-size .25s ease, width .25s ease, height .25s ease; }
 .sbar.small .whead .eyebrow { max-height: 0; opacity: 0; }
@@ -773,7 +730,7 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
 .hr { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
 .hr b { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
 /* длинное место («Лаборатория автоматики №12…») — мельче и не больше двух строк; нет аудитории — тихо */
-.hr b.lg { font-size: 17px; letter-spacing: -.01em; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
 .hr b.none { font-size: 15px; font-weight: 600; letter-spacing: 0; color: var(--muted); }
 /* очень длинное название предмета — не больше трёх строк в «Сейчас» и в свёрнутой карточке (полностью — в раскрытой) */
 .hero h3, .cc h3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -808,12 +765,12 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
   position: fixed; z-index: 11; left: 12px; right: 12px; max-width: 496px; margin: 0 auto;
   bottom: calc(max(10px, env(safe-area-inset-bottom), var(--safe-bottom, 0px)) + 78px);
   display: flex; align-items: center; gap: 10px; padding: 10px 8px 10px 12px; border-radius: 22px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, 0) 55%), color-mix(in srgb, var(--tab-bg) 70%, transparent);
+
   -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
-  border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
+
   animation: rise .55s var(--ease-spring) both;
 }
-html[data-theme="light"] .ibar { background: rgba(255, 255, 255, .8); }
+
 .ibar .tile { width: 36px; height: 36px; border-radius: 11px; }
 body.has-ibar #app, body.has-ibar .snap { padding-bottom: calc(170px + max(env(safe-area-inset-bottom), var(--safe-bottom, 0px))); }   /* плашка не закрывает последнюю пару */
 /* устаревшие данные и подсветка пары из уведомления */
@@ -828,7 +785,6 @@ body.has-ibar #app, body.has-ibar .snap { padding-bottom: calc(170px + max(env(s
 @supports (corner-shape: squircle) { .ibar { corner-shape: squircle; border-radius: 30px; } .ibtn, .ibar .tile { corner-shape: squircle; border-radius: 16px; } }
 
 /* --- переход по нажатию на день: сдвигается только содержимое, рамки страницы не трогаем --- */
-.page.cur.from-r, .page.cur.from-l { animation: none; }
 .page.cur.from-r > * { animation: dayInR .28s cubic-bezier(.2, .8, .2, 1) both; }
 .page.cur.from-l > * { animation: dayInL .28s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes dayInR { from { opacity: 0; transform: translate3d(24px, 0, 0); } }
@@ -855,10 +811,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
   border: 1.5px solid transparent; background: var(--bg); color: var(--muted); font-size: 12.5px; font-weight: 600; }
 .ipick button img { width: 44px; height: 44px; border-radius: 11px; }
 .ipick button.on { border-color: var(--accent); color: var(--text); background: rgba(var(--acc-rgb), .1); }
-.isteps { list-style: none; margin: 0; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 10px; }
-.isteps li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; background: var(--bg); font-size: 15px; line-height: 1.4; }
-.isteps li > b { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-size: 13px; }
-.isteps li small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+
 .ihint { margin: 12px 2px 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); text-align: left; }
 .ibig { width: 100%; height: 50px; border: 0; border-radius: 16px; background: var(--accent); color: var(--on-accent); font-size: 16px; font-weight: 700; margin-top: 4px; }
 .ibig.ghost { background: var(--bg); color: var(--accent); margin-top: 12px; }
@@ -869,15 +822,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 @supports (corner-shape: squircle) { .isheet { corner-shape: squircle; border-radius: 40px; } .iprev { corner-shape: squircle; border-radius: 26px; } }
 
 /* --- видео-инструкция --- */
-.vwrap { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, .8); display: flex; align-items: center; justify-content: center;
-  padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px)); animation: fadeIn .2s ease both; }
-.vbox { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 420px; max-height: 100%; animation: rise .45s var(--ease-spring) both; }
-.vtop { display: flex; align-items: center; gap: 10px; }
-.vseg { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(255, 255, 255, .1); }
-.vseg button { height: 40px; border: 0; border-radius: 10px; background: transparent; color: rgba(255, 255, 255, .7); font-size: 14px; font-weight: 600; }
-.vseg button.on { background: rgba(255, 255, 255, .18); color: #fff; }
-.vtop .ix { color: #fff; background: rgba(255, 255, 255, .1); }
-.vbox video { display: block; width: 100%; height: auto; max-height: calc(100vh - 120px); object-fit: contain; border-radius: 22px; background: #000; }
+
 .ibig svg { vertical-align: -3px; margin-right: 4px; }
 
 /* --- видео внутри блока установки --- */
@@ -936,10 +881,10 @@ button.offline span { min-width: 0; text-wrap: balance; }
 .foot .ver { font-size: 11px; opacity: .85; font-variant-numeric: tabular-nums; }
 
 /* --- таблетка выбранного дня: отдельный слой, едет плавно (видеокарта) --- */
-.days { position: relative; }
+
 .days .day { position: relative; z-index: 1; }
 .days .pill { position: absolute; z-index: 0; left: 0; top: 4px; bottom: 4px; width: 0; border-radius: 18px; pointer-events: none;
-  background: var(--accent); box-shadow: 0 6px 18px -6px rgba(var(--acc-rgb), .75); opacity: 0; will-change: transform, width; }
+  background: var(--accent);  opacity: 0; will-change: transform, width; }
 .days .pill.ready { opacity: 1; }
 /* листание: на время движения каждый день — свой слой видеокарты (текст едет вместе с рамками, без дрожи) */
 .pager.paging > .page { will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
@@ -976,10 +921,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 @supports (animation-timing-function: linear(0, 1)) {
   :root { --ease-spring: linear(0, 0.01924, 0.06951, 0.141, 0.2256, 0.3169, 0.4097, 0.5004, 0.5861, 0.6649, 0.7358, 0.7981, 0.8519, 0.8972, 0.9347, 0.9649, 0.9887, 1.007, 1.02, 1.029, 1.035, 1.038, 1.038, 1.038, 1.036, 1.033, 1.03, 1.026, 1.022, 1.019, 1.016, 1.013, 1.01, 1.008, 1.006, 1.004, 1.002, 1.001, 1, 0.9997, 1); --ease-bounce: linear(0, 0.0265, 0.09696, 0.1984, 0.3191, 0.4487, 0.5787, 0.7025, 0.815, 0.913, 0.9945, 1.059, 1.106, 1.139, 1.157, 1.163, 1.16, 1.149, 1.133, 1.113, 1.092, 1.071, 1.051, 1.032, 1.016, 1.002, 0.9915, 0.9834, 0.9779, 0.9747, 0.9735, 0.9738, 0.9755, 0.978, 0.9811, 0.9845, 0.988, 0.9914, 0.9944, 0.9971, 1); }
 }
-.tl.enter .dot { animation: pop .6s var(--ease-bounce) both; animation-delay: calc(var(--i) * 70ms); }
-.tl.enter .card, .tl.enter .cc { animation: rise .55s var(--ease-spring) both; animation-delay: calc(var(--i) * 50ms); }
-.tl.enter .fill { animation: grow .9s var(--ease-spring) both; animation-delay: calc(var(--i) * 70ms + 200ms); }
-.tl.enter .mark { animation: slide .9s var(--ease-spring) both; animation-delay: calc(var(--i) * 70ms + 200ms); }
+
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
 .ring .arc, .fill, .mark, .nowlbl, .bmark, .bnow { transition-timing-function: var(--ease-spring); }
 .sbar .eyebrow, .sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day, .sbar .whead .top-actions { transition-timing-function: var(--ease-spring); transition-duration: .45s; }
@@ -1003,8 +945,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
   .hero { border-radius: 36px; }
   .days { border-radius: 30px; }
   .day { border-radius: 26px; }
-  .tabs { border-radius: 38px; }
-  .tab { border-radius: 32px; }
+
   .list, .tcard { border-radius: 32px; }
   .search { border-radius: 22px; }
   .kind { border-radius: 11px; }
@@ -1035,13 +976,13 @@ html[data-theme="light"] .tabs {
   box-shadow: inset 0 1px 0 #FFFFFF, 0 16px 36px rgba(20, 30, 60, .16), 0 2px 6px rgba(20, 30, 60, .06);
 }
 /* светлая кромка стекла: ярче сверху-слева и снизу-справа, как блик на линзе */
-.tabs::before, .lg::before {
+.tabs::before {
   content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
   background: linear-gradient(155deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .08) 35%, rgba(255, 255, 255, .03) 65%, rgba(255, 255, 255, .28));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
-html[data-theme="light"] .tabs::before, html[data-theme="light"] .lg::before {
+html[data-theme="light"] .tabs::before {
   background: linear-gradient(155deg, #FFFFFF, rgba(255, 255, 255, .6) 40%, rgba(255, 255, 255, .5) 70%, #FFFFFF);
 }
 /* выбранная вкладка — «линза» из стекла внутри панели */
@@ -1127,6 +1068,15 @@ html[data-theme="light"] .nc { background: var(--surface); box-shadow: 0 1px 2px
 .sic-red { background: linear-gradient(180deg, #FF7A6E, #E5484D); }
 .sicrow + .selrow { padding-left: 56px; }
 @supports (corner-shape: squircle) { .sic { corner-shape: squircle; border-radius: 12px; } }
+
+/* лента: напоминания и сводки */
+.nc-purple { --tone: var(--lab-fg); --tone-bg: rgba(var(--lab-rgb), .16); }
+.nc-orange { --tone: var(--prac-fg); --tone-bg: rgba(var(--prac-rgb), .16); }
+.nc-list { display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 0; }
+.nc-list > span { display: flex; gap: 10px; min-width: 0; font-size: 13.5px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nc-list em { min-width: 0; font-style: normal; overflow: hidden; text-overflow: ellipsis; }
+.nc-list b { flex: none; width: 42px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.nc-list .more { color: var(--muted); padding-left: 52px; }
 </style>
 </head>
 <body>
@@ -1262,7 +1212,6 @@ window.__appStart = () => {
     x: svg('<path d="M18 6 6 18M6 6l12 12"/>', 18),
     swap: svg('<path d="M7 4 3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/>', 20),
   };
-
 
   // ---------------- утилиты ----------------
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
@@ -1629,10 +1578,7 @@ window.__appStart = () => {
     };
     requestAnimationFrame(step);
   }
-  function fadeIn() {   // вкладки и первый показ: одна и та же короткая проявка
-    if (navRM() || !app.animate) return;
-    try { app.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: "ease-out" }); } catch (e) { /* старый браузер */ }
-  }
+
   function go(v, t, push) {
     const anim = push && navReady && !navBusy && !navRM() && !document.hidden;
     if (push) stack.push({ view, target, y: window.scrollY, snap: snapshot() });
@@ -2005,11 +1951,43 @@ window.__appStart = () => {
 
   // ---------------- уведомления ----------------
   function changeItems() { return changes && Array.isArray(changes.items) ? changes.items : []; }
+  // Лента «Уведомлений»: изменения расписания от бота + то, что приходит на телефон по расписанию —
+  // напоминание перед парой, утренняя сводка, пары на завтра. Их приложение составляет само из расписания:
+  // ничего не уходит на сервер, лента появляется даже без подключённого бота.
+  const SUN = svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', 20);
+  const MORNING_SEC = 7.5 * 3600, EVENING_SEC = 20 * 3600;
+  function remindLead() { return nstate && nstate.min ? nstate.min : 15; }
+  function dayLessons(date) {
+    const g = mem.g;
+    const w = g && g.weeks.find((x) => x.monday === mondayOf(date));
+    return w ? lessonsOf(w, weekday(date)).filter((l) => l.start) : [];
+  }
+  const hmSec = (hm) => { const [h, m] = String(hm).split(":").map(Number); return h * 3600 + m * 60; };
+  const isoAt = (date, sec) => `${date}T${String(Math.floor(sec / 3600)).padStart(2, "0")}:${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")}:00+04:00`;
+  function feedItems() {
+    const out = changeItems().map((c) => Object.assign({ src: "change" }, c));
+    const now = samaraNow(), lead = remindLead();
+    const today = now.date, yesterday = addDays(today, -1);
+    // вчера вечером — «пары на завтра» (то есть на сегодня)
+    const tl = dayLessons(today);
+    if (tl.length) out.push({ src: "app", kind: "evening", date: today, ts: isoAt(yesterday, EVENING_SEC), lessons: tl });
+    const ls = dayLessons(today);
+    if (ls.length && now.sec >= MORNING_SEC) out.push({ src: "app", kind: "morning", date: today, ts: isoAt(today, MORNING_SEC), lessons: ls });
+    for (const st of [...new Set(ls.map((l) => l.start))]) {
+      const at = hmSec(st) - lead * 60;
+      if (at >= 0 && at <= now.sec) out.push({ src: "app", kind: "remind", date: today, start: st, lead, ts: isoAt(today, at), lessons: ls.filter((l) => l.start === st) });
+    }
+    if (now.sec >= EVENING_SEC) {
+      const tm = addDays(today, 1), tml = dayLessons(tm);
+      if (tml.length) out.push({ src: "app", kind: "evening", date: tm, ts: isoAt(today, EVENING_SEC), lessons: tml });
+    }
+    return out.sort((x, y) => (String(x.ts) < String(y.ts) ? -1 : String(x.ts) > String(y.ts) ? 1 : 0));
+  }
   function hasUnseen() {
-    const items = changeItems();
+    const items = feedItems();
     if (!items.length) return false;
     const seen = store.get("seenChanges") || "";
-    return items[items.length - 1].ts > seen;
+    return String(items[items.length - 1].ts) > seen;
   }
   function openNotifySettings() {
     const bot = (index && index.bot) || "sodp55u_bot";
@@ -2049,13 +2027,46 @@ window.__appStart = () => {
       <span class="nc-subj">${subj}${type}</span>
       <span class="nc-diff">${diff}</span></button>`;
   }
+  function dayWord(date) {
+    const t = samaraNow().date;
+    return date === t ? "Сегодня" : date === addDays(t, 1) ? "Завтра" : date === addDays(t, -1) ? "Вчера" : `${SHORT[weekday(date)]}, ${fmtDate(date)}`;
+  }
+  const lRoom = (l) => (roomText(l.room) || "").split(" · ")[0];
+  function postedLabel(ts) {
+    ts = String(ts || "");
+    return ts.slice(0, 10) === samaraNow().date ? ts.slice(11, 16) : (ts ? `${+ts.slice(8, 10)} ${MSHORT[+ts.slice(5, 7) - 1]}` : "");
+  }
+  function appItemHTML(c, unread) {
+    const chip = (t, cls) => `<span class="nc-chip ${cls}">${esc(t)}</span>`;
+    const ls = c.lessons || [], first = ls[0] || {};
+    let tone, icon, title, when, subj, diff = "";
+    if (c.kind === "remind") {
+      tone = "blue"; icon = I.bell; title = "Скоро пара";
+      when = `${dayWord(c.date)} · ${c.start}`;
+      subj = ls.map((l) => esc(l.subject)).join(" / ") + (first.type ? `<span class="nc-type">${esc(String(first.type).toLowerCase())}</span>` : "");
+      diff = chip(`через ${c.lead} мин`, "new") + (lRoom(first) ? chip(lRoom(first), "plain") : "") + (first.extra ? chip(shortName(first.extra), "plain") : "");
+    } else {
+      const morning = c.kind === "morning";
+      tone = morning ? "orange" : "purple"; icon = morning ? SUN : I.moon; title = morning ? "Утренняя сводка" : "Пары на завтра";
+      when = `${dayWord(c.date)}, ${fmtDate(c.date)}`;
+      const last = ls[ls.length - 1] || {};
+      subj = `${ls.length} ${plural(ls.length, "пара", "пары", "пар")} · ${esc(first.start)} – ${esc(last.end || "")}`;
+      diff = `<span class="nc-list">${ls.slice(0, 4).map((l) => `<span><b>${esc(l.start)}</b><em>${esc(l.subject)}</em></span>`).join("")}${ls.length > 4 ? `<span class="more">и ещё ${ls.length - 4}</span>` : ""}</span>`;
+    }
+    return `<button class="nc nc-${tone}${unread ? " unread" : ""}" data-act="jump" data-date="${esc(c.date)}" data-start="${esc(c.start || first.start || "")}" data-kind="${esc(c.kind)}">
+      <span class="nc-top"><span class="nc-ic" aria-hidden="true">${icon}</span><span class="nc-title">${title}</span>
+        <span class="nc-ts">${unread ? `<i class="nc-dot" aria-label="новое"></i>` : ""}${esc(postedLabel(c.ts))}</span></span>
+      <span class="nc-when">${esc(when)}<span class="nc-go" aria-hidden="true">${I.chev}</span></span>
+      <span class="nc-subj">${subj}</span>
+      <span class="nc-diff">${diff}</span></button>`;
+  }
   async function renderNotif(token) {
     if (!changes) {
       app.innerHTML = skeletonHTML();
       try { changes = await fetchJSON("data/changes.json"); } catch (e) { changes = { items: [] }; }
       if (token !== renderToken) return;
     }
-    const items = changeItems().slice().reverse();
+    const items = feedItems().slice().reverse();
     const seen = store.get("seenChanges") || "";
     const today = samaraNow().date, yesterday = addDays(today, -1);
     const groups = [["Сегодня", []], ["Вчера", []], ["Ранее", []]];
@@ -2066,16 +2077,16 @@ window.__appStart = () => {
     const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
     const fresh = items.filter((c) => String(c.ts) > seen).length;
     let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Уведомления</h1></div></div></div>`;
-    if (items.length) html += `<p class="nsum">${fresh ? `<b>${fresh} ${plural(fresh, "новое", "новых", "новых")}</b> · ` : ""}изменения расписания — нажмите, чтобы открыть день</p>`;
+    if (items.length) html += `<p class="nsum">${fresh ? `<b>${fresh} ${plural(fresh, "новое", "новых", "новых")}</b> · ` : ""}напоминания, сводки и изменения — нажмите, чтобы открыть день</p>`;
     const foot = `<button class="btn wide" data-act="to-settings">${I.bell}Настроить уведомления</button>`;
     if (!items.length) {
       // Пусто: колокольчик, текст и кнопка — одним блоком посередине экрана
       html += `<div class="nempty"><div class="empty"><div class="ic">${I.bellBig}</div><div class="h">Уведомлений пока нет</div>
-        <div class="p">Отмены, замены и смену аудиторий покажем здесь.</div></div>${foot}</div>`;
+        <div class="p">Здесь будут напоминания о парах, сводки на день и изменения расписания.</div></div>${foot}</div>`;
     } else {
       for (const [title, list] of groups) {
         if (!list.length) continue;
-        html += `<h2 class="sec">${title}</h2><div class="nlist">${list.map((c) => changeHTML(c, String(c.ts) > seen)).join("")}</div>`;
+        html += `<h2 class="sec">${title}</h2><div class="nlist">${list.map((c) => (c.src === "app" ? appItemHTML : changeHTML)(c, String(c.ts) > seen)).join("")}</div>`;
       }
       html += `<div class="nfoot">${foot}</div>`;
     }
@@ -2939,30 +2950,6 @@ window.__appStart = () => {
     }
     wrap.innerHTML = installSheetHTML();
   }
-  // ---- видео-инструкция: свой ролик для iPhone и Android, можно переключить ----
-  function showInstallVideo(os) {
-    os = os || (IOS ? "ios" : "android");
-    let w = document.querySelector(".vwrap:not(.closing)");
-    if (!w) {
-      w = document.createElement("div");
-      w.className = "vwrap";
-      w.addEventListener("click", (ev) => {
-        const b = ev.target.closest("[data-vs]");
-        if (b && b.dataset.vs === "close") { dismiss(w, w.querySelector(".vbox"), false); return; }
-        if (b && b.dataset.vs !== os) { haptic("select"); showInstallVideo(b.dataset.vs); return; }
-        if (ev.target === w) dismiss(w, w.querySelector(".vbox"), false);
-      });
-      document.body.appendChild(w);
-    }
-    w.innerHTML = `<div class="vbox" role="dialog" aria-label="Видео: как установить">
-      <div class="vtop"><div class="vseg">${[["ios", "iPhone"], ["android", "Android"]].map(([v, l]) =>
-        `<button data-vs="${v}" class="${v === os ? "on" : ""}" aria-pressed="${v === os}">${l}</button>`).join("")}</div>
-        <button class="ix" data-vs="close" aria-label="Закрыть">${I.x}</button></div>
-      <video src="media/install-${os}.mp4?v=2" poster="media/install-${os}.jpg?v=2" autoplay muted loop playsinline controls
-        width="540" height="960" aria-label="Как установить расписание на главный экран"></video></div>`;
-    const v = w.querySelector("video");
-    try { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* автозапуск запрещён — есть кнопка ▶ */ }
-  }
   // Закрытие окон — тоже плавно, обратным движением (раньше они просто исчезали)
   function dismiss(wrap, panel, down) {
     if (!wrap || wrap.classList.contains("closing")) return;
@@ -2998,7 +2985,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v18.7 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v18.9 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -3121,7 +3108,6 @@ window.__appStart = () => {
       const slot = pg.querySelector(dir > 0 ? ":scope > .page.next" : ":scope > .page.prev");
       if (slot) {
         slot.innerHTML = dayBodyHTML(c.data, np.w, np.d, view === "teacher", false);
-        slot._ci = null;
         pillGoal = np.w === c.p.w ? np.d : null;   // таблетка едет прямо к нужному дню (в той же неделе)
         haptic("select");
         slideTo(pg, dir, 0, np);
@@ -3383,11 +3369,13 @@ window.__appStart = () => {
     const body = fresh.querySelector(".card, .cc");
     const h1 = body.getBoundingClientRect().height;
     const d = h1 - h0;   // > 0 — раскрываем, < 0 — сворачиваем
-    if (d >= 0) fitPager(); else setTimeout(fitPager, springEase().startsWith("linear") ? 540 : 340);
+    if (d >= 0) fitPager(); else setTimeout(fitPager, 360);
 
     // Всё движение — сдвигами и масками, которые телефон считает на видеокарте:
     // страница под карточкой не перерисовывается каждый кадр, поэтому без рывков
-    const ease = springEase(), dur = ease.startsWith("linear") ? 520 : 320, opt = { duration: dur, easing: ease };
+    // Без пружины: карточка и пары ниже приезжают на место и сразу останавливаются. Пружина с перелётом
+    // давала «докат» — содержимое проскакивало на несколько точек и возвращалось, это выглядело как дёрганье.
+    const ease = "cubic-bezier(.25, .9, .3, 1)", dur = 340, opt = { duration: dur, easing: ease };
     const radius = getComputedStyle(body).borderTopLeftRadius;
 
     // 1) пары ниже съезжают со старого места на новое
@@ -3426,7 +3414,12 @@ window.__appStart = () => {
     const n1 = title && t1 ? Math.round(t1.height / (parseFloat(getComputedStyle(title).lineHeight) || f1 * 1.3)) : 0;
     const morph = !!(t1 && n0 && n0 !== n1 && gt);
     if (gt && !morph) gt.style.visibility = "hidden";
-    const cleanup = () => { ghost.remove(); fresh.style.position = ""; body.style.cssText = ""; };
+    // Фон карточки возвращаем без плавного перехода (иначе после сворачивания он ещё 0,2 с «проявляется»)
+    const cleanup = () => {
+      ghost.remove(); fresh.style.position = "";
+      body.style.cssText = "transition: none";
+      requestAnimationFrame(() => requestAnimationFrame(() => { body.style.cssText = ""; }));
+    };
     if (d >= 0) {
       Object.assign(ghost.style, { background: "transparent", borderColor: "transparent", boxShadow: "none", zIndex: "2" });
       fresh.appendChild(ghost);
@@ -3517,20 +3510,12 @@ window.__appStart = () => {
   // на время движения каждый день — отдельный слой видеокарты: не перерисовывается, а едет готовой картинкой
   function pagerLayers(pg, on) { if (pg && pg.classList.contains("paging") !== on) pg.classList.toggle("paging", on); }
   function pagerPages(pg) { return pg.querySelectorAll(":scope > .page"); }
-  // ---- «открытие дня» каскадом ----
-  // Въезжающий день: заголовок, блок «Сейчас» и пары чуть отстают от ленты — каждая следующая сильнее —
-  // и догоняют её к концу движения. Уходящий день слегка гаснет. Только трансформ и прозрачность.
-  const CASCADE_SEL = ":scope > .dayhead, :scope > .hero, :scope > .tl > li > .card, :scope > .tl > li > .cc, :scope > .tl > li > .blbl, :scope > .empty";
-  function cascadeItems(page) {
-    if (!page) return [];
-    if (!page._ci) page._ci = [...page.querySelectorAll(CASCADE_SEL)].slice(0, 14);
-    return page._ci;
-  }
+  // ---- «открытие дня» ----
+  // Въезжающий день мягко проявляется, уходящий слегка гаснет. Строки внутри дня едут вместе с ним.
   let cascadeSide = 0;
   function cascadeReset(page) {
     if (!page) return;
     page.style.opacity = "";
-    cascadeItems(page).forEach((el) => { el.style.transform = ""; el.style.opacity = ""; });
   }
   function cascade(pg, off) {
     if (REDUCED) return;
@@ -3966,7 +3951,7 @@ window.__appStart = () => {
     document.addEventListener("touchstart", (e) => {
       y0 = null;
       if (busy || e.touches.length !== 1 || window.scrollY > 0 || ROOT.classList.contains("swiping")
-        || document.querySelector(".sheet, .vbox, .iwrap, .vwrap")) return;
+        || document.querySelector(".sheet, .iwrap")) return;
       y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; active = false; dist = 0; ready = false;
       ROOT.style.overscrollBehaviorY = "none";   // родная «резинка» страницы сверху не мешает нашей
     }, { passive: true });
@@ -4077,7 +4062,7 @@ window.__appStart = () => {
       if (animating) return;
       if (sx !== null) { abort(); return; }
       const t = e.touches[0];
-      if (e.touches.length !== 1 || !stack.length || t.clientX > 24 || document.querySelector(".vbox, .isheet")
+      if (e.touches.length !== 1 || !stack.length || t.clientX > 24 || document.querySelector(".isheet")
         || ROOT.classList.contains("ptr-busy") || ROOT.classList.contains("nav-anim")) return;
       sx = t.clientX; sy = t.clientY; dx = 0; mode = 0; vx = 0; lastX = t.clientX; lastT = performance.now();
       const pg = e.target.closest && e.target.closest("[data-pager]");
