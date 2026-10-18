@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="ba2bf080abc1">
+<meta name="app-ver" content="cdc19fa3f0a9">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1401,7 +1401,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.2.6";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.2.7";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2569,8 +2569,13 @@ window.__appStart = () => {
       const a = Math.min(2.4, (fv || 0.9) * dur / dist);              // начинаем ровно со скорости пальца, дальше плавно разгоняемся
       const d = Math.min(k, 6) * 35;
       t = Math.max(t, d + dur * 0.7);                                  // список начинает смыкаться, пока строка ещё уезжает
-      try { w.animate([{ transform: "none" }, { transform: `translate3d(${-dist}px,0,0)` }],
-        { duration: dur, delay: d, easing: `cubic-bezier(.333, ${(a / 3).toFixed(3)}, .667, 1)`, fill: "forwards" }); } catch (e) { /* без анимации */ }
+      try {
+        w.animate([{ transform: "none" }, { transform: `translate3d(${-dist}px,0,0)` }],
+          { duration: dur, delay: d, easing: `cubic-bezier(.333, ${(a / 3).toFixed(3)}, .667, 1)`, fill: "forwards" });
+        // красная кнопка не тянется через весь экран за карточкой — сразу тает
+        const del = w.querySelector(".nc-del");
+        if (del) del.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, delay: d, easing: "ease-out", fill: "forwards" });
+      } catch (e) { /* без анимации */ }
     });
     // удаляем последнее — шапка раздела, подпись и кнопка гаснут вместе с ним, потом мягко появляется пустой экран
     if (last) for (const el of app.querySelectorAll(".nsum, .nsec, .nfoot")) {
