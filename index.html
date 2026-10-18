@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="3db2e84a3551">
+<meta name="app-ver" content="854dcb5d99fc">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1079,27 +1079,69 @@ html[data-theme="light"] .nc { background: var(--surface); box-shadow: 0 1px 2px
 .nc-list .more { color: var(--muted); padding-left: 52px; }
 
 /* экран «Статистика» */
-.stiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
-.stiles > div { padding: 14px 12px 12px; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); }
-.stiles b { display: block; font-size: 28px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.stiles span { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.st-upd { margin-top: 4px; font-size: 13px; color: var(--muted); }
+.st-hero { margin-top: 14px; padding: 16px 16px 14px; border-radius: 24px; background: var(--surface); border: 1px solid var(--hair);
+  display: grid; grid-template-columns: auto 1fr; align-items: end; column-gap: 14px; }
+.st-hero .lbl { grid-column: 1 / -1; font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .02em; text-transform: uppercase; }
+.st-hero .big { font-size: 56px; line-height: 1; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin-top: 6px; }
+.st-hero .side { padding-bottom: 6px; display: flex; flex-direction: column; gap: 3px; font-size: 13.5px; color: var(--text2); }
+.st-hero .side b { color: var(--text); font-variant-numeric: tabular-nums; }
+.st-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.st-two > div { padding: 13px 14px; border-radius: 20px; background: var(--surface); border: 1px solid var(--hair); min-width: 0; }
+.st-two .n { display: block; font-size: 28px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.st-two .t { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.st-trend { display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; padding: 3px 8px; border-radius: 99px; font-size: 12px; font-weight: 700;
+  background: var(--surface2); color: var(--text2); font-variant-numeric: tabular-nums; }
+.st-trend.up { background: var(--tag-bg); color: var(--tag-fg); }
+.st-trend.down { background: var(--red-bg); color: var(--red-fg); }
+.st-trend svg { width: 12px; height: 12px; }
+.st-range { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin: 18px 0 2px; border-radius: 14px; background: var(--surface); border: 1px solid var(--hair); }
+.st-range button { height: 36px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: 14px; font-weight: 700; }
+.st-range button.on { background: var(--surface2); border-color: var(--border); color: var(--text); }
 .schart { padding: 14px 16px 12px; }
-.schart svg { display: block; width: 100%; height: 120px; overflow: visible; touch-action: pan-y; }
-.schart .sbar { fill: color-mix(in srgb, var(--accent) 45%, transparent); }
+.scap { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-height: 40px; }
+.scap .d { font-size: 13.5px; color: var(--muted); font-weight: 600; }
+.scap .v { font-size: 13.5px; color: var(--text2); white-space: nowrap; }
+.scap .v b { font-size: 24px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.schart svg { display: block; width: 100%; height: 132px; overflow: visible; touch-action: pan-y; margin-top: 6px; }
+.schart .sbar { fill: color-mix(in srgb, var(--accent) 38%, transparent); transition: fill .15s; }
 .schart .sbar.on { fill: var(--accent); }
-.schart .shit { fill: transparent; }
+.schart .shit { fill: transparent; cursor: pointer; }
 .schart .sbase { stroke: var(--sep); stroke-width: 1; }
-.scap { margin-bottom: 8px; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.scap b { color: var(--text); font-size: 15px; }
-.saxis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.srowbar { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; padding: 6px 0; }
-.srowbar .nm { font-size: 14.5px; font-weight: 600; }
-.srowbar .v { font-size: 14.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.srowbar .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface2); overflow: hidden; }
-.srowbar .bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
-.skv > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 14px; border-top: 1px solid var(--sep); }
+.schart .savg { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; opacity: .8; }
+.schart .sval { fill: var(--text2); font-size: 11px; font-weight: 700; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.saxis { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.saxis.wd span { flex: 1; text-align: center; font-weight: 600; }
+.saxis.wd span.on { color: var(--text); }
+.savgl { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.savgl i { width: 16px; border-top: 1.5px dashed var(--muted); }
+.sstack { display: flex; gap: 2px; height: 12px; border-radius: 6px; overflow: hidden; background: var(--surface2); }
+.sstack i { display: block; height: 100%; min-width: 4px; }
+.sleg { display: flex; flex-direction: column; margin-top: 4px; }
+.sleg > div { display: grid; grid-template-columns: 10px 1fr auto 44px; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--sep); font-size: 14.5px; }
+.sleg > div:first-child { border-top: 0; }
+.sleg .dot { width: 10px; height: 10px; border-radius: 3px; }
+.sleg .nm { font-weight: 600; min-width: 0; }
+.sleg b { font-variant-numeric: tabular-nums; }
+.sleg .pc { text-align: right; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.c1 { background: #2a78d6; } .c2 { background: #eb6834; } .c3 { background: #1baf7a; }
+html[data-theme="dark"] .c1 { background: #3987e5; } html[data-theme="dark"] .c2 { background: #d95926; } html[data-theme="dark"] .c3 { background: #199e70; }
+.skv > div { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 10px 0; font-size: 14.5px; border-top: 1px solid var(--sep); }
 .skv > div:first-child { border-top: 0; }
-.skv span { color: var(--text2); min-width: 0; } .skv b { flex: none; font-variant-numeric: tabular-nums; text-align: right; max-width: 55%; }
+.skv span { color: var(--text2); min-width: 0; }
+.skv b { font-variant-numeric: tabular-nums; text-align: right; }
+.skv small { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: -2px; }
+.skv .pbar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--surface2); overflow: hidden; }
+.skv .pbar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+.sgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sgrid > div { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 18px; background: var(--surface); border: 1px solid var(--hair); min-width: 0; }
+.sgrid .tx { display: flex; flex-direction: column; min-width: 0; }
+.sgrid b { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.sgrid span { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.snote { margin: 8px 4px 0; font-size: 13px; color: var(--muted); }
+.schips { display: flex; flex-wrap: wrap; gap: 6px; }
+.schips span { padding: 6px 10px; border-radius: 99px; background: var(--surface); border: 1px solid var(--hair); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.schips span b { color: var(--muted); font-weight: 600; margin-left: 4px; }
 </style>
 </head>
 <body>
@@ -1248,7 +1290,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v18.11";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v18.12";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2106,79 +2148,130 @@ window.__appStart = () => {
       p: IOS ? "ios" : ANDROID ? "android" : "desktop", v: APP_LABEL });
     fetch(index.relay, { method: "POST", body }).catch(() => fetch(index.relay, { method: "POST", body, mode: "no-cors" }).catch(() => {}));
   }
-  async function loadAdminStats() {
+  async function openStats(j) {
+    const kb = Uint8Array.from(nkey.match(/../g).map((h) => parseInt(h, 16)));
+    const c = unb64u(String(j.c || "")), n = String(j.n || "");
+    if ((await hmacRaw(kb, cat(utf8(`stats|${n}|`), c))) !== j.h) return null;   // не ваша сводка
+    return JSON.parse(new TextDecoder().decode(await streamXor(await sha(cat(kb, utf8(n))), c)));
+  }
+  async function loadAdminStats(fresh) {
     if (!nkey || !window.crypto || !crypto.subtle) return null;
     const today = samaraNow().date;
+    // владелец: сразу показываем прошлую сводку из памяти телефона, свежую подгружаем следом
+    if (!fresh && !adminStats && store.get("isAdmin") === "1") {
+      try { const st = await openStats(JSON.parse(store.get("cache:data/stats.json") || "null") || {}); if (st) adminStats = st; } catch (e) { /* нет кэша */ }
+    }
     // у обычных пользователей не дёргаем сервер каждый запуск: проверяем раз в 3 дня
     if (store.get("isAdmin") !== "1" && QS.get("open") !== "stats" && store.get("adminTry") && store.get("adminTry") > addDays(today, -3)) return null;
     store.set("adminTry", today);
     try {
       const j = await fetchJSON("data/stats.json");
-      const kb = Uint8Array.from(nkey.match(/../g).map((h) => parseInt(h, 16)));
-      const c = unb64u(String(j.c || "")), n = String(j.n || "");
-      if ((await hmacRaw(kb, cat(utf8(`stats|${n}|`), c))) !== j.h) return null;   // не ваша сводка
-      adminStats = JSON.parse(new TextDecoder().decode(await streamXor(await sha(cat(kb, utf8(n))), c)));
+      const st = j && !j._offline ? await openStats(j) : null;
+      if (!st) return adminStats;
+      adminStats = st;
       store.set("isAdmin", "1");
       return adminStats;
-    } catch (e) { return null; }
+    } catch (e) { return adminStats; }
   }
+  let statsRange = store.get("statsRange") === "30" ? 30 : 7, statsPick = -1;
   function renderStats() {
     const x = adminStats;
     const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
+    const upd = x && x.updated ? `Обновлено ${fmtAgo(x.updated)}` : "";
     let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Статистика</h1></div></div></div>`;
-    if (!x) { app.innerHTML = html + `<div class="empty"><div class="h">Сводки пока нет</div><div class="p">Бот выкладывает её раз в полчаса.</div></div>`; return; }
-    const num = (n) => String(n || 0);
-    html += `<div class="stiles">
-      <div><b>${num(x.today)}</b><span>сегодня</span></div>
-      <div><b>${num(x.week)}</b><span>за 7 дней</span></div>
-      <div><b>${num(x.month)}</b><span>за 30 дней</span></div></div>`;
-    // открытия по дням — столбики за 30 дней
-    const daily = x.daily || [], max = Math.max(1, ...daily.map((d) => d.n));
-    const W = 330, H = 120, gap = 2, bw = (W - gap * (daily.length - 1)) / Math.max(1, daily.length);
+    if (!x) { app.innerHTML = html + `<div class="empty"><div class="h">Сводки пока нет</div><div class="p">Бот выкладывает её раз в полчаса. Потяните экран вниз, чтобы проверить.</div></div>`; return; }
+    const n = (v) => +v || 0;
+    const dev = (k) => plural(k, "устройство", "устройства", "устройств");
+    const daily = (x.daily || []).slice(-statsRange);
+    const avg = daily.length ? Math.round(daily.reduce((a, d) => a + d.n, 0) / daily.length) : 0;
+    // главная цифра — сегодня
+    html += `${upd ? `<div class="st-upd">${esc(upd)}</div>` : ""}
+      <div class="st-hero"><span class="lbl">Сегодня</span><span class="big">${n(x.today)}</span>
+        <span class="side"><span>${dev(n(x.today))} открыли приложение</span>
+        ${x.yesterday != null ? `<span>вчера <b>${n(x.yesterday)}</b> · в среднем <b>${avg}</b> в день</span>` : ""}</span></div>`;
+    // неделя (с изменением к прошлой) и месяц
+    const arrowUp = svg('<path d="M12 19V5M5 12l7-7 7 7"/>', 12, 2.4), arrowDn = svg('<path d="M12 5v14M19 12l-7 7-7-7"/>', 12, 2.4);
+    let trend = "";
+    if (x.prev_week != null) {
+      if (!n(x.prev_week)) trend = `<span class="st-trend">первая неделя</span>`;
+      else {
+        const d = Math.round(((n(x.week) - n(x.prev_week)) / n(x.prev_week)) * 100);
+        trend = d === 0 ? `<span class="st-trend">как на прошлой</span>`
+          : `<span class="st-trend ${d > 0 ? "up" : "down"}" aria-label="${d > 0 ? "больше" : "меньше"}, чем на прошлой неделе, на ${Math.abs(d)}%">${d > 0 ? arrowUp : arrowDn}${Math.abs(d)}% к прошлой</span>`;
+      }
+    }
+    html += `<div class="st-two">
+      <div><span class="n">${n(x.week)}</span><span class="t">за 7 дней</span>${trend}</div>
+      <div><span class="n">${n(x.month)}</span><span class="t">за 30 дней</span><span class="st-trend">${n(x.new_week) ? `+${n(x.new_week)} ${plural(n(x.new_week), "новое", "новых", "новых")}` : "новых нет"}</span></div></div>`;
+    // переключатель периода
+    html += `<div class="st-range" role="group" aria-label="Период">${[7, 30].map((r) =>
+      `<button data-act="srange" data-v="${r}" aria-pressed="${statsRange === r}" class="${statsRange === r ? "on" : ""}">${r} дней</button>`).join("")}</div>`;
+    // столбики по дням
+    const max = Math.max(1, ...daily.map((d) => d.n)), W = 330, H = 120, top = statsRange === 7 ? 16 : 4;
+    const gap = statsRange === 7 ? 10 : 2, bw = (W - gap * (daily.length - 1)) / Math.max(1, daily.length);
+    const pick = statsPick >= 0 && statsPick < daily.length ? statsPick : daily.length - 1;
+    const yv = (v) => H - (v / max) * (H - top);
     const bars = daily.map((d, i) => {
-      const h = d.n ? Math.max(3, (d.n / max) * (H - 4)) : 0, xx = i * (bw + gap);
-      return `<rect class="sbar${i === daily.length - 1 ? " on" : ""}" data-i="${i}" x="${xx.toFixed(1)}" y="${(H - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2"/>
+      const h = d.n ? Math.max(3, H - yv(d.n)) : 0, xx = i * (bw + gap), r = Math.min(4, bw / 2);
+      const path = h ? `M${xx.toFixed(1)} ${H}V${(H - h + r).toFixed(1)}q0 -${r} ${r} -${r}h${(bw - 2 * r).toFixed(1)}q${r} 0 ${r} ${r}V${H}Z` : "";
+      return `${path ? `<path class="sbar${i === pick ? " on" : ""}" data-i="${i}" d="${path}"/>` : ""}
+        ${statsRange === 7 ? `<text class="sval" x="${(xx + bw / 2).toFixed(1)}" y="${(H - h - 5).toFixed(1)}">${d.n}</text>` : ""}
         <rect class="shit" data-i="${i}" x="${(xx - gap / 2).toFixed(1)}" y="0" width="${(bw + gap).toFixed(1)}" height="${H}"/>`;
     }).join("");
-    const dl = (d) => `${+d.slice(8, 10)} ${MSHORT[+d.slice(5, 7) - 1]}`;
-    const last = daily[daily.length - 1];
-    html += `<h2 class="sec">Устройств в день</h2><div class="list pad schart">
-      <div class="scap" id="scap">${last ? `${dl(last.d)} · <b>${last.n}</b>` : ""}</div>
-      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Устройств в день за 30 дней, максимум ${max}">
-        <line class="sbase" x1="0" x2="${W}" y1="${H - 0.5}" y2="${H - 0.5}"/>${bars}</svg>
-      <div class="saxis"><span>${daily[0] ? dl(daily[0].d) : ""}</span><span>макс. ${max}</span><span>${last ? dl(last.d) : ""}</span></div></div>`;
-    // разбивки — строки с полосой
-    const rows = (obj, names) => {
-      const total = Object.values(obj || {}).reduce((a, b) => a + b, 0) || 1;
-      return names.map(([k, l]) => { const v = (obj || {})[k] || 0;
-        return `<div class="srowbar"><span class="nm">${l}</span><span class="v">${v}</span><span class="bar"><i style="width:${((v / total) * 100).toFixed(1)}%"></i></span></div>`; }).join("");
+    const dl = (d) => { const t = toUTC(d); return `${SHORT[(t.getUTCDay() + 6) % 7]}, ${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]}`; };
+    const capHTML = (i) => { const d = daily[i]; return d ? `<span class="d">${i === daily.length - 1 ? "Сегодня, " : ""}${esc(dl(d.d))}</span><span class="v"><b>${d.n}</b> ${dev(d.n)}</span>` : ""; };
+    const axis = statsRange === 7
+      ? `<div class="saxis wd">${daily.map((d, i) => `<span class="${i === pick ? "on" : ""}">${SHORT[(toUTC(d.d).getUTCDay() + 6) % 7]}</span>`).join("")}</div>`
+      : `<div class="saxis"><span>${daily[0] ? +daily[0].d.slice(8, 10) + " " + MSHORT[+daily[0].d.slice(5, 7) - 1] : ""}</span><span>сегодня</span></div>`;
+    html += `<h2 class="sec">Открывали по дням</h2><div class="list schart">
+      <div class="scap" id="scap" aria-live="polite">${capHTML(pick)}</div>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Устройств в день за ${statsRange} дней, в среднем ${avg}">
+        <line class="sbase" x1="0" x2="${W}" y1="${H - 0.5}" y2="${H - 0.5}"/>
+        ${avg ? `<line class="savg" x1="0" x2="${W}" y1="${yv(avg).toFixed(1)}" y2="${yv(avg).toFixed(1)}"/>` : ""}${bars}</svg>
+      ${axis}<div class="savgl"><i></i>в среднем ${avg} в день · нажмите на столбик</div></div>`;
+    // разбивки: одна полоса из частей + подписи
+    const part = (title, obj, names) => {
+      const total = names.reduce((a, [k]) => a + n((obj || {})[k]), 0);
+      if (!total) return `<h2 class="sec">${title}</h2><div class="list pad"><span class="snote" style="margin:0">Пока нет данных</span></div>`;
+      const segs = names.filter(([k]) => n(obj[k])).map(([k, , c]) => `<i class="${c}" style="flex:${n(obj[k])}"></i>`).join("");
+      const rows = names.map(([k, l, c]) => { const v = n(obj[k]);
+        return `<div><span class="dot ${c}"></span><span class="nm">${l}</span><b>${v}</b><span class="pc">${Math.round((v / total) * 100)}%</span></div>`; }).join("");
+      return `<h2 class="sec">${title}</h2><div class="list pad"><div class="sstack" aria-hidden="true">${segs}</div><div class="sleg">${rows}</div></div>`;
     };
-    html += `<h2 class="sec">Как открывают · 7 дней</h2><div class="list pad">${rows(x.mode, [["pwa", "С главного экрана"], ["tg", "В Telegram"], ["web", "В браузере"]])}</div>`;
-    html += `<h2 class="sec">Устройства · 7 дней</h2><div class="list pad">${rows(x.platform, [["ios", "iPhone"], ["android", "Android"], ["desktop", "Компьютер"]])}</div>`;
+    const m = statsRange === 30 ? (x.mode30 || x.mode) : x.mode, pf = statsRange === 30 ? (x.platform30 || x.platform) : x.platform;
+    html += part("Как открывают", m, [["pwa", "С главного экрана", "c1"], ["tg", "В Telegram", "c2"], ["web", "В браузере", "c3"]]);
+    html += part("Устройства", pf, [["ios", "iPhone", "c1"], ["android", "Android", "c2"], ["desktop", "Компьютер", "c3"]]);
+    // аудитория
+    const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+    html += `<h2 class="sec">Аудитория</h2><div class="list pad skv">
+      <div><span>Вернулись с прошлой недели</span><b>${n(x.returning)} из ${n(x.prev_week)}</b><span class="pbar"><i style="width:${pct(n(x.returning), n(x.prev_week))}%"></i></span></div>
+      <div><span>Установили на главный экран</span><b>${n(x.installed)} из ${n(x.total)}</b><span class="pbar"><i style="width:${pct(n(x.installed), n(x.total))}%"></i></span></div>
+      <div><span>Устройств за всё время</span><b>${n(x.total)}</b></div>
+      <div><span>Пользователей бота</span><b>${n(x.bot_users)}</b></div></div>`;
+    // уведомления — плитки как в настройках
     const nt = x.notify || {};
-    html += `<h2 class="sec">Уведомления · люди в боте</h2><div class="list pad skv">
-      <div><span>Включено хоть что-то</span><b>${num(x.notify_users)} из ${num(x.bot_users)}</b></div>
-      <div><span>Напоминание о паре</span><b>${num(nt.remind)}</b></div>
-      <div><span>Утренняя сводка</span><b>${num(nt.morning)}</b></div>
-      <div><span>Вечерняя сводка</span><b>${num(nt.evening)}</b></div>
-      <div><span>Изменения в расписании</span><b>${num(nt.changes)}</b></div>
-      <div><span>Push на устройствах</span><b>${num(x.push_devices)}</b></div></div>
-      <h2 class="sec">Всего</h2><div class="list pad skv">
-      <div><span>Устройств за всё время</span><b>${num(x.total)}</b></div>
-      <div><span>Новых за 7 дней</span><b>${num(x.new_week)}</b></div>
-      <div><span>Установили на главный экран</span><b>${num(x.installed)}</b></div>
-      ${Object.keys(x.versions || {}).length ? `<div><span>Версии за неделю</span><b>${Object.entries(x.versions).map(([v, n]) => `${esc(v || "?")}: ${n}`).join(", ")}</b></div>` : ""}</div>
-      <p class="foot">Обновлено ${esc(String(x.updated || "").slice(11, 16))} · считаются устройства, без имён</p>`;
+    const tile = (cls, icon, v, l) => `<div><span class="sic ${cls}" aria-hidden="true">${icon}</span><span class="tx"><b>${n(v)}</b><span>${l}</span></span></div>`;
+    html += `<h2 class="sec">Уведомления</h2><div class="sgrid">
+      ${tile("sic-blue", I.bell, nt.remind, "перед парой")}
+      ${tile("sic-orange", svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', 18), nt.morning, "утром")}
+      ${tile("sic-purple", I.moon, nt.evening, "вечером")}
+      ${tile("sic-red", I.swap, nt.changes, "об изменениях")}</div>
+      <p class="snote">Хоть одно включено у ${n(x.notify_users)} из ${n(x.bot_users)} · ${n(x.push_devices) ? `push на ${n(x.push_devices)} ${dev(n(x.push_devices))}` : "push пока не включали"}</p>`;
+    const vers = Object.entries(x.versions || {});
+    if (vers.length) html += `<h2 class="sec">Версии за неделю</h2><div class="schips">${vers.map(([v, k]) => `<span>${esc(v || "?")}<b>${k}</b></span>`).join("")}</div>`;
+    html += `<p class="foot">Считаются устройства, без имён и аккаунтов</p>`;
     app.innerHTML = html;
     // касание столбика — подпись с датой и числом
     const svgEl = app.querySelector(".schart svg"), cap = app.querySelector("#scap");
-    const pick = (e) => {
+    const choose = (e) => {
       const t = e.target.closest && e.target.closest("[data-i]"); if (!t) return;
-      const i = +t.dataset.i, d = daily[i]; if (!d) return;
+      const i = +t.dataset.i; if (!daily[i] || i === statsPick) return;
+      statsPick = i;
       svgEl.querySelectorAll(".sbar").forEach((r) => r.classList.toggle("on", +r.dataset.i === i));
-      cap.innerHTML = `${dl(d.d)} · <b>${d.n}</b>`;
+      app.querySelectorAll(".saxis.wd span").forEach((s, k) => s.classList.toggle("on", k === i));
+      cap.innerHTML = capHTML(i);
     };
-    if (svgEl) { svgEl.addEventListener("pointerdown", pick); svgEl.addEventListener("pointermove", pick); }
+    if (svgEl) { svgEl.addEventListener("pointerdown", choose); svgEl.addEventListener("pointermove", (e) => { if (e.buttons || e.pointerType === "mouse") choose(e); }); }
   }
   async function renderNotif(token) {
     if (!changes) {
@@ -3294,9 +3387,14 @@ window.__appStart = () => {
     } else if (act === "fs") {
       haptic("select");
       setFullscreen(!tg.isFullscreen);
+    } else if (act === "srange") {
+      const r = +el.dataset.v;
+      if (r !== statsRange) { haptic("light"); statsRange = r; statsPick = -1; store.set("statsRange", String(r)); const y = window.scrollY; render(); window.scrollTo(0, y); }
     } else if (act === "stats") {
       haptic("light");
+      statsPick = -1;
       go("stats", null, true);
+      loadAdminStats(true).then((st) => { if (st && view === "stats" && !navBusy) { const y = window.scrollY; render(); window.scrollTo(0, y); } });
     } else if (act === "to-settings") {
       haptic("light");
       nOpen = true; store.set("nOpen", "1");
@@ -4124,10 +4222,11 @@ window.__appStart = () => {
       const updated = await checkAppVersion(true);
       if (updated) return;
       loadedAt = 0;
-      const ok = await reloadIfStale(true);
+      const ok = view === "stats" ? !!(await loadAdminStats(true)) : await reloadIfStale(true);
+      if (view === "stats") render();
       await new Promise((r) => setTimeout(r, Math.max(0, 700 - (Date.now() - t0))));   // крутилка не мелькает
       release(420);
-      if (ok) setTimeout(() => toast("Расписание обновлено"), 200);
+      if (ok) setTimeout(() => toast(view === "stats" ? "Статистика обновлена" : "Расписание обновлено"), 200);
     };
     document.addEventListener("touchend", end, { passive: true });
     document.addEventListener("touchcancel", end, { passive: true });
