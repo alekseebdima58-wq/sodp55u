@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="9e7aabb56f05">
+<meta name="app-ver" content="7b82cf9a2e7c">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -789,8 +789,6 @@ body.has-ibar #app, body.has-ibar .snap { padding-bottom: calc(170px + max(env(s
 /* устаревшие данные и подсветка пары из уведомления */
 .offline.stale { background: var(--warn-bg); color: var(--warn-fg); }
 .foot.old { color: var(--warn-fg); }
-.row.flash > .card, .row.flash > .cc { animation: flashRing 2.4s ease both; }
-@keyframes flashRing { 0%, 60% { box-shadow: 0 0 0 3px var(--accent), 0 0 24px rgba(var(--acc-rgb), .5); } 100% { box-shadow: 0 0 0 0 transparent; } }
 .ibar .ib { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; line-height: 1.3; }
 .ibar .ib small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
 .ibtn { flex: none; height: 36px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 700; }
@@ -1169,6 +1167,7 @@ html[data-theme="dark"] .c1 { background: #3987e5; } html[data-theme="dark"] .c2
 .sgrid .tx > span { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .snote { margin: 8px 4px 0; font-size: 13px; color: var(--muted); }
 .sic-gray { background: linear-gradient(180deg, #A3AAB6, #737B89); }
+.sic-tg { background: linear-gradient(180deg, #37BBFE, #229ED9); }
 .sic-green { background: linear-gradient(180deg, #4ADE80, #16A34A); }
 .dg-hero { padding: 14px 16px 12px; border-radius: 22px; border: 1px solid var(--hair); background: var(--surface); box-shadow: var(--elev); }
 .dg-head .sic, .dg-chips .sic, .dg-row .sic { background: var(--surface2); color: var(--text2); }
@@ -1402,7 +1401,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.2.3";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.2.5";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2156,7 +2155,7 @@ window.__appStart = () => {
   // напоминание перед парой, утренняя сводка, пары на завтра. Их приложение составляет само из расписания:
   // ничего не уходит на сервер, лента появляется даже без подключённого бота.
   const SUN = svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', 20);
-  const MORNING_SEC = 7.5 * 3600, EVENING_SEC = 20 * 3600;
+  const MORNING_SEC = 8 * 3600, EVENING_SEC = 20 * 3600;
   function remindLead() { return nstate && nstate.min ? nstate.min : 15; }
   function dayLessons(date) {
     const g = mem.g;
@@ -2557,23 +2556,70 @@ window.__appStart = () => {
     haptic("light");
     nHide(ids, true);
     ncOpenW = null;
-    let left = ws.length;
-    const done = () => { if (--left) return; if (view === "notif") { const y = scrollY; render(); scrollTo(0, y); } syncBadge(); };
-    for (const w of ws) {
-      const h = w.offsetHeight;
+    // 1) удаляемые строки уезжают влево целиком (вместе с красной кнопкой), по очереди
+    let t = 0;
+    ws.forEach((w, k) => {
       w.classList.add("gone");
-      try {
-        // строка целиком (карточка вместе с красной кнопкой) уезжает влево, потом список смыкается
-        const W = w.offsetWidth + 120;
-        w.animate([{ transform: "none", opacity: 1 }, { transform: `translate3d(${-W}px,0,0)`, opacity: 1 }],
-          { duration: 230, easing: "cubic-bezier(.4, 0, .9, .6)", fill: "forwards" });
-        w.animate([{ height: h + "px", marginBottom: "0px" }, { height: "0px", marginBottom: "-10px" }],
-          { duration: 260, delay: 190, easing: "cubic-bezier(.3, .9, .3, 1)", fill: "forwards" }).finished.then(done, done);
-      } catch (e) { done(); }
-    }
+      const d = Math.min(k, 6) * 35;
+      t = Math.max(t, d + 240);
+      try { w.animate([{ transform: w.style.transform || "none" }, { transform: `translate3d(${-(w.offsetWidth + 120)}px,0,0)` }],
+        { duration: 240, delay: d, easing: "cubic-bezier(.4, 0, .9, .6)", fill: "forwards" }); } catch (e) { /* без анимации */ }
+    });
+    // 2) убираем их из списка, а всё, что ниже, плавно поднимается на освободившееся место
+    //    (FLIP: раскладка меняется сразу, а глазу видно только движение — трансформом, без рывков)
+    setTimeout(() => {
+      if (view !== "notif" || !ws[0].isConnected) return;
+      const blocks = [...app.children];
+      const rows = [...app.querySelectorAll(".ncw")].filter((w) => !ws.includes(w));
+      const top = (el) => el.getBoundingClientRect().top;
+      const before = new Map([...blocks, ...rows].map((el) => [el, top(el)]));
+      for (const w of ws) w.remove();
+      for (const list of app.querySelectorAll(".nlist")) {
+        if (list.querySelector(".ncw")) continue;
+        const head = list.previousElementSibling;   // заголовок раздела с «Очистить»
+        if (head && head.classList.contains("nsec")) head.remove();
+        list.remove();
+      }
+      if (!app.querySelector(".ncw")) {   // ничего не осталось — пустой экран мягко проявляется
+        const y = scrollY; render(); scrollTo(0, y); syncBadge();
+        try { app.animate([{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], { duration: 320, easing: "cubic-bezier(.2, .9, .3, 1)" }); } catch (e) { /* без анимации */ }
+        return;
+      }
+      // дальний путь (очистили большой раздел) — чуть дольше, чтобы не «прыгало»
+      const o = (dy) => ({ duration: 320 + Math.min(200, Math.abs(dy) * 0.18), easing: "cubic-bezier(.25, .9, .3, 1)" });
+      for (const el of blocks) {
+        if (!el.isConnected || !before.has(el)) continue;
+        const dy = before.get(el) - top(el);
+        if (Math.abs(dy) > 0.5) try { el.animate([{ transform: `translate3d(0,${dy}px,0)` }, { transform: "none" }], o(dy)); } catch (e) { /* без анимации */ }
+      }
+      for (const w of rows) {
+        if (!w.isConnected) continue;
+        const list = w.parentElement;
+        const dy = (before.get(w) - (before.get(list) ?? top(list))) - (top(w) - top(list));
+        if (Math.abs(dy) > 0.5) try { w.animate([{ transform: `translate3d(0,${dy}px,0)` }, { transform: "none" }], o(before.get(w) - top(w))); } catch (e) { /* без анимации */ }
+      }
+      // «N новых» вверху — по оставшимся
+      const sum = app.querySelector(".nsum"), un = app.querySelectorAll(".ncw .nc.unread").length;
+      if (sum) { const b = sum.querySelector("b"); if (b && un) b.textContent = `${un} ${plural(un, "новое", "новых", "новых")}`; else if (b) sum.textContent = sum.textContent.replace(/^.*?·\s*/, ""); }
+      // в «Очистить» у оставшихся разделов уже правильные списки; обновляем только счётчик на колокольчике
+      syncBadge();
+    }, t);
     toast(ids.length > 1 ? "Уведомления удалены" : "Уведомление удалено", "Вернуть", () => {
       nHide(ids, false);
-      if (view === "notif") { const y = scrollY; render(); scrollTo(0, y); }
+      if (view === "notif") {
+        const key = (el) => el.dataset.nid || (el.classList.contains("nsec") ? "h:" + el.textContent : el.className);
+        const before = new Map([...app.querySelectorAll(".ncw, .nsec, .nfoot")].map((el) => [key(el), el.getBoundingClientRect().top]));
+        const y = scrollY; render(); scrollTo(0, y);
+        const o = { duration: 340, easing: "cubic-bezier(.25, .9, .3, 1)" };
+        for (const el of app.querySelectorAll(".ncw, .nsec, .nfoot")) {
+          const k = key(el);
+          try {
+            if (ids.includes(el.dataset.nid)) el.animate([{ transform: "translate3d(-40px,0,0)", opacity: 0 }, { transform: "none", opacity: 1 }], { ...o, delay: 60 });
+            else if (before.has(k)) { const dy = before.get(k) - el.getBoundingClientRect().top; if (Math.abs(dy) > 0.5) el.animate([{ transform: `translate3d(0,${dy}px,0)` }, { transform: "none" }], o); }
+            else el.animate([{ opacity: 0 }, { opacity: 1 }], o);
+          } catch (e) { /* без анимации */ }
+        }
+      }
       syncBadge();
     });
   }
@@ -2656,7 +2702,7 @@ window.__appStart = () => {
     return `${sw("on", "Напоминание о паре", "С аудиторией и преподавателем")}
       <label class="selrow" id="nminrow"${nstate.on ? "" : " hidden"}><span>Напоминать за</span>
         <select class="nsel" id="nmin" aria-label="За сколько минут напоминать"${dis}>${opts}</select></label>
-      ${sw("morning", "Утренняя сводка", "Пары на день в 7:30")}
+      ${sw("morning", "Утренняя сводка", "Пары на день в 8:00")}
       ${sw("evening", "Пары на завтра", "Вечером в 20:00")}
       ${sw("changes", "Изменения в расписании", "Отмена, замена, другая аудитория")}
       ${pushRowsHTML()}
@@ -2666,7 +2712,7 @@ window.__appStart = () => {
     const can = canLinkNotify();
     const label = linkBusy ? "Жду ответ бота…" : inTG && tg.initData ? "Подключить" : "Подключить через Telegram";
     return `<div class="nlink"><p>${can ? "Свяжи приложение с ботом — один раз, и тумблеры заработают прямо здесь." : "Уведомления включаются в чате с ботом."}</p>
-      <ul><li>Напоминание о паре за 5–30 минут</li><li>Утренняя сводка в 7:30</li><li>Пары на завтра в 20:00</li><li>Отмены, замены, другая аудитория</li></ul>
+      <ul><li>Напоминание о паре за 5–30 минут</li><li>Утренняя сводка в 8:00</li><li>Пары на завтра в 20:00</li><li>Отмены, замены, другая аудитория</li></ul>
       ${can ? `<button class="btn wide" data-act="nlink"${linkBusy ? " disabled" : ""}>${I.bell}${label}</button>
         <p class="nstatus" id="nstatus" aria-live="polite" style="text-align:center">${linkBusy ? linkNote : ""}</p>
         ${linkBusy && linkStartArg
@@ -2937,12 +2983,15 @@ window.__appStart = () => {
   const pushTg = () => store.get("pushTg") !== "0";
   function pushRowsHTML() {
     if (!pushSupported() || !canEditNotify()) return "";
-    const row = (act, on, title, sub) => `<div class="srow"><div class="body"><span class="nm">${title}</span><span class="sub">${sub}</span></div>
+    const row = (act, on, ic, cls, title, sub) => `<div class="srow sicrow"><span class="sic ${cls}" aria-hidden="true">${ic}</span>
+      <div class="body"><span class="nm">${title}</span>${sub ? `<span class="sub">${sub}</span>` : ""}</div>
       <button class="sw" role="switch" data-act="${act}" aria-checked="${on}" aria-label="${title}"><span class="tr"><span class="kn"></span></span></button></div>`;
     const denied = Notification.permission === "denied";
-    return `<div class="nsub">На этом ${IOS || ANDROID ? "телефоне" : "устройстве"}</div>
-      ${row("npush", pushOn() && !denied, "Присылать сюда", denied ? "Запрещено в настройках телефона — разреши уведомления для «Расписания»" : "Как от обычного приложения — даже без Telegram")}
-      ${pushOn() && !denied ? row("ntg", pushTg(), "И в Telegram тоже", "Выключи, чтобы не приходило дважды") : ""}`;
+    const phone = svg('<rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18.5h2"/>', 18);
+    const plane = svg('<path d="M21.5 4.5 2.8 11.6c-.9.4-.9 1.6 0 1.9l4.6 1.5 1.8 5.4c.3.8 1.3 1 1.9.4l2.6-2.5 4.7 3.5c.7.5 1.7.1 1.9-.7L23 5.9c.2-1-.6-1.8-1.5-1.4Z"/><path d="m7.4 15 10.1-7.6"/>', 18);
+    return `<div class="nsub">Куда присылать</div>
+      ${row("npush", pushOn() && !denied, phone, "sic-green", IOS || ANDROID ? "На этот телефон" : "На это устройство", denied ? "Запрещено в настройках телефона" : "")}
+      ${pushOn() && !denied ? row("ntg", pushTg(), plane, "sic-tg", "В Telegram", "") : ""}`;
   }
   async function pushSend(sub, on) {
     const j = sub.toJSON();
@@ -3114,16 +3163,14 @@ window.__appStart = () => {
     slideDir = 0;
     if (focusTarget && !isTeacher) { const ft = focusTarget; focusTarget = null; setTimeout(() => focusLesson(ft), 420); }
   }
-  // Пришли из уведомления: прокручиваем к паре и подсвечиваем её
+  // Пришли из уведомления: прокручиваем к паре
   let focusTarget = null;
   function focusLesson(ft) {
     const rows = [...app.querySelectorAll("[data-cur] .row")];
     const row = ft.start && rows.find((r) => (r.querySelector(".time .st") || {}).textContent === ft.start);
     if (!row) { toast(ft.kind === "cancel" ? `Пара в ${ft.start} отменена — в расписании её больше нет` : "Этой пары в расписании уже нет"); return; }
-    row.classList.remove("flash"); void row.offsetWidth; row.classList.add("flash");
     row.scrollIntoView({ block: "center", behavior: REDUCED ? "auto" : "smooth" });
     if (ft.kind === "cancel") toast("Эта пара отменена");
-    setTimeout(() => row.classList.remove("flash"), 2600);
   }
 
   function teacherRowsHTML(list, subjects) {
@@ -3508,12 +3555,12 @@ window.__appStart = () => {
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
       <h2 class="sec" id="nsec">Уведомления</h2>
       ${notifSettingsHTML()}
-      <h2 class="sec" id="asec">Приложение</h2>
+      ${!STANDALONE || adminStats ? `<h2 class="sec" id="asec">Приложение</h2>` : ""}
       ${adminStats ? `<div class="list" style="margin-bottom:10px"><button class="item" data-act="stats">
         <span class="sic sic-blue" aria-hidden="true">${svg('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', 18)}</span>
         <span class="body"><span class="nm">Статистика</span><span class="sub">Сегодня ${adminStats.today} · за неделю ${adminStats.week}</span></span>
         <span class="chev" aria-hidden="true">${I.chev}</span></button></div>` : ""}
-      ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
+      ${STANDALONE ? "" : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
         <br><span class="ver">${APP_LABEL} · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
@@ -3806,6 +3853,7 @@ window.__appStart = () => {
       const w = g && date ? g.weeks.findIndex((x) => x.monday === mondayOf(date)) : -1;
       if (w < 0) { haptic("light"); toast("Этого дня уже нет в расписании"); return; }
       pos.g = { w, d: weekday(date) };
+      delete keepMonday.g;   // иначе после обновления (потянули вниз) открылась бы прежняя неделя, а не день из уведомления
       focusTarget = { date, start: el.dataset.start, kind: el.dataset.kind };
       haptic("select");
       go("schedule", "g", false);
