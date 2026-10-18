@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="02d656f462d7">
+<meta name="app-ver" content="30f76b95b910">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -2719,7 +2719,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v17.6 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v17.7 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -3249,30 +3249,39 @@ window.__appStart = () => {
     pillFollow(off);
     if (Math.abs(off) < 0.02) previewChips(0);
   }
-  function pagerAnim(pg, to, v, done) {
+  function pagerAnim(pg, to, v, done, since) {
     cancelAnimationFrame(pgAnim);
     pagerLayers(pg, true);
     const from = pgX, dist = to - from;
     scrolling = true;
     const finish = () => { pgAnim = 0; scrolling = false; done && done(); if (!pgDrag) pagerLayers(pagerEl(), false); };
     if (Math.abs(dist) < 0.5 || REDUCED) { setPagerX(pg, to); finish(); return; }
-    // быстрее бросили — быстрее доезжает (но не резче 0,18 с и не дольше 0,36 с)
-    const dur = Math.max(180, Math.min(360, Math.abs(dist) / Math.max(Math.abs(v || 0), 1.05)));
-    const t0 = performance.now();
+    // День продолжает движение ровно с той скоростью, с которой его отпустил палец, плавно
+    // разгоняется (если палец был медленным) и мягко тормозит у места — без скачка скорости.
+    // Раньше после отпускания скорость сразу вырастала в 2–3 раза: глаз видел рывок и «30 кадров».
+    const W = pg.clientWidth || 390, D = Math.abs(dist), sg = Math.sign(dist);
+    let v0 = v || 0;                                   // px/мс, как у пальца (плюс — вправо)
+    const tMax = 200 + 220 * Math.min(1, D / W);       // целый день — 0,42 с, остаток пути — быстрее
+    let T = v0 * sg > 0.05 ? Math.max(180, Math.min(tMax, 2 * D / (v0 * sg))) : tMax;
+    if (!v) v0 = sg * 0.8 * D / T;                     // по нажатию — трогается сразу, без «раскачки»
+    if (v0 * sg * T > 2.8 * D) v0 = sg * 2.8 * D / T;  // быстрее нельзя — проскочил бы мимо дня
+    const a3 = v0 * T;                                 // начальная скорость в долях пути
+    // отсчёт — с последнего движения пальца: первый кадр после отпускания не «замирает»
+    const now0 = performance.now(), t0 = since ? Math.max(now0 - 34, Math.min(now0, since)) : now0;
     const step = (now) => {
-      const k = Math.min(1, (now - t0) / dur);
-      setPagerX(pg, from + dist * (1 - Math.pow(1 - k, 3)));
+      const k = Math.min(1, (now - t0) / T), k2 = k * k, k3 = k2 * k;
+      setPagerX(pg, from + dist * (3 * k2 - 2 * k3) + a3 * (k - 2 * k2 + k3));
       if (k < 1) pgAnim = requestAnimationFrame(step); else finish();
     };
     pgAnim = requestAnimationFrame(step);
   }
   // уехать на соседний день (dir = ±1) и сменить его (новый день встаёт ровно туда же — подмена незаметна)
-  function slideTo(pg, dir, v, np) {
+  function slideTo(pg, dir, v, np, since) {
     const W = pg.clientWidth || 1;
     pagerAnim(pg, -dir * W, v, () => {
       pillGoal = null;
       if (np) commitTo(np); else if (dir) commitDay(dir); else setPagerX(pg, 0);
-    });
+    }, since);
   }
   // дальний переход: лента уже стоит на нужном дне — фиксируем его без вибро и анимаций
   function commitTo(np) {
@@ -3331,7 +3340,7 @@ window.__appStart = () => {
     if (d.vx < -0.3 || (off > 0.35 && d.vx < 0.25)) dir = 1;
     else if (d.vx > 0.3 || (off < -0.35 && d.vx > -0.25)) dir = -1;
     if (dir && !hasNeighbor(dir)) dir = 0;
-    slideTo(d.pg, dir, d.vx);
+    slideTo(d.pg, dir, d.vx, null, d.vx ? d.lt : 0);
   }
 
   // ---- таблетка выбранного дня: плавно едет за листанием и к нажатому дню ----
