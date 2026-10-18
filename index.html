@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="a8b154168fbc">
+<meta name="app-ver" content="4a043bd985c3">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -503,10 +503,9 @@ html[data-theme="light"] .seg3 button.on { background: var(--surface); }
 /* иконка стоит неподвижно — ровно как на картинке-заставке iPhone, без «моргания» при подмене */
 #splash img { width: 112px; height: 112px; border-radius: 25px; margin-top: -48px;
   box-shadow: 0 14px 40px -14px rgba(0, 0, 0, .45); }
-/* уход: сначала быстро гаснет иконка, затем фон — иконка не просвечивает поверх расписания */
-#splash { transition: opacity .26s ease .06s; }
+/* уход: заставка гаснет целиком (иконка вместе с фоном) — без чёрной паузы между иконкой и расписанием */
+#splash { transition: opacity .22s ease-out; }
 #splash.out { opacity: 0; pointer-events: none; }
-#splash.out img { opacity: 0; transform: scale(.96); transition: opacity .12s ease, transform .2s ease; }
 @keyframes splashIn { from { opacity: 0; transform: scale(.88); } }
 /* iOS 26 размывает полосу чуть ниже статус-бара (и под кнопками Telegram во весь экран).
    Сплошная подложка закрывает эту полосу, а контент начинается ниже — подпись «СОДП-55у» не попадает под размытие. */
@@ -1534,7 +1533,6 @@ window.__appStart = () => {
     if (!anim) {
       render();
       window.scrollTo(0, 0);
-      if (!push) fadeIn();
       return;
     }
     // новый экран рисуем за правым краем, пока на месте виден снимок прошлого; данные ждём
@@ -1572,7 +1570,7 @@ window.__appStart = () => {
     syncBack();
     syncTabs();
     // возвращаемся туда же, где были на прошлом экране
-    return Promise.resolve(render()).then(() => { if (prev.y) window.scrollTo(0, prev.y); if (!instant) fadeIn(); });
+    return Promise.resolve(render()).then(() => { if (prev.y) window.scrollTo(0, prev.y); });
   }
 
   function pickDefault(data) {
@@ -2869,7 +2867,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v18.3 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v18.4 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -3178,13 +3176,24 @@ window.__appStart = () => {
   function refreshNow() { loadedAt = 0; reloadIfStale(true); }
   window.addEventListener("online", () => { if (mem.g && mem.g._offline) refreshNow(); });
   setInterval(() => { if (mem.g && mem.g._offline && !document.hidden) refreshNow(); }, 60 * 1000);
-  async function reloadIfStale(force) {
+  async function reloadIfStale(force, quiet) {
     if (reloading || (document.hidden && !force) || Date.now() - loadedAt < 10 * 60 * 1000) return;
     reloading = true;
     try {
       const [i, mt, ch, g] = await Promise.all([fetchJSON("data/index.json"), fetchJSON("data/meta.json"),
         fetchJSON("data/changes.json"), fetchJSON("data/g.json")]);
-      if (g._offline) { if (force) { render(); toast(lastNetError ? `Не отвечает — ${lastNetError}` : "Нет сети"); } return false; }
+      if (g._offline) {
+        if (quiet) { if (mem.g) mem.g._offline = true; if (view === "schedule") render(); return false; }   // показываем «нет сети» на сохранённом
+        if (force) { render(); toast(lastNetError ? `Не отвечает — ${lastNetError}` : "Нет сети"); }
+        return false;
+      }
+      // тихая проверка после быстрого запуска: всё то же самое — экран не трогаем совсем
+      const same = (a, b) => { try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return false; } };
+      if (quiet && same(g, mem.g) && same(i, index) && same(ch, changes)) {
+        meta = mt; loadedAt = Date.now(); loadedDate = samaraNow().date;
+        syncBadge();
+        return true;
+      }
       const newDay = samaraNow().date !== loadedDate;
       for (const id of Object.keys(pos)) {
         const w = mem[id] && mem[id].weeks[pos[id].w];
@@ -3680,13 +3689,22 @@ window.__appStart = () => {
   // Сначала скелет, потом всё нужное для первого экрана разом — чтобы анимация не обрывалась
   app.innerHTML = skeletonHTML();
   ROOT.classList.remove("booting");   // до этого момента панель и экран скрыты — без «призраков» на первом кадре
-  Promise.all([
-    fetchJSON("data/index.json").then((j) => { index = j; }).catch(() => {}),
-    fetchJSON("data/meta.json").then((j) => { meta = j; }).catch(() => {}),
-    fetchJSON("data/changes.json").then((j) => { changes = j; }).catch(() => { changes = { items: [] }; }),
-    load("g").catch(() => {}),
-  ]).then(() => {
-    loadedAt = Date.now();
+  // Быстрый запуск: расписание, сохранённое в прошлый раз, показываем сразу — без ожидания сети.
+  // Свежее тихо подтягивается следом и перерисовывает экран, только если что-то изменилось.
+  const saved = (path) => { try { const v = store.get("cache:" + path); return v ? JSON.parse(v) : null; } catch (e) { return null; } };
+  const sg = saved("data/g.json"), si = saved("data/index.json");
+  const startData = sg && sg.weeks && sg.weeks.length && si
+    ? Promise.resolve().then(() => {
+      index = si; meta = saved("data/meta.json"); changes = saved("data/changes.json") || { items: [] }; mem.g = sg;
+      setTimeout(() => { loadedAt = 0; reloadIfStale(true, true); }, 120);
+    })
+    : Promise.all([
+      fetchJSON("data/index.json").then((j) => { index = j; }).catch(() => {}),
+      fetchJSON("data/meta.json").then((j) => { meta = j; }).catch(() => {}),
+      fetchJSON("data/changes.json").then((j) => { changes = j; }).catch(() => { changes = { items: [] }; }),
+      load("g").catch(() => {}),
+    ]).then(() => { loadedAt = Date.now(); });
+  startData.then(() => {
     setTimeout(() => window.hideSplash && window.hideSplash(), 0);
     let restore = null;
     try { restore = JSON.parse(sessionStorage.getItem("verView") || "null"); sessionStorage.removeItem("verView"); } catch (e) { /* без хранилища */ }
@@ -3724,8 +3742,9 @@ window.__appStart = () => {
   window.hideSplash = () => {
     const el = document.getElementById("splash");
     if (!el || el.hidden || el.classList.contains("out")) return;
-    const wait = Math.max(0, 550 - (Date.now() - (window.__splashAt || 0)));
-    setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 320); }, wait);
+    // иконка уже была на картинке-заставке iPhone — дольше её не держим, сразу плавно открываем расписание
+    const wait = Math.max(0, 120 - (Date.now() - (window.__splashAt || 0)));
+    setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 260); }, wait);
   };
   // --- число на иконке: сколько изменений расписания ещё не смотрели ---
   function syncBadge() {
