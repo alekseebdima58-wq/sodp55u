@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="9e2b7bbb227f">
+<meta name="app-ver" content="d44af7431147">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1140,6 +1140,24 @@ html[data-theme="dark"] .c1 { background: #3987e5; } html[data-theme="dark"] .c2
 .sgrid b { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .sgrid span { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .snote { margin: 8px 4px 0; font-size: 13px; color: var(--muted); }
+.dg-ok { flex-direction: row !important; align-items: center; gap: 12px; }
+.dg-ok b { display: block; font-size: 15px; } .dg-ok .sub { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.dg-ic { width: 30px; height: 30px; flex: none; border-radius: 50%; display: grid; place-items: center; }
+.dg-ic.ok { background: var(--tag-bg); color: var(--tag-fg); }
+.dg-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.dg-tiles > div { padding: 10px 8px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); text-align: center; min-width: 0; }
+.dg-tiles b { display: block; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.dg-tiles span { display: block; font-size: 11px; font-weight: 600; color: var(--muted); line-height: 1.2; }
+.dg-tiles .bad b { color: var(--red-fg); } .dg-tiles .warn b { color: var(--warn-fg); }
+.dg-list { margin-top: 8px; gap: 0 !important; }
+.dg-list > div { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--sep); }
+.dg-list > div:first-child { border-top: 0; padding-top: 2px; }
+.dg-tag { flex: none; padding: 3px 8px; border-radius: 8px; font-size: 11.5px; font-weight: 700; margin-top: 1px; }
+.dg-tag.bad { background: var(--red-bg); color: var(--red-fg); } .dg-tag.warn { background: var(--warn-bg); color: var(--warn-fg); }
+.dg-tag.info { background: var(--surface2); color: var(--text2); }
+.dg-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dg-m { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.dg-body .sub { font-size: 12px; color: var(--muted); }
 .schips { display: flex; flex-wrap: wrap; gap: 6px; }
 .schips span { padding: 6px 10px; border-radius: 99px; background: var(--surface); border: 1px solid var(--hair); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .schips span b { color: var(--muted); font-weight: 600; margin-left: 4px; }
@@ -1287,11 +1305,59 @@ window.__appStart = () => {
     set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* хранилище недоступно */ } },
   };
 
+  // ---------------- отчёты о сбоях ----------------
+  // Приложение само замечает, что пошло не так у человека: ошибки кода, рывки анимаций (пропущенные
+  // кадры), повторные нажатия, медленный запуск и частоту кадров экрана. Копит коротко и обезличенно
+  // и время от времени отправляет боту — владелец видит это в «Статистике» и сразу узнаёт о новых ошибках.
+  const DIAG = (() => {
+    let box = {};
+    try { box = JSON.parse(store.get("diag") || "{}") || {}; } catch (e) { box = {}; }
+    const save = () => store.set("diag", JSON.stringify(box));
+    function add(k, m, x) {
+      const key = k + "|" + String(m).slice(0, 140);
+      if (!box[key] && Object.keys(box).length >= 20) return;
+      const r = box[key] || (box[key] = [k, String(m).slice(0, 140), 0, 0]);
+      r[2] += 1; r[3] = Math.max(r[3], Math.round(x || 0));
+      save();
+    }
+    return { add, take() { const v = Object.values(box); box = {}; save(); return v; }, size: () => Object.keys(box).length };
+  })();
+  window.addEventListener("error", (e) => {
+    if (!e || !e.message) return;
+    const at = e.filename ? `${String(e.filename).split("/").pop().split("?")[0]}:${e.lineno || 0}` : "";
+    DIAG.add("err", `${e.message}${at ? " @" + at : ""}`);
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const r = e && e.reason;
+    if (r && (r.name === "AbortError" || /abort|cancel/i.test(String(r.message || r)))) return;   // отменённые анимации и запросы — не ошибка
+    DIAG.add("err", "promise: " + String((r && (r.message || r)) || "?").slice(0, 120));
+  });
+  // Следим за кадрами, пока что-то движется: пропуск больше ~3 кадров подряд — заметный рывок.
+  // Заодно узнаём настоящую частоту кадров у человека (30 — энергосбережение, 60, 120 — ProMotion).
+  const fpsSeen = new Set();
+  function watchFrames(where, ms) {
+    if (document.hidden || !window.requestAnimationFrame) return;
+    const gaps = [];
+    let last = 0;
+    const t0 = performance.now();
+    const step = (ts) => {
+      if (last) gaps.push(ts - last);
+      last = ts;
+      if (ts - t0 < ms && !document.hidden) { requestAnimationFrame(step); return; }
+      if (gaps.length < 4) return;
+      const body = gaps.slice(1).sort((a, b) => a - b), med = body[Math.floor(body.length / 2)], max = body[body.length - 1];
+      const hz = med < 11 ? "120" : med < 22 ? "60" : med < 40 ? "30" : "<30";
+      if (!fpsSeen.has(hz)) { fpsSeen.add(hz); DIAG.add("fps", hz); }
+      if (max > Math.max(50, med * 3)) DIAG.add("jank", where, max);
+    };
+    requestAnimationFrame(step);
+  }
+
   // ---------------- настройки уведомлений ----------------
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.0.1";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.1";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -1662,6 +1728,7 @@ window.__appStart = () => {
     return { set, clear, els: [app, under, dim] };
   }
   function navRun(L, from, to, dur, done) {
+    watchFrames("переход между экранами", dur);
     L.set(from);
     const anims = gpuMove(L.els, () => L.set(to), dur, NAV_EASE);
     animsDone(anims, dur).then(done, done);
@@ -2176,6 +2243,19 @@ window.__appStart = () => {
     if ((await hmacRaw(kb, cat(utf8(`stats|${n}|`), c))) !== j.h) return null;   // не ваша сводка
     return JSON.parse(new TextDecoder().decode(await streamXor(await sha(cat(kb, utf8(n))), c)));
   }
+  function diagSend(beacon) {
+    if (!DIAG.size() || !index || !index.relay) return;
+    const sid = store.get("sid");
+    if (!/^[0-9a-f]{16}$/.test(sid || "")) return;
+    const lastAt = +(store.get("diagAt") || 0);
+    if (!beacon && Date.now() - lastAt < 10 * 60 * 1000) return;   // не чаще раза в 10 минут
+    store.set("diagAt", String(Date.now()));
+    const body = JSON.stringify({ q: "diag", d: sid, v: APP_LABEL, m: inTG ? "tg" : STANDALONE ? "pwa" : "web",
+      p: IOS ? "ios" : ANDROID ? "android" : "desktop", e: DIAG.take() });
+    try { if (beacon && navigator.sendBeacon && navigator.sendBeacon(index.relay, body)) return; } catch (e) { /* ниже — обычный запрос */ }
+    fetch(index.relay, { method: "POST", body, keepalive: true }).catch(() => fetch(index.relay, { method: "POST", body, mode: "no-cors" }).catch(() => {}));
+  }
+  document.addEventListener("visibilitychange", () => { if (document.hidden) try { diagSend(true); } catch (e) { /* ещё не готово */ } });
   async function loadAdminStats(fresh) {
     if (!nkey || !window.crypto || !crypto.subtle) return null;
     const today = samaraNow().date;
@@ -2196,6 +2276,39 @@ window.__appStart = () => {
     } catch (e) { return adminStats; }
   }
   let statsRange = store.get("statsRange") === "30" ? 30 : 7, statsPick = -1;
+  // «Ошибки и сбои» — что пошло не так у людей за неделю (из отчётов приложений)
+  function diagHTML(g) {
+    if (!g) return "";
+    const w = g.week || {}, n = (v) => +v || 0;
+    const PL = { ios: "iPhone", android: "Android", desktop: "компьютер" }, MD = { pwa: "с экрана", tg: "Telegram", web: "браузер" };
+    const where = (pm) => { const [p, m] = String(pm || "").split("."); return [PL[p], MD[m]].filter(Boolean).join(" · "); };
+    const KIND = { err: ["Ошибка", "bad"], jank: ["Рывок", "warn"], slow: ["Медленно", "warn"], dbl: ["Повтор", "info"] };
+    const total = n(w.err) + n(w.jank) + n(w.slow);
+    let h = `<h2 class="sec">Ошибки и сбои · 7 дней</h2>`;
+    if (!total && !n(w.dbl)) {
+      h += `<div class="list pad dg-ok"><span class="dg-ic ok" aria-hidden="true">${svg('<path d="M20 6 9 17l-5-5"/>', 16, 2.6)}</span>
+        <span><b>Сбоев не было</b><span class="sub">Ни ошибок, ни рывков ни у кого за неделю</span></span></div>`;
+    } else {
+      h += `<div class="dg-tiles">
+        <div class="${n(w.err) ? "bad" : ""}"><b>${n(w.err)}</b><span>ошибок</span></div>
+        <div class="${n(w.jank) ? "warn" : ""}"><b>${n(w.jank)}</b><span>рывков</span></div>
+        <div><b>${n(w.slow)}</b><span>медл. запусков</span></div>
+        <div><b>${n(w.dbl)}</b><span>двойных нажатий</span></div></div>`;
+      const list = (g.issues || []).slice(0, 8);
+      if (list.length) h += `<div class="list pad dg-list">${list.map((it) => {
+        const [lbl, cls] = KIND[it.k] || ["Сбой", "info"];
+        const extra = it.k === "jank" || it.k === "slow" ? ` · до ${it.k === "slow" ? (it.x / 1000).toFixed(1) + " с" : it.x + " мс"}` : "";
+        return `<div><span class="dg-tag ${cls}">${lbl}</span><span class="dg-body"><span class="dg-m">${esc(it.m)}</span>
+          <span class="sub">${n(it.n)} ${plural(n(it.n), "раз", "раза", "раз")} · ${n(it.dev)} ${plural(n(it.dev), "устройство", "устройства", "устройств")}${extra}${it.v ? " · " + esc(it.v) : ""}${where(it.p) ? " · " + where(it.p) : ""}</span></span></div>`;
+      }).join("")}</div>`;
+    }
+    const fps = g.fps || {}, f = (k) => n(fps[k]);
+    if (f("120") + f("60") + f("30") + f("<30")) {
+      h += `<p class="snote">Частота кадров у людей: ${[["120", "120 Гц"], ["60", "60 Гц"], ["30", "30 Гц (энергосбережение)"], ["<30", "меньше 30"]]
+        .filter(([k]) => f(k)).map(([k, l]) => `${l} — ${f(k)}`).join(" · ")}</p>`;
+    }
+    return h;
+  }
   function renderStats() {
     const x = adminStats;
     const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
@@ -2225,6 +2338,7 @@ window.__appStart = () => {
     html += `<div class="st-two">
       <div><span class="n">${n(x.week)}</span><span class="t">за 7 дней</span>${trend}</div>
       <div><span class="n">${n(x.month)}</span><span class="t">за 30 дней</span><span class="st-trend">${n(x.new_week) ? `+${n(x.new_week)} ${plural(n(x.new_week), "новое", "новых", "новых")}` : "новых нет"}</span></div></div>`;
+    html += diagHTML(x.diag);
     // переключатель периода
     html += `<div class="st-range" role="group" aria-label="Период">${[7, 30].map((r) =>
       `<button data-act="srange" data-v="${r}" aria-pressed="${statsRange === r}" class="${statsRange === r ? "on" : ""}">${r} дней</button>`).join("")}</div>`;
@@ -3338,7 +3452,7 @@ window.__appStart = () => {
     if (!c || !np) return;
     // лента уже едет к этому дню (повторное нажатие, «двойной» тап iPhone) — ничего не делаем,
     // иначе день появлялся заново, а таблетка прыгала назад и ехала ещё раз
-    if (pgAnim && pgAnim.goal && pgAnim.goal.w === np.w && pgAnim.goal.d === np.d) return;
+    if (pgAnim && pgAnim.goal && pgAnim.goal.w === np.w && pgAnim.goal.d === np.d) { DIAG.add("dbl", "повторное нажатие на день"); return; }
     const k = (np.w - c.p.w) * 7 + (np.d - c.p.d);
     if (!k) return;
     // Любой переход (соседний или дальний день, «Сегодня», другая неделя) — тем же движением, что и
@@ -3391,7 +3505,8 @@ window.__appStart = () => {
     if (act === "day") {
       const d = +el.dataset.d;
       const goal = pgAnim && pgAnim.goal;   // лента ещё едет — сравниваем с днём, к которому едет
-      if (pos[id] && (goal ? !(goal.w === pos[id].w && goal.d === d) : pos[id].d !== d)) { haptic("select"); moveTo({ w: pos[id].w, d }); }
+      if (goal && goal.w === pos[id].w && goal.d === d) DIAG.add("dbl", "повторное нажатие на день");   // лента уже едет туда
+      else if (pos[id] && (goal || pos[id].d !== d)) { haptic("select"); moveTo({ w: pos[id].w, d }); }
     } else if (act === "week") {
       const data = mem[id];
       const w = pos[id].w + (+el.dataset.dir);
@@ -3628,6 +3743,7 @@ window.__appStart = () => {
     // Без пружины: карточка и пары ниже приезжают на место и сразу останавливаются. Пружина с перелётом
     // давала «докат» — содержимое проскакивало на несколько точек и возвращалось, это выглядело как дёрганье.
     const ease = "cubic-bezier(.25, .9, .3, 1)", dur = 340, opt = { duration: dur, easing: ease };
+    watchFrames("раскрытие карточки", dur);
     const radius = getComputedStyle(body).borderTopLeftRadius;
 
     // 1) пары ниже съезжают со старого места на новое
@@ -3835,6 +3951,7 @@ window.__appStart = () => {
       `cubic-bezier(0.3333, ${(a / 3).toFixed(4)}, 0.6667, 1)`);
     if (t0) anims.forEach((x) => { try { x.startTime = t0; } catch (e) { /* не умеет — начнёт со следующего кадра */ } });
     tok = pgAnim = { pg, from, dist, a, T, t0: t0 || now0, anims };
+    watchFrames(since ? "листание (бросок)" : "листание (нажатие)", T);
     animsDone(anims, T - (t0 ? now0 - t0 : 0)).then(finish, () => { /* подхватили пальцем — pagerStop уже всё сделал */ });
   }
   // уехать на соседний день (dir = ±1) и сменить его (новый день встаёт ровно туда же — подмена незаметна)
@@ -3874,7 +3991,7 @@ window.__appStart = () => {
       if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
       d.mode = Math.abs(dx) > Math.abs(dy) * 1.15 ? 1 : 2;   // 1 — листаем дни, 2 — прокрутка вверх-вниз
       d.x = t.clientX; d.base = pgX;                         // без рывка на величину «мёртвой зоны»
-      if (d.mode === 1) scrolling = true;
+      if (d.mode === 1) { scrolling = true; watchFrames("листание пальцем", 600); }
     }
     if (d.mode !== 1) return;
     if (e.cancelable) e.preventDefault();
@@ -4141,6 +4258,10 @@ window.__appStart = () => {
     syncBadge();
     pushVerify();
     setTimeout(statSend, 2000);
+    setTimeout(() => diagSend(false), 4000);
+    // медленный запуск: от открытия до готового экрана дольше 4 секунд
+    const bootMs = performance.now();
+    if (bootMs > 4000) DIAG.add("slow", inTG ? "запуск в Telegram" : "запуск", bootMs);
     loadAdminStats().then((st) => {
       // по кнопке «Открыть статистику» из бота: экран открывается поверх «Настроек», «Назад» ведёт туда
       if (st && QS.get("open") === "stats" && view === "schedule" && !navBusy) { go("settings"); go("stats", null, true); }
