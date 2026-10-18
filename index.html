@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="35d27efe87ac">
+<meta name="app-ver" content="c3d61f1903b8">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1077,6 +1077,56 @@ html[data-theme="light"] .ibar { background: linear-gradient(180deg, rgba(255, 2
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .tabs, .ibar { background: var(--glass); }
 }
+
+/* ---- экран «Уведомления»: карточки изменений как уведомления iPhone ---- */
+.nsum { margin: 6px 2px 0; font-size: 13.5px; color: var(--muted); }
+.nsum b { color: var(--accent); font-weight: 700; }
+.nlist { display: flex; flex-direction: column; gap: 10px; }
+.nc { --tone: var(--warn-fg); --tone-bg: var(--warn-bg);
+  display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 14px 16px 15px; text-align: left; color: var(--text);
+  border-radius: 22px; border: 1px solid var(--hair); background: linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, 0)), var(--surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05); position: relative; overflow: hidden; }
+html[data-theme="light"] .nc { background: var(--surface); box-shadow: 0 1px 2px rgba(20, 30, 60, .04), 0 6px 18px rgba(20, 30, 60, .05); }
+.nc-red { --tone: var(--red-fg); --tone-bg: var(--red-bg); }
+.nc-green { --tone: var(--tag-fg); --tone-bg: var(--tag-bg); }
+.nc-blue { --tone: var(--accent); --tone-bg: var(--acc-soft); }
+.nc.unread { border-color: color-mix(in srgb, var(--tone) 35%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--tone) 12%, transparent), transparent 55%), var(--surface); }
+.nc-top { display: flex; align-items: center; gap: 10px; }
+.nc-ic { width: 30px; height: 30px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--tone-bg); color: var(--tone); }
+.nc-ic svg { width: 18px; height: 18px; }
+.nc-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--tone); }
+.nc-ts { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.nc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 22%, transparent); }
+.nc-when { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.nc-go { color: var(--faint); display: inline-flex; }
+.nc-subj { font-size: 14.5px; line-height: 1.35; color: var(--text2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nc-subj s { text-decoration-color: color-mix(in srgb, var(--tone) 70%, transparent); text-decoration-thickness: 1.5px; }
+.nc-type { color: var(--muted); }
+.nc-type::before { content: " · "; }
+.nc-diff { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; min-width: 0; }
+.nc-chip { max-width: 100%; padding: 4px 10px; border-radius: 10px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nc-chip.old { background: var(--surface2); color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 70%, transparent); }
+.nc-chip.new { background: var(--tone-bg); color: var(--tone); font-weight: 700; }
+.nc-chip.bad { background: var(--red-bg); color: var(--red-fg); }
+.nc-chip.good { background: var(--tag-bg); color: var(--tag-fg); }
+.nc-chip.plain { background: var(--surface2); color: var(--text2); }
+.nc-arr { display: inline-flex; color: var(--muted); }
+.nc-arr svg { width: 16px; height: 16px; }
+.nc-was { font-size: 12.5px; color: var(--muted); }
+.nc:active { transform: scale(.98); transition: transform .08s; }
+@supports (corner-shape: squircle) { .nc { corner-shape: squircle; border-radius: 30px; } .nc-ic { corner-shape: squircle; border-radius: 13px; } }
+
+/* значки у переключателей уведомлений */
+.sicrow { padding-left: 12px; }
+.sic { width: 32px; height: 32px; flex: none; border-radius: 10px; display: grid; place-items: center; color: #fff; }
+.sic svg { width: 18px; height: 18px; }
+.sic-blue { background: linear-gradient(180deg, #4C9BFF, #1F6FEB); }
+.sic-orange { background: linear-gradient(180deg, #FFB547, #F08A1C); }
+.sic-purple { background: linear-gradient(180deg, #A78BFA, #7C4DFF); }
+.sic-red { background: linear-gradient(180deg, #FF7A6E, #E5484D); }
+.sicrow + .selrow { padding-left: 56px; }
+@supports (corner-shape: squircle) { .sic { corner-shape: squircle; border-radius: 12px; } }
 </style>
 </head>
 <body>
@@ -1976,20 +2026,28 @@ window.__appStart = () => {
     type: { tile: "t-other", icon: "swap", title: "Изменился тип занятия" },
     teacher: { tile: "t-other", icon: "swap", title: "Другой преподаватель" },
   };
+  // Карточка изменения — как уведомление в iPhone: цветной значок по типу, когда и что,
+  // и само изменение наглядно: было (зачёркнуто) → стало (выделено)
+  const NC_TONE = { cancel: "red", add: "green", room: "blue", replace: "orange", type: "orange", teacher: "orange" };
   function changeHTML(c, unread) {
     const v = CHANGE_VIEW[c.kind] || CHANGE_VIEW.type;
-    const when = `${SHORT[weekday(c.date)]}, ${fmtDate(c.date)}${c.start ? ", " + c.start : ""}`;
-    let what;
-    if (c.kind === "cancel") what = `${c.subject}, ${c.type}`;
-    else if (c.kind === "add") what = `${c.subject}, ${c.type}${c.room ? " · " + c.room : ""}`;
-    else if (c.kind === "replace") what = `${c.old} → ${c.subject}`;
-    else what = `${c.subject}: ${c.old} → ${c.new}`;
+    const tone = NC_TONE[c.kind] || "orange";
+    const when = `${SHORT[weekday(c.date)]}, ${fmtDate(c.date)}${c.start ? " · " + c.start : ""}`;
     const ts = String(c.ts || "");
     const posted = ts.slice(0, 10) === samaraNow().date ? ts.slice(11, 16) : (ts ? `${+ts.slice(8, 10)} ${MSHORT[+ts.slice(5, 7) - 1]}` : "");
-    return `<button class="item nitem${unread ? " unread" : ""}" data-act="jump" data-date="${esc(c.date)}" data-start="${esc(c.start || "")}" data-kind="${esc(c.kind || "")}">
-      <span class="tile ${v.tile}" aria-hidden="true">${I[v.icon]}</span>
-      <span class="body"><span class="row1"><span class="nm">${v.title}</span><span class="when">${esc(posted)}</span></span>
-      <span class="desc">${esc(when)} · ${esc(what)}</span></span></button>`;
+    const type = c.type ? `<span class="nc-type">${esc(c.type)}</span>` : "";
+    const chip = (t, cls) => `<span class="nc-chip ${cls}">${esc(t)}</span>`;
+    let subj = esc(c.subject || ""), diff = "";
+    if (c.kind === "cancel") { subj = `<s>${subj}</s>`; diff = chip("Пары не будет", "bad"); }
+    else if (c.kind === "add") diff = chip("Новая пара", "good") + (c.room ? chip(c.room, "plain") : "");
+    else if (c.kind === "replace") diff = `<span class="nc-was">вместо</span>${chip(c.old || "другой пары", "old")}`;
+    else diff = `${chip(c.old || "—", "old")}<span class="nc-arr" aria-label="на">${I.right}</span>${chip(c.new || "—", "new")}`;
+    return `<button class="nc nc-${tone}${unread ? " unread" : ""}" data-act="jump" data-date="${esc(c.date)}" data-start="${esc(c.start || "")}" data-kind="${esc(c.kind || "")}">
+      <span class="nc-top"><span class="nc-ic" aria-hidden="true">${I[v.icon]}</span><span class="nc-title">${v.title}</span>
+        <span class="nc-ts">${unread ? `<i class="nc-dot" aria-label="новое"></i>` : ""}${esc(posted)}</span></span>
+      <span class="nc-when">${esc(when)}<span class="nc-go" aria-hidden="true">${I.chev}</span></span>
+      <span class="nc-subj">${subj}${type}</span>
+      <span class="nc-diff">${diff}</span></button>`;
   }
   async function renderNotif(token) {
     if (!changes) {
@@ -2006,7 +2064,9 @@ window.__appStart = () => {
       groups[d === today ? 0 : d === yesterday ? 1 : 2][1].push(c);
     }
     const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
+    const fresh = items.filter((c) => String(c.ts) > seen).length;
     let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Уведомления</h1></div></div></div>`;
+    if (items.length) html += `<p class="nsum">${fresh ? `<b>${fresh} ${plural(fresh, "новое", "новых", "новых")}</b> · ` : ""}изменения расписания — нажмите, чтобы открыть день</p>`;
     const foot = `<button class="btn wide" data-act="to-settings">${I.bell}Настроить уведомления</button>`;
     if (!items.length) {
       // Пусто: колокольчик, текст и кнопка — одним блоком посередине экрана
@@ -2015,7 +2075,7 @@ window.__appStart = () => {
     } else {
       for (const [title, list] of groups) {
         if (!list.length) continue;
-        html += `<h2 class="sec">${title}</h2><div class="list">${list.map((c) => changeHTML(c, String(c.ts) > seen)).join("")}</div>`;
+        html += `<h2 class="sec">${title}</h2><div class="nlist">${list.map((c) => changeHTML(c, String(c.ts) > seen)).join("")}</div>`;
       }
       html += `<div class="nfoot">${foot}</div>`;
     }
@@ -2039,7 +2099,14 @@ window.__appStart = () => {
   }
   function nSwitchesHTML() {
     const dis = canEditNotify() ? "" : " disabled";
-    const sw = (key, title, sub) => `<div class="srow"><div class="body"><span class="nm">${title}</span><span class="sub">${sub}</span></div>
+    // у каждого переключателя — цветной значок, как в настройках iPhone
+    const ICO = {
+      on: ["sic-blue", I.bell],
+      morning: ["sic-orange", svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', 18)],
+      evening: ["sic-purple", I.moon],
+      changes: ["sic-red", I.swap],
+    };
+    const sw = (key, title, sub) => `<div class="srow sicrow"><span class="sic ${ICO[key][0]}" aria-hidden="true">${ICO[key][1]}</span><div class="body"><span class="nm">${title}</span><span class="sub">${sub}</span></div>
       <button class="sw" role="switch" data-act="ntoggle" data-k="${key}" aria-checked="${!!nstate[key]}" aria-label="${title}"${dis}>
       <span class="tr"><span class="kn"></span></span></button></div>`;
     const opts = [5, 10, 15, 30].map((m) => `<option value="${m}"${m === nstate.min ? " selected" : ""}>${m} мин</option>`).join("");
@@ -2931,7 +2998,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v18.6 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v18.7 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
