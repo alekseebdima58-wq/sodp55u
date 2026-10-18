@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="854dcb5d99fc">
+<meta name="app-ver" content="81a511d38440">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -896,8 +896,10 @@ button.offline span { min-width: 0; text-wrap: balance; }
 .days:has(.days-on) .day.on { color: var(--text) !important; }
 .days:has(.days-on) .day.on .dots i { background: var(--k-bar) !important; }
 .days:has(.days-on) .day.on .s { opacity: .65; }
-.days-on { position: absolute; inset: 0; z-index: 2; pointer-events: none; padding: inherit;
-  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: inherit; color: var(--on-accent); clip-path: inset(50%); will-change: clip-path; }
+.days-on { position: absolute; z-index: 2; left: 0; top: 4px; bottom: 4px; width: 0; overflow: hidden; border-radius: 18px; pointer-events: none; will-change: transform; }
+.days-on-in { position: absolute; left: 0; top: -4px; bottom: -4px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: center;
+  color: var(--on-accent); will-change: transform; }
+@supports (corner-shape: squircle) { .days-on { corner-shape: squircle; border-radius: 26px; } }
 .days-on .day-o { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 56px; font: inherit; }
 .days-on .s { font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; opacity: .9; }
 .days-on .n { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -1290,7 +1292,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v18.12";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v18.13";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -1608,6 +1610,32 @@ window.__appStart = () => {
   const navDPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
   const navSnap = (v) => Math.round(v * navDPR) / navDPR;
   let navBusy = false, navReady = false;   // navReady — первый экран уже показан (при запуске без выезда)
+  // Анимации «через видеокарту». Запоминаем, где элементы сейчас, сразу ставим конечное положение
+  // и отдаём движение браузеру: он ведёт его в отдельном потоке с частотой экрана. Такое движение
+  // не урезают до 30 кадров ни встроенный браузер Telegram, ни режим энергосбережения, ни занятый скрипт.
+  function gpuMove(els, apply, dur, easing, delay) {
+    const read = (el) => ({ t: el.style.transform || "none", o: el.style.opacity === "" ? "1" : el.style.opacity });
+    els = els.filter(Boolean);
+    const before = els.map(read);
+    apply();
+    const anims = [];
+    els.forEach((el, i) => {
+      const a = read(el), b = before[i], k0 = {}, k1 = {};
+      if (a.t !== b.t) { k0.transform = b.t; k1.transform = a.t; }
+      if (a.o !== b.o) { k0.opacity = b.o; k1.opacity = a.o; }
+      if (!("transform" in k0) && !("opacity" in k0)) return;
+      try { anims.push(el.animate([k0, k1], { duration: dur, easing, delay: delay || 0, fill: "backwards" })); } catch (e) { /* старый браузер — сразу на месте */ }
+    });
+    return anims;
+  }
+  const animsDone = (anims, ms) => (anims.length ? anims[0].finished : new Promise((r) => setTimeout(r, Math.max(0, ms))));
+  // кривая переходов между экранами (разгон и мягкая остановка, как у iPhone) — точной ломаной, где браузер умеет
+  const NAV_EASE = (() => {
+    const f = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2) * 0.35 + (1 - Math.pow(1 - k, 3)) * 0.65;
+    const lin = "linear(" + Array.from({ length: 25 }, (_, i) => f(i / 24).toFixed(4)).join(", ") + ")";
+    try { if (CSS.supports("animation-timing-function", lin)) return lin; } catch (e) { /* нет CSS.supports */ }
+    return "cubic-bezier(.35, .55, .2, 1)";
+  })();
   function navLayers(entry) {
     ROOT.classList.add("swiping", "nav-anim");
     const under = document.createElement("div");
@@ -1621,6 +1649,7 @@ window.__appStart = () => {
     under.scrollTop = (entry && entry.y) || 0;
     const w = app.getBoundingClientRect().width || innerWidth;
     const set = (p) => {   // 0 — новый экран на месте, 1 — уехал вправо целиком
+      set.p = p;
       app.style.transform = p > 0.0005 ? `translate3d(${navSnap(p * w)}px,0,0)` : "";
       under.style.transform = `translate3d(${navSnap(-0.3 * w * (1 - p))}px,0,0)`;
       dim.style.opacity = String(1 - p);
@@ -1631,18 +1660,12 @@ window.__appStart = () => {
       if (under.firstChild) under.firstChild.remove();   // снимок остаётся в стеке — для жеста «назад»
       under.remove(); dim.remove();
     };
-    return { set, clear };
+    return { set, clear, els: [app, under, dim] };
   }
   function navRun(L, from, to, dur, done) {
-    const t0 = performance.now();
-    // плавный разгон и мягкая остановка (как у системных переходов iPhone)
-    const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2) * 0.35 + (1 - Math.pow(1 - k, 3)) * 0.65;
-    const step = (now) => {
-      const k = Math.min(1, (now - t0) / dur);
-      L.set(from + (to - from) * ease(k));
-      if (k < 1) requestAnimationFrame(step); else done();
-    };
-    requestAnimationFrame(step);
+    L.set(from);
+    const anims = gpuMove(L.els, () => L.set(to), dur, NAV_EASE);
+    animsDone(anims, dur).then(done, done);
   }
 
   function go(v, t, push) {
@@ -3727,7 +3750,7 @@ window.__appStart = () => {
   // ---- листание дней: как в iOS, через видеокарту ----
   // Дни (текущий и по соседу с каждой стороны) сдвигаются трансформом — это делает видеокарта,
   // главный поток не нагружается, поэтому без подёргиваний. Таблетка в полосе дней едет вместе с пальцем.
-  let pgDrag = null, pgAnim = 0, pgX = 0;
+  let pgDrag = null, pgAnim = null, pgX = 0;
   // Сдвиги — ровно по точкам экрана телефона: при дробных сдвигах текст выравнивается отдельно
   // от рамок и «дрожит» внутри карточки
   const DPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
@@ -3766,12 +3789,24 @@ window.__appStart = () => {
     pillFollow(off);
     if (Math.abs(off) < 0.02) previewChips(0);
   }
+  // кривая листания: путь (доля) за время k при начальной скорости a (в долях пути за всё время)
+  const pagerCurve = (k, a) => { const k2 = k * k, k3 = k2 * k; return 3 * k2 - 2 * k3 + a * (k - 2 * k2 + k3); };
+  // остановить листание на лету (подхватили пальцем): лента остаётся ровно там, где её видно
+  function pagerStop() {
+    const a = pgAnim;
+    if (!a) return;
+    pgAnim = null;
+    const k = Math.max(0, Math.min(1, (performance.now() - a.t0) / a.T));
+    setPagerX(a.pg, a.from + a.dist * pagerCurve(k, a.a));
+    a.anims.forEach((x) => x.cancel());
+  }
   function pagerAnim(pg, to, v, done, since) {
-    cancelAnimationFrame(pgAnim);
+    pagerStop();
     pagerLayers(pg, true);
     const from = pgX, dist = to - from;
     scrolling = true;
-    const finish = () => { pgAnim = 0; scrolling = false; done && done(); if (!pgDrag) pagerLayers(pagerEl(), false); };
+    let tok = null;
+    const finish = () => { if (pgAnim !== tok) return; pgAnim = null; scrolling = false; done && done(); if (!pgDrag) pagerLayers(pagerEl(), false); };
     if (Math.abs(dist) < 0.5 || REDUCED) { setPagerX(pg, to); finish(); return; }
     // День продолжает движение ровно с той скоростью, с которой его отпустил палец, плавно
     // разгоняется (если палец был медленным) и мягко тормозит у места — без скачка скорости.
@@ -3785,12 +3820,14 @@ window.__appStart = () => {
     const a3 = v0 * T;                                 // начальная скорость в долях пути
     // отсчёт — с последнего движения пальца: первый кадр после отпускания не «замирает»
     const now0 = performance.now(), t0 = since ? Math.max(now0 - 34, Math.min(now0, since)) : now0;
-    const step = (now) => {
-      const k = Math.min(1, (now - t0) / T), k2 = k * k, k3 = k2 * k;
-      setPagerX(pg, from + dist * (3 * k2 - 2 * k3) + a3 * (k - 2 * k2 + k3));
-      if (k < 1) pgAnim = requestAnimationFrame(step); else finish();
-    };
-    pgAnim = requestAnimationFrame(step);
+    // Эта кривая — ровно cubic-bezier(1/3, a/3, 2/3, 1): отдаём её браузеру целиком, и дни, таблетка
+    // и цифры в ней едут в отдельном потоке видеокарты с частотой экрана (60 или 120 кадров)
+    const a = a3 / dist;
+    const pill = pillEl(), on = pill && pill.parentNode.querySelector(".days-on");
+    const anims = gpuMove([...pagerPages(pg), pill, on, on && on.firstElementChild], () => setPagerX(pg, to), T,
+      `cubic-bezier(0.3333, ${(a / 3).toFixed(4)}, 0.6667, 1)`, t0 - now0);
+    tok = pgAnim = { pg, from, dist, a, T, t0, anims };
+    animsDone(anims, T - (now0 - t0)).then(finish, () => { /* подхватили пальцем — pagerStop уже всё сделал */ });
   }
   // уехать на соседний день (dir = ±1) и сменить его (новый день встаёт ровно туда же — подмена незаметна)
   function slideTo(pg, dir, v, np, since) {
@@ -3815,7 +3852,7 @@ window.__appStart = () => {
     const t = e.touches[0];
     if (e.touches.length !== 1 || (stack.length && t.clientX <= 24 && !inTG)) { pgDrag = null; return; }   // у края — свайп «назад»
     const pg = e.currentTarget;
-    if (pgAnim) { cancelAnimationFrame(pgAnim); pgAnim = 0; }   // подхватили на лету
+    if (pgAnim) pagerStop();   // подхватили на лету
     pagerTouch = true;
     pagerLayers(pg, true);   // слои готовим заранее, на касании — чтобы первый кадр движения не тормозил
     pgDrag = { pg, x: t.clientX, y: t.clientY, base: pgX, mode: 0, vx: 0, lx: t.clientX, lt: performance.now() };
@@ -3879,12 +3916,16 @@ window.__appStart = () => {
   function putPill(f) {
     const el = pillEl(), r = pillAt(f);
     if (!el || !r) return;
-    el.style.width = `${r.w}px`;
-    el.style.transform = `translate3d(${snap(r.x)}px,0,0)`;
+    const x = snap(r.x), w = `${r.w}px`;
+    if (el.style.width !== w) el.style.width = w;
+    el.style.transform = `translate3d(${x}px,0,0)`;
+    // «окно» таблетки с белыми цифрами едет вместе с ней, а строка цифр внутри — навстречу:
+    // цифры стоят на месте, окно скользит по ним (два трансформа — всё на видеокарте)
     const on = el.parentNode.querySelector(".days-on");
     if (on) {
-      const W = pillW || on.offsetWidth;
-      on.style.clipPath = `inset(4px ${snap(W - snap(r.x) - r.w)}px 4px ${snap(r.x)}px round 18px)`;
+      if (on.style.width !== w) on.style.width = w;
+      on.style.transform = `translate3d(${x}px,0,0)`;
+      if (on.firstElementChild) on.firstElementChild.style.transform = x ? `translate3d(${-x}px,0,0)` : "none";
     }
   }
   function setupPill() {
@@ -3895,19 +3936,24 @@ window.__appStart = () => {
       const on = document.createElement("div");
       on.className = "days-on";
       on.setAttribute("aria-hidden", "true");
-      on.innerHTML = [...nav.querySelectorAll(".day")].map((b) => `<span class="day-o">${b.innerHTML}</span>`).join("");
+      on.innerHTML = `<div class="days-on-in">${[...nav.querySelectorAll(".day")].map((b) => `<span class="day-o">${b.innerHTML}</span>`).join("")}</div>`;
       nav.appendChild(on);
     }
     measurePill();
-    pillW = nav.querySelector(".days-on").offsetWidth;
+    pillW = nav.clientWidth;
+    const inn = nav.querySelector(".days-on-in"), cs = getComputedStyle(nav);
+    inn.style.width = `${pillW}px`;
+    inn.style.padding = `0 ${cs.paddingRight} 0 ${cs.paddingLeft}`;
+    inn.style.columnGap = cs.columnGap;
     putPill(c.p.d);
     el.classList.add("ready");
     // день сменили нажатием / кнопкой «Сегодня» в той же неделе — таблетка переезжает, а не прыгает
     const wk = c.data.weeks[c.p.w].monday;
     if (pillPrev && pillPrev.week === wk && pillPrev.d !== c.p.d && !REDUCED) {
-      const to = pillAt(c.p.d), fr = pillAt(pillPrev.f);
-      if (to && fr) el.animate([{ transform: `translate3d(${fr.x}px,0,0)`, width: `${fr.w}px` }, { transform: `translate3d(${to.x}px,0,0)`, width: `${to.w}px` }],
-        { duration: 380, easing: typeof springEase === "function" ? springEase() : "cubic-bezier(.22, 1, .36, 1)" });
+      const on = nav.querySelector(".days-on");
+      putPill(pillPrev.f);
+      gpuMove([el, on, on && on.firstElementChild], () => putPill(c.p.d), 380,
+        typeof springEase === "function" ? springEase() : "cubic-bezier(.22, 1, .36, 1)");
     }
     pillPrev = null;
   }
