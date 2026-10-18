@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="4ac81084c703">
+<meta name="app-ver" content="3db2e84a3551">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1248,7 +1248,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v18.10";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v18.11";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2125,7 +2125,7 @@ window.__appStart = () => {
   function renderStats() {
     const x = adminStats;
     const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
-    let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div><div class="eyebrow">Только для вас</div><h1>Статистика</h1></div></div></div>`;
+    let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Статистика</h1></div></div></div>`;
     if (!x) { app.innerHTML = html + `<div class="empty"><div class="h">Сводки пока нет</div><div class="p">Бот выкладывает её раз в полчаса.</div></div>`; return; }
     const num = (n) => String(n || 0);
     html += `<div class="stiles">
@@ -3101,11 +3101,11 @@ window.__appStart = () => {
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
       <h2 class="sec" id="nsec">Уведомления</h2>
       ${notifSettingsHTML()}
-      ${adminStats ? `<h2 class="sec">Только для вас</h2><div class="list"><button class="item" data-act="stats">
+      <h2 class="sec" id="asec">Приложение</h2>
+      ${adminStats ? `<div class="list" style="margin-bottom:10px"><button class="item" data-act="stats">
         <span class="sic sic-blue" aria-hidden="true">${svg('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', 18)}</span>
         <span class="body"><span class="nm">Статистика</span><span class="sub">Сегодня ${adminStats.today} · за неделю ${adminStats.week}</span></span>
         <span class="chev" aria-hidden="true">${I.chev}</span></button></div>` : ""}
-      <h2 class="sec" id="asec">Приложение</h2>
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
