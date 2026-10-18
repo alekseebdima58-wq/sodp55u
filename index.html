@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="073ca8933ef2">
+<meta name="app-ver" content="d85ce4f06f80">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -910,6 +910,8 @@ button.offline u { text-underline-offset: 2px; }
 .days .pill { position: absolute; z-index: 0; left: 0; top: 4px; bottom: 4px; width: 0; border-radius: 18px; pointer-events: none;
   background: var(--accent); box-shadow: 0 6px 18px -6px rgba(var(--acc-rgb), .75); opacity: 0; will-change: transform, width; }
 .days .pill.ready { opacity: 1; }
+/* листание: на время движения каждый день — свой слой видеокарты (текст едет вместе с рамками, без дрожи) */
+.pager.paging > .page { will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 /* каскад при «открытии дня»: строки соседних дней — отдельными слоями, чтобы двигались без перерисовки */
 .page.prev > :is(.dayhead, .hero, .empty), .page.prev > .tl > li > :is(.card, .cc, .blbl),
 .page.next > :is(.dayhead, .hero, .empty), .page.next > .tl > li > :is(.card, .cc, .blbl) { will-change: transform, opacity; }
@@ -2720,7 +2722,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v17.3 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v17.4 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -3187,6 +3189,12 @@ window.__appStart = () => {
   // Дни (текущий и по соседу с каждой стороны) сдвигаются трансформом — это делает видеокарта,
   // главный поток не нагружается, поэтому без подёргиваний. Таблетка в полосе дней едет вместе с пальцем.
   let pgDrag = null, pgAnim = 0, pgX = 0;
+  // Сдвиги — ровно по точкам экрана телефона: при дробных сдвигах текст выравнивается отдельно
+  // от рамок и «дрожит» внутри карточки
+  const DPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  const snap = (v) => Math.round(v * DPR) / DPR;
+  // на время движения каждый день — отдельный слой видеокарты: не перерисовывается, а едет готовой картинкой
+  function pagerLayers(pg, on) { if (pg && pg.classList.contains("paging") !== on) pg.classList.toggle("paging", on); }
   function pagerPages(pg) { return pg.querySelectorAll(":scope > .page"); }
   // ---- «открытие дня» каскадом ----
   // Въезжающий день: заголовок, блок «Сейчас» и пары чуть отстают от ленты — каждая следующая сильнее —
@@ -3217,13 +3225,14 @@ window.__appStart = () => {
     const lag = 1 - p;   // 1 — день только показался, 0 — встал на место
     cascadeItems(inc).forEach((el, i) => {
       const tx = dir * lag * (18 + i * 14);   // каждая следующая строка отстаёт сильнее
-      el.style.transform = lag > 0.001 ? `translate3d(${tx.toFixed(1)}px,0,0)` : "";
+      el.style.transform = lag > 0.001 ? `translate3d(${snap(tx)}px,0,0)` : "";
       el.style.opacity = lag > 0.001 ? (1 - lag * Math.min(0.75, 0.25 + i * 0.08)).toFixed(3) : "";
     });
   }
   function setPagerX(pg, x) {
     pgX = x;
-    const t = x ? `translate3d(${x.toFixed(2)}px,0,0)` : "";
+    const sx = snap(x);
+    const t = sx ? `translate3d(${sx}px,0,0)` : "";
     pagerPages(pg).forEach((el) => { el.style.transform = t; });
     const W = pg.clientWidth || 1, off = -x / W;            // -1 … 1, плюс — к следующему дню
     const o = REDUCED ? 0 : Math.min(1, Math.abs(off) * 5);
@@ -3234,9 +3243,10 @@ window.__appStart = () => {
   }
   function pagerAnim(pg, to, v, done) {
     cancelAnimationFrame(pgAnim);
+    pagerLayers(pg, true);
     const from = pgX, dist = to - from;
     scrolling = true;
-    const finish = () => { pgAnim = 0; scrolling = false; done && done(); };
+    const finish = () => { pgAnim = 0; scrolling = false; done && done(); if (!pgDrag) pagerLayers(pagerEl(), false); };
     if (Math.abs(dist) < 0.5 || REDUCED) { setPagerX(pg, to); finish(); return; }
     // быстрее бросили — быстрее доезжает (но не резче 0,18 с и не дольше 0,36 с)
     const dur = Math.max(180, Math.min(360, Math.abs(dist) / Math.max(Math.abs(v || 0), 1.05)));
@@ -3273,6 +3283,7 @@ window.__appStart = () => {
     const pg = e.currentTarget;
     if (pgAnim) { cancelAnimationFrame(pgAnim); pgAnim = 0; }   // подхватили на лету
     pagerTouch = true;
+    pagerLayers(pg, true);   // слои готовим заранее, на касании — чтобы первый кадр движения не тормозил
     pgDrag = { pg, x: t.clientX, y: t.clientY, base: pgX, mode: 0, vx: 0, lx: t.clientX, lt: performance.now() };
   }
   function pagerMove(e) {
@@ -3304,7 +3315,7 @@ window.__appStart = () => {
     if (!d || (e.touches && e.touches.length)) return;
     pgDrag = null;
     pagerTouch = false;
-    if (d.mode !== 1) { if (pgX && !pgAnim) slideTo(d.pg, 0, 0); return; }
+    if (d.mode !== 1) { if (pgX && !pgAnim) slideTo(d.pg, 0, 0); else if (!pgAnim) pagerLayers(d.pg, false); return; }
     const W = d.pg.clientWidth || 1;
     if (performance.now() - d.lt > 90) d.vx = 0;          // палец остановился — броска нет
     const off = -pgX / W;                                   // плюс — тянем к следующему дню
@@ -3335,11 +3346,11 @@ window.__appStart = () => {
     const el = pillEl(), r = pillAt(f);
     if (!el || !r) return;
     el.style.width = `${r.w}px`;
-    el.style.transform = `translate3d(${r.x.toFixed(2)}px,0,0)`;
+    el.style.transform = `translate3d(${snap(r.x)}px,0,0)`;
     const on = el.parentNode.querySelector(".days-on");
     if (on) {
       const W = pillW || on.offsetWidth;
-      on.style.clipPath = `inset(4px ${(W - r.x - r.w).toFixed(2)}px 4px ${r.x.toFixed(2)}px round 18px)`;
+      on.style.clipPath = `inset(4px ${snap(W - snap(r.x) - r.w)}px 4px ${snap(r.x)}px round 18px)`;
     }
   }
   function setupPill() {
@@ -3651,8 +3662,8 @@ window.__appStart = () => {
     }
     function setP(p) {   // 0 — экран на месте, 1 — уехал целиком
       const w = W();
-      app.style.transform = `translate3d(${(p * w).toFixed(1)}px,0,0)`;
-      if (under) under.style.transform = `translate3d(${(-0.3 * w * (1 - p)).toFixed(1)}px,0,0)`;
+      app.style.transform = `translate3d(${snap(p * w)}px,0,0)`;
+      if (under) under.style.transform = `translate3d(${snap(-0.3 * w * (1 - p))}px,0,0)`;
       if (dim) dim.style.opacity = String(1 - p);
     }
     function cleanup() {
