@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="3eeacb1c7225">
+<meta name="app-ver" content="4ac81084c703">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -515,7 +515,7 @@ html.swiping, html.swiping body { overflow-x: clip; }   /* уехавший вб
 .wr { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
 
 /* дни — одна дорожка, выбранный день — плотная капсула */
-.days { gap: 2px; margin-top: 12px; padding: 4px; border-radius: 22px;   border: 1px solid var(--hair); }
+.days { gap: 2px; margin-top: 12px; padding: 4px; border-radius: 22px;   border: 1px solid var(--border); }
 .day { height: 56px; border-radius: 18px; border-color: transparent; background: transparent; }
 .day .s { font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; opacity: .65; }
 .day .n { font-size: 18px; }
@@ -1077,6 +1077,29 @@ html[data-theme="light"] .nc { background: var(--surface); box-shadow: 0 1px 2px
 .nc-list em { min-width: 0; font-style: normal; overflow: hidden; text-overflow: ellipsis; }
 .nc-list b { flex: none; width: 42px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
 .nc-list .more { color: var(--muted); padding-left: 52px; }
+
+/* экран «Статистика» */
+.stiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.stiles > div { padding: 14px 12px 12px; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); }
+.stiles b { display: block; font-size: 28px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.stiles span { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.schart { padding: 14px 16px 12px; }
+.schart svg { display: block; width: 100%; height: 120px; overflow: visible; touch-action: pan-y; }
+.schart .sbar { fill: color-mix(in srgb, var(--accent) 45%, transparent); }
+.schart .sbar.on { fill: var(--accent); }
+.schart .shit { fill: transparent; }
+.schart .sbase { stroke: var(--sep); stroke-width: 1; }
+.scap { margin-bottom: 8px; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.scap b { color: var(--text); font-size: 15px; }
+.saxis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.srowbar { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; padding: 6px 0; }
+.srowbar .nm { font-size: 14.5px; font-weight: 600; }
+.srowbar .v { font-size: 14.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.srowbar .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface2); overflow: hidden; }
+.srowbar .bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+.skv > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 14px; border-top: 1px solid var(--sep); }
+.skv > div:first-child { border-top: 0; }
+.skv span { color: var(--text2); min-width: 0; } .skv b { flex: none; font-variant-numeric: tabular-nums; text-align: right; max-width: 55%; }
 </style>
 </head>
 <body>
@@ -1225,6 +1248,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
+  const APP_LABEL = "v18.10";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -1513,7 +1537,7 @@ window.__appStart = () => {
   const opened = new Set();   // раскрытые вручную компактные карточки
 
   function syncTabs() {
-    const tab = view === "teacher" ? "teachers" : view === "notif" ? "schedule" : view;
+    const tab = view === "teacher" ? "teachers" : view === "notif" ? "schedule" : view === "stats" ? "settings" : view;
     tabs.forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
   }
   function syncBack() {
@@ -1946,6 +1970,7 @@ window.__appStart = () => {
     if (view === "settings") return renderSettings();
     if (view === "teachers") return renderTeachers(token);
     if (view === "notif") return renderNotif(token);
+    if (view === "stats") return renderStats();
     return renderSchedule(token);
   }
 
@@ -2059,6 +2084,101 @@ window.__appStart = () => {
       <span class="nc-when">${esc(when)}<span class="nc-go" aria-hidden="true">${I.chev}</span></span>
       <span class="nc-subj">${subj}</span>
       <span class="nc-diff">${diff}</span></button>`;
+  }
+
+  // ---------------- статистика (видна только владельцу) ----------------
+  // Раз в день приложение сообщает боту случайный номер этого устройства (не имя и не Telegram),
+  // как открыто и какой телефон. Бот считает только числа и выкладывает сводку зашифрованной
+  // личным ключом владельца — расшифровать её может только его приложение.
+  let adminStats = null;
+  function statSend() {
+    if (!index || !index.relay || !window.crypto || !crypto.getRandomValues) return;
+    const today = samaraNow().date;
+    if (store.get("statDay") === today) return;
+    let sid = store.get("sid");
+    if (!/^[0-9a-f]{16}$/.test(sid || "")) {
+      sid = hex(crypto.getRandomValues(new Uint8Array(8)));
+      store.set("sid", sid);
+      if (store.get("sid") !== sid) return;   // хранилище недоступно — не считаем, иначе каждый запуск — «новое» устройство
+    }
+    store.set("statDay", today);
+    const body = JSON.stringify({ q: "stat", d: sid, m: inTG ? "tg" : STANDALONE ? "pwa" : "web",
+      p: IOS ? "ios" : ANDROID ? "android" : "desktop", v: APP_LABEL });
+    fetch(index.relay, { method: "POST", body }).catch(() => fetch(index.relay, { method: "POST", body, mode: "no-cors" }).catch(() => {}));
+  }
+  async function loadAdminStats() {
+    if (!nkey || !window.crypto || !crypto.subtle) return null;
+    const today = samaraNow().date;
+    // у обычных пользователей не дёргаем сервер каждый запуск: проверяем раз в 3 дня
+    if (store.get("isAdmin") !== "1" && QS.get("open") !== "stats" && store.get("adminTry") && store.get("adminTry") > addDays(today, -3)) return null;
+    store.set("adminTry", today);
+    try {
+      const j = await fetchJSON("data/stats.json");
+      const kb = Uint8Array.from(nkey.match(/../g).map((h) => parseInt(h, 16)));
+      const c = unb64u(String(j.c || "")), n = String(j.n || "");
+      if ((await hmacRaw(kb, cat(utf8(`stats|${n}|`), c))) !== j.h) return null;   // не ваша сводка
+      adminStats = JSON.parse(new TextDecoder().decode(await streamXor(await sha(cat(kb, utf8(n))), c)));
+      store.set("isAdmin", "1");
+      return adminStats;
+    } catch (e) { return null; }
+  }
+  function renderStats() {
+    const x = adminStats;
+    const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
+    let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div><div class="eyebrow">Только для вас</div><h1>Статистика</h1></div></div></div>`;
+    if (!x) { app.innerHTML = html + `<div class="empty"><div class="h">Сводки пока нет</div><div class="p">Бот выкладывает её раз в полчаса.</div></div>`; return; }
+    const num = (n) => String(n || 0);
+    html += `<div class="stiles">
+      <div><b>${num(x.today)}</b><span>сегодня</span></div>
+      <div><b>${num(x.week)}</b><span>за 7 дней</span></div>
+      <div><b>${num(x.month)}</b><span>за 30 дней</span></div></div>`;
+    // открытия по дням — столбики за 30 дней
+    const daily = x.daily || [], max = Math.max(1, ...daily.map((d) => d.n));
+    const W = 330, H = 120, gap = 2, bw = (W - gap * (daily.length - 1)) / Math.max(1, daily.length);
+    const bars = daily.map((d, i) => {
+      const h = d.n ? Math.max(3, (d.n / max) * (H - 4)) : 0, xx = i * (bw + gap);
+      return `<rect class="sbar${i === daily.length - 1 ? " on" : ""}" data-i="${i}" x="${xx.toFixed(1)}" y="${(H - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2"/>
+        <rect class="shit" data-i="${i}" x="${(xx - gap / 2).toFixed(1)}" y="0" width="${(bw + gap).toFixed(1)}" height="${H}"/>`;
+    }).join("");
+    const dl = (d) => `${+d.slice(8, 10)} ${MSHORT[+d.slice(5, 7) - 1]}`;
+    const last = daily[daily.length - 1];
+    html += `<h2 class="sec">Устройств в день</h2><div class="list pad schart">
+      <div class="scap" id="scap">${last ? `${dl(last.d)} · <b>${last.n}</b>` : ""}</div>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Устройств в день за 30 дней, максимум ${max}">
+        <line class="sbase" x1="0" x2="${W}" y1="${H - 0.5}" y2="${H - 0.5}"/>${bars}</svg>
+      <div class="saxis"><span>${daily[0] ? dl(daily[0].d) : ""}</span><span>макс. ${max}</span><span>${last ? dl(last.d) : ""}</span></div></div>`;
+    // разбивки — строки с полосой
+    const rows = (obj, names) => {
+      const total = Object.values(obj || {}).reduce((a, b) => a + b, 0) || 1;
+      return names.map(([k, l]) => { const v = (obj || {})[k] || 0;
+        return `<div class="srowbar"><span class="nm">${l}</span><span class="v">${v}</span><span class="bar"><i style="width:${((v / total) * 100).toFixed(1)}%"></i></span></div>`; }).join("");
+    };
+    html += `<h2 class="sec">Как открывают · 7 дней</h2><div class="list pad">${rows(x.mode, [["pwa", "С главного экрана"], ["tg", "В Telegram"], ["web", "В браузере"]])}</div>`;
+    html += `<h2 class="sec">Устройства · 7 дней</h2><div class="list pad">${rows(x.platform, [["ios", "iPhone"], ["android", "Android"], ["desktop", "Компьютер"]])}</div>`;
+    const nt = x.notify || {};
+    html += `<h2 class="sec">Уведомления · люди в боте</h2><div class="list pad skv">
+      <div><span>Включено хоть что-то</span><b>${num(x.notify_users)} из ${num(x.bot_users)}</b></div>
+      <div><span>Напоминание о паре</span><b>${num(nt.remind)}</b></div>
+      <div><span>Утренняя сводка</span><b>${num(nt.morning)}</b></div>
+      <div><span>Вечерняя сводка</span><b>${num(nt.evening)}</b></div>
+      <div><span>Изменения в расписании</span><b>${num(nt.changes)}</b></div>
+      <div><span>Push на устройствах</span><b>${num(x.push_devices)}</b></div></div>
+      <h2 class="sec">Всего</h2><div class="list pad skv">
+      <div><span>Устройств за всё время</span><b>${num(x.total)}</b></div>
+      <div><span>Новых за 7 дней</span><b>${num(x.new_week)}</b></div>
+      <div><span>Установили на главный экран</span><b>${num(x.installed)}</b></div>
+      ${Object.keys(x.versions || {}).length ? `<div><span>Версии за неделю</span><b>${Object.entries(x.versions).map(([v, n]) => `${esc(v || "?")}: ${n}`).join(", ")}</b></div>` : ""}</div>
+      <p class="foot">Обновлено ${esc(String(x.updated || "").slice(11, 16))} · считаются устройства, без имён</p>`;
+    app.innerHTML = html;
+    // касание столбика — подпись с датой и числом
+    const svgEl = app.querySelector(".schart svg"), cap = app.querySelector("#scap");
+    const pick = (e) => {
+      const t = e.target.closest && e.target.closest("[data-i]"); if (!t) return;
+      const i = +t.dataset.i, d = daily[i]; if (!d) return;
+      svgEl.querySelectorAll(".sbar").forEach((r) => r.classList.toggle("on", +r.dataset.i === i));
+      cap.innerHTML = `${dl(d.d)} · <b>${d.n}</b>`;
+    };
+    if (svgEl) { svgEl.addEventListener("pointerdown", pick); svgEl.addEventListener("pointermove", pick); }
   }
   async function renderNotif(token) {
     if (!changes) {
@@ -2981,11 +3101,15 @@ window.__appStart = () => {
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
       <h2 class="sec" id="nsec">Уведомления</h2>
       ${notifSettingsHTML()}
+      ${adminStats ? `<h2 class="sec">Только для вас</h2><div class="list"><button class="item" data-act="stats">
+        <span class="sic sic-blue" aria-hidden="true">${svg('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', 18)}</span>
+        <span class="body"><span class="nm">Статистика</span><span class="sub">Сегодня ${adminStats.today} · за неделю ${adminStats.week}</span></span>
+        <span class="chev" aria-hidden="true">${I.chev}</span></button></div>` : ""}
       <h2 class="sec" id="asec">Приложение</h2>
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v18.9 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">${APP_LABEL} · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -3170,6 +3294,9 @@ window.__appStart = () => {
     } else if (act === "fs") {
       haptic("select");
       setFullscreen(!tg.isFullscreen);
+    } else if (act === "stats") {
+      haptic("light");
+      go("stats", null, true);
     } else if (act === "to-settings") {
       haptic("light");
       nOpen = true; store.set("nOpen", "1");
@@ -3839,6 +3966,12 @@ window.__appStart = () => {
     }
     syncBadge();
     pushVerify();
+    setTimeout(statSend, 2000);
+    loadAdminStats().then((st) => {
+      // по кнопке «Открыть статистику» из бота: экран открывается поверх «Настроек», «Назад» ведёт туда
+      if (st && QS.get("open") === "stats" && view === "schedule" && !navBusy) { go("settings"); go("stats", null, true); }
+      else if (st && view === "settings") render();
+    });
     setTimeout(() => { navReady = true; }, 0);
     setTimeout(prefetchTeachers, 3000);
     setTimeout(() => checkAppVersion(true), 2500);
