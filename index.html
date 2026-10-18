@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark">
 <head>
-<meta name="app-ver" content="d70c42578793">
+<meta name="app-ver" content="02d656f462d7">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -912,9 +912,6 @@ button.offline u { text-underline-offset: 2px; }
 .days .pill.ready { opacity: 1; }
 /* листание: на время движения каждый день — свой слой видеокарты (текст едет вместе с рамками, без дрожи) */
 .pager.paging > .page { will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-/* каскад при «открытии дня»: строки соседних дней — отдельными слоями, чтобы двигались без перерисовки */
-.page.prev > :is(.dayhead, .hero, .empty), .page.prev > .tl > li > :is(.card, .cc, .blbl),
-.page.next > :is(.dayhead, .hero, .empty), .page.next > .tl > li > :is(.card, .cc, .blbl) { will-change: transform, opacity; }
 .days:has(.pill.ready) .day.on { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
 .day { transition: color .18s ease, opacity .18s ease; }
 @supports (corner-shape: squircle) { .days .pill { corner-shape: squircle; border-radius: 26px; } }
@@ -2722,7 +2719,7 @@ window.__appStart = () => {
       ${STANDALONE ? installHTML() + iconPickHTML() : installWizardHTML()}
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
-        <br><span class="ver">v17.5 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+        <br><span class="ver">v17.6 · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
   function toast(text) {
@@ -3235,14 +3232,10 @@ window.__appStart = () => {
       cascadeReset(pg.querySelector(cascadeSide > 0 ? ":scope > .page.next" : ":scope > .page.prev"));
     }
     cascadeSide = dir;
+    // «Открытие дня» — мягкая смена прозрачности целых дней. Строки внутри дня едут вместе
+    // со страницей, без отставания: название и преподаватель не съезжают и не возвращаются
     if (cur) cur.style.opacity = p ? (1 - 0.35 * p).toFixed(3) : "";
-    if (!inc) return;
-    const lag = 1 - p;   // 1 — день только показался, 0 — встал на место
-    cascadeItems(inc).forEach((el, i) => {
-      const tx = dir * lag * (18 + i * 14);   // каждая следующая строка отстаёт сильнее
-      el.style.transform = lag > 0.001 ? `translate3d(${snap(tx)}px,0,0)` : "";
-      el.style.opacity = lag > 0.001 ? (1 - lag * Math.min(0.75, 0.25 + i * 0.08)).toFixed(3) : "";
-    });
+    if (inc) inc.style.opacity = p < 0.999 ? (0.55 + 0.45 * p).toFixed(3) : "";
   }
   function setPagerX(pg, x) {
     pgX = x;
