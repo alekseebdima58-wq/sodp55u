@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="a89104589de7">
+<meta name="app-ver" content="99864ca5e5ab">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -463,11 +463,25 @@ html.swiping, html.swiping body { overflow-x: clip; }   /* уехавший вб
 
 .foot { margin: 22px 0 0; text-align: center; font-size: 13px; line-height: 1.5; color: var(--muted); }
 .flink { border: 0; background: none; padding: 6px 2px; margin: -6px 0; color: var(--accent); font-weight: 600; }
+/* Подсказки — тихая чёрная капсула вверху, как «остров» iPhone. В приложении на iPhone с вырезом
+   она выходит прямо из «острова» и уходит обратно в него. */
 .toast {
-  position: fixed; left: 50%; bottom: calc(96px + max(env(safe-area-inset-bottom), var(--safe-bottom, 0px))); transform: translateX(-50%);
-  padding: 10px 16px; border-radius: 999px; background: var(--text); color: var(--bg); font-size: 13px; font-weight: 600;
-  animation: fade .2s ease both; z-index: 20;
+  position: fixed; left: 50%; top: calc(var(--safe-top, 0px) + 8px); transform: translateX(-50%); z-index: 40;
+  display: flex; align-items: center; gap: 8px; height: 36px; max-width: calc(100vw - 32px); padding: 0 14px 0 6px;
+  border-radius: 999px; background: #000; color: #EDEEF0; font-size: 13px; font-weight: 600; letter-spacing: .005em; white-space: nowrap;
+  box-shadow: 0 0 0 .5px rgba(255, 255, 255, .07), 0 6px 18px rgba(0, 0, 0, .28);
 }
+html[data-theme="light"] .toast { box-shadow: 0 6px 18px rgba(20, 30, 60, .18); }
+.toast.isl { top: 55px; }
+.toast.long { height: auto; min-height: 36px; padding-top: 7px; padding-bottom: 7px; border-radius: 19px; white-space: normal; line-height: 1.3; width: max-content; max-width: min(340px, calc(100vw - 32px)); }
+.toast .t-ic { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--tc) 20%, transparent); color: var(--tc); }
+.toast .t-ic svg { width: 13px; height: 13px; }
+.toast .t-tx { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.toast { --tc: #6AB0FF; } .toast.t-ok { --tc: #5BE38E; } .toast.t-warn { --tc: #FFBE5C; } .toast.t-trash { --tc: #B9BEC8; }
+.toast.act { padding-right: 5px; }
+.toast.act button { flex: none; height: 26px; margin-left: 4px; padding: 0 11px; border: 0; border-radius: 999px; font: inherit; font-size: 12.5px; font-weight: 700;
+  background: rgba(255, 255, 255, .11); color: #8EC2FF; }
 
 /* Во весь экран сверху — часы телефона и кнопки Telegram «Закрыть» / «⋯». Под ними сплошная полоса
    цвета фона (с мягким краем), чтобы прокрученный текст не залезал под них. */
@@ -940,7 +954,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 /* --- сквиркл: плавные углы как у иконок iOS; радиусы крупнее, потому что сквиркл «съедает» скругление --- */
 @supports (corner-shape: squircle) {
   .card, .cc, .hero, .days, .day, .tabs, .tab, .list, .tcard, .search, .kind, .seg3, .seg3 button, .nsel,
-  .btn:not(.icon-btn), .empty .ic, .offline, .tag, .toast { corner-shape: squircle; }
+  .btn:not(.icon-btn), .empty .ic, .offline, .tag { corner-shape: squircle; }
   .card { border-radius: 30px; }
   .cc { border-radius: 26px; }
   .hero { border-radius: 36px; }
@@ -954,7 +968,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
   .seg3 button { border-radius: 17px; }
   .btn:not(.icon-btn), .nsel { border-radius: 18px; }
   .empty .ic { border-radius: 28px; }
-  .tag, .offline, .toast { border-radius: 14px; }
+  .tag, .offline { border-radius: 14px; }
   .ctlchip { corner-shape: squircle; border-radius: 11px; }
 }
 
@@ -1024,6 +1038,19 @@ html[data-theme="light"] .ibar { background: linear-gradient(180deg, rgba(255, 2
 .nsum { margin: 6px 2px 0; font-size: 13.5px; color: var(--muted); }
 .nsum b { color: var(--accent); font-weight: 700; }
 .nlist { display: flex; flex-direction: column; gap: 10px; }
+.nsec { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.nclear { margin: 0 4px 0 0; padding: 6px 2px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; }
+.ncw { position: relative; border-radius: 22px; }
+.ncw > .nc { position: relative; z-index: 1; touch-action: pan-y; }
+.ncw.ncsw > .nc { will-change: transform; }
+.nc-del { --w: 0px; position: absolute; z-index: 0; top: 0; bottom: 0; right: 0; width: max(var(--w), 0px); min-width: 0; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; border: 0; border-radius: 22px;
+  background: #E5484D; color: #fff; font: inherit; font-size: 12px; font-weight: 700; opacity: 0; transition: opacity .15s; }
+.ncw.ncsw > .nc-del { opacity: 1; }
+.nc-del svg { flex: none; width: 22px; height: 22px; }
+.nc-del span { white-space: nowrap; }
+.ncw.gone { overflow: hidden; pointer-events: none; }
+
 .nc { --tone: var(--warn-fg); --tone-bg: var(--warn-bg);
   display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 14px 16px 15px; text-align: left; color: var(--text);
   border-radius: 22px; border: 1px solid var(--hair); background: linear-gradient(180deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, 0)), var(--surface);
@@ -1308,6 +1335,7 @@ window.__appStart = () => {
     bell: svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', 20),
     bellBig: svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', 28, 1.8),
     xc: svg('<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/>', 20),
+    trash: svg('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>', 20),
     plus: svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>', 20),
     pinBig: svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>', 20),
     cap: svg('<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>', 14),
@@ -1377,7 +1405,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.1.3";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.2.1";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2140,7 +2168,20 @@ window.__appStart = () => {
   }
   const hmSec = (hm) => { const [h, m] = String(hm).split(":").map(Number); return h * 3600 + m * 60; };
   const isoAt = (date, sec) => `${date}T${String(Math.floor(sec / 3600)).padStart(2, "0")}:${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")}:00+04:00`;
+  // Удалённые свайпом уведомления: помним их (на этом устройстве) 3 недели
+  const nItemId = (c) => (c.src === "app" ? `a|${c.kind}|${c.date}|${c.start || ""}` : `c|${c.ts}|${c.date}|${c.start || ""}|${c.kind}|${c.subject || ""}`);
+  let nHidden = {};
+  try { nHidden = JSON.parse(store.get("nHidden") || "{}") || {}; } catch (e) { nHidden = {}; }
+  function nHide(ids, on) {
+    const today = samaraNow().date;
+    for (const id of ids) { if (on) nHidden[id] = today; else delete nHidden[id]; }
+    for (const [id, d] of Object.entries(nHidden)) if (d < addDays(today, -21)) delete nHidden[id];
+    store.set("nHidden", JSON.stringify(nHidden));
+  }
   function feedItems() {
+    return feedItemsAll().filter((c) => !nHidden[nItemId(c)]);
+  }
+  function feedItemsAll() {
     const out = changeItems().map((c) => Object.assign({ src: "change" }, c));
     const now = samaraNow(), lead = remindLead();
     const today = now.date, yesterday = addDays(today, -1);
@@ -2329,6 +2370,10 @@ window.__appStart = () => {
       return (he ? `<rect class="de" x="${x}" y="${(H - he).toFixed(1)}" width="${bw.toFixed(1)}" height="${he.toFixed(1)}" rx="2.5"/>` : "") +
         (hj ? `<rect class="dj" x="${x}" y="${(H - he - (he ? 2 : 0) - hj).toFixed(1)}" width="${bw.toFixed(1)}" height="${hj.toFixed(1)}" rx="2.5"/>` : "");
     }).join("");
+    if (st[0] === "ok") {
+      return `<h2 class="sec">Ошибки и сбои</h2><div class="dg-hero ok"><div class="dg-head"><span class="sic ${st[2][0]}" aria-hidden="true">${st[2][1]}</span>
+        <span class="dg-ht"><b>${st[1]}</b></span></div></div>` + fpsHTML(g);
+    }
     let h = `<h2 class="sec">Ошибки и сбои</h2>
       <div class="dg-hero ${st[0]}">
         <div class="dg-head"><span class="sic ${st[2][0]}" aria-hidden="true">${st[2][1]}</span>
@@ -2350,6 +2395,11 @@ window.__appStart = () => {
           <span class="dg-cnt"><b>×${n(it.n)}</b><span>${n(it.dev)} ${plural(n(it.dev), "устр.", "устр.", "устр.")}</span></span></div>`;
       }).join("")}</div>`;
     }
+    return h + fpsHTML(g);
+  }
+  function fpsHTML(g) {
+    const n = (v) => +v || 0;
+    let h = "";
     // частота кадров у людей — одна полоса из частей
     const fps = g.fps || {}, fr = [["120", "120 Гц", "c1"], ["60", "60 Гц", "c3"], ["30", "30 Гц — энергосбережение", "c2"], ["<30", "меньше 30 Гц", "c2"]].filter(([k]) => n(fps[k]));
     const ft = fr.reduce((a, [k]) => a + n(fps[k]), 0);
@@ -2482,7 +2532,8 @@ window.__appStart = () => {
     } else {
       for (const [title, list] of groups) {
         if (!list.length) continue;
-        html += `<h2 class="sec">${title}</h2><div class="nlist">${list.map((c) => (c.src === "app" ? appItemHTML : changeHTML)(c, String(c.ts) > seen)).join("")}</div>`;
+        html += `<div class="nsec"><h2 class="sec">${title}</h2><button class="nclear" data-act="nclear" data-ids="${esc(JSON.stringify(list.map(nItemId)))}">Очистить</button></div>
+          <div class="nlist">${list.map((c) => `<div class="ncw" data-nid="${esc(nItemId(c))}"><button class="nc-del" data-act="ndel" aria-label="Удалить уведомление" tabindex="-1">${I.trash}<span>Удалить</span></button>${(c.src === "app" ? appItemHTML : changeHTML)(c, String(c.ts) > seen)}</div>`).join("")}</div>`;
       }
       html += `<div class="nfoot">${foot}</div>`;
     }
@@ -2491,6 +2542,91 @@ window.__appStart = () => {
     if (items.length) store.set("seenChanges", String(items[0].ts));
     syncBadge();
   }
+  // ---- удаление уведомлений свайпом, как в iPhone ----
+  // Влево — под карточкой появляется красная «Удалить». Дотянул больше чем до середины или резко
+  // смахнул — удаляется сразу; чуть-чуть — карточка останавливается с открытой кнопкой.
+  const NC_OPEN = 92;
+  let ncSw = null, ncOpenW = null, ncClickBlock = 0;
+  const ncSet = (w, x, anim) => {
+    const card = w.querySelector(".nc"), del = w.querySelector(".nc-del");
+    const from = card.style.transform || "none", to = x ? `translate3d(${x}px,0,0)` : "none";
+    card.style.transform = x ? to : "";
+    del.style.setProperty("--w", `${Math.max(0, -x)}px`);
+    w.classList.toggle("ncsw", x < 0);
+    if (anim && from !== to) try { card.animate([{ transform: from }, { transform: to }], { duration: 300, easing: "cubic-bezier(.25, .9, .3, 1)" }); } catch (e) { /* без анимации */ }
+  };
+  function ncClose(anim) { if (ncOpenW && ncOpenW.isConnected) ncSet(ncOpenW, 0, anim); ncOpenW = null; }
+  function ncRemove(ws) {
+    const ids = ws.map((w) => w.dataset.nid);
+    haptic("light");
+    nHide(ids, true);
+    ncOpenW = null;
+    let left = ws.length;
+    const done = () => { if (--left) return; if (view === "notif") { const y = scrollY; render(); scrollTo(0, y); } syncBadge(); };
+    for (const w of ws) {
+      const card = w.querySelector(".nc"), del = w.querySelector(".nc-del"), h = w.offsetHeight;
+      w.classList.add("gone");
+      try {
+        const W = w.offsetWidth;
+        // красная подложка растягивается за улетающей карточкой на всю ширину, как в iPhone
+        w.classList.add("ncsw");
+        del.animate([{ width: getComputedStyle(del).width }, { width: W + "px" }], { duration: 220, easing: "cubic-bezier(.4, 0, 1, 1)", fill: "forwards" });
+        card.animate([{ transform: card.style.transform || "none" }, { transform: `translate3d(${-W - 40}px,0,0)` }], { duration: 220, easing: "cubic-bezier(.4, 0, 1, 1)", fill: "forwards" });
+        w.animate([{ height: h + "px", marginBottom: "0px", opacity: 1 }, { height: "0px", marginBottom: "-10px", opacity: 0 }],
+          { duration: 260, delay: 160, easing: "cubic-bezier(.25, .9, .3, 1)", fill: "forwards" }).finished.then(done, done);
+      } catch (e) { done(); }
+    }
+    toast(ids.length > 1 ? "Уведомления удалены" : "Уведомление удалено", "Вернуть", () => {
+      nHide(ids, false);
+      if (view === "notif") { const y = scrollY; render(); scrollTo(0, y); }
+      syncBadge();
+    });
+  }
+  app.addEventListener("touchstart", (e) => {
+    const w = e.target.closest && e.target.closest(".ncw");
+    if (ncOpenW && ncOpenW !== w) ncClose(true);
+    if (!w || e.touches.length !== 1 || e.target.closest(".nc-del")) { ncSw = null; return; }
+    const t = e.touches[0];
+    const card = w.querySelector(".nc"), m = /translate3d\((-?[\d.]+)px/.exec(card.style.transform || "");
+    ncSw = { w, x0: t.clientX, y0: t.clientY, base: m ? +m[1] : 0, mode: 0, x: 0, vx: 0, lx: t.clientX, lt: e.timeStamp || performance.now() };
+  }, { passive: true });
+  app.addEventListener("touchmove", (e) => {
+    const d = ncSw;
+    if (!d) return;
+    const t = e.touches[0], dx = t.clientX - d.x0, dy = t.clientY - d.y0;
+    if (d.mode === 0) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      d.mode = Math.abs(dx) > Math.abs(dy) * 1.2 && (dx < 0 || d.base < 0) ? 1 : 2;
+      if (d.mode === 2) { ncSw = null; return; }
+      d.x0 = t.clientX;
+    }
+    if (e.cancelable) e.preventDefault();
+    let x = d.base + (t.clientX - d.x0);
+    if (x > 0) x = x / 4;                                   // вправо — только туго, как резинка
+    d.x = x;
+    const now = e.timeStamp || performance.now();
+    d.vx = (t.clientX - d.lx) / Math.max(1, now - d.lt); d.lx = t.clientX; d.lt = now;
+    ncSet(d.w, Math.min(0, x));
+  }, { passive: false });
+  const ncEnd = () => {
+    const d = ncSw;
+    ncSw = null;
+    if (!d || d.mode !== 1) return;
+    ncClickBlock = Date.now();
+    const W = d.w.offsetWidth;
+    if (d.x < -W * 0.55 || (d.vx < -0.7 && d.x < -40)) { ncRemove([d.w]); return; }
+    if (d.x < -NC_OPEN / 2 && d.vx < 0.4) { ncSet(d.w, -NC_OPEN, true); ncOpenW = d.w; haptic("select"); }
+    else { ncSet(d.w, 0, true); if (ncOpenW === d.w) ncOpenW = null; }
+  };
+  app.addEventListener("touchend", ncEnd, { passive: true });
+  app.addEventListener("touchcancel", ncEnd, { passive: true });
+  // после свайпа «клик» по карточке не открывает день; по открытой карточке — просто закрыть
+  app.addEventListener("click", (e) => {
+    const card = e.target.closest && e.target.closest(".ncw .nc");
+    if (!card) return;
+    const w = card.closest(".ncw");
+    if (Date.now() - ncClickBlock < 400 || w.classList.contains("ncsw")) { e.stopImmediatePropagation(); e.preventDefault(); ncClose(true); }
+  }, true);
   function canEditNotify() {
     return !!(nstate && nkey && index && index.relay && window.crypto && crypto.subtle);
   }
@@ -3388,15 +3524,68 @@ window.__appStart = () => {
         <br><span class="ver">${APP_LABEL} · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
   }
 
-  function toast(text) {
+  // Всплывающие подсказки — тем же стеклом, что и нижняя панель: значок по смыслу, текст, кнопка действия
+  const TOAST_IC = {
+    ok: svg('<path d="M20 6 9 17l-5-5"/>', 16, 2.6),
+    refresh: svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', 16, 2.4),
+    trash: svg('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>', 16, 2.2),
+    warn: svg('<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>', 16, 2.2),
+    copy: svg('<rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>', 16, 2.2),
+    info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>', 16, 2.4),
+  };
+  function toastKind(t) {
+    if (/удален/i.test(t)) return "trash";
+    if (/обновлен/i.test(t)) return "refresh";
+    if (/скопирован/i.test(t)) return "copy";
+    if (/нет сети|не отвечает|ошибк|не удалось/i.test(t)) return "warn";
+    if (/подключен|готово|включен|сохранен/i.test(t)) return "ok";
+    return "info";
+  }
+  function toast(text, action, onAction) {
     const old = document.querySelector(".toast");
     if (old) old.remove();
+    text = String(text).replace(/\s*✓$/, "");
+    const kind = toastKind(text);
     const el = document.createElement("div");
-    el.className = "toast";
+    el.className = `toast t-${kind}${action ? " act" : ""}`;
     el.setAttribute("role", "status");
-    el.textContent = text;
+    el.innerHTML = `<span class="t-ic" aria-hidden="true">${TOAST_IC[kind]}</span><span class="t-tx"></span>`;
+    el.querySelector(".t-tx").textContent = text;
+    let hideAnim = null;
+    const hide = () => {
+      if (!el.isConnected) return;
+      try { (hideAnim ? hideAnim() : el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" })).finished.then(() => el.remove(), () => el.remove()); }
+      catch (e) { el.remove(); }
+    };
+    if (action) {
+      const b = document.createElement("button");
+      b.textContent = action;
+      b.addEventListener("click", () => { haptic("light"); el.remove(); onAction && onAction(); });
+      el.appendChild(b);
+    }
+    if (text.length > 34) el.classList.add("long");
+    // «остров» есть у установленного приложения на iPhone с вырезом: верхний отступ экрана 51 px и больше
+    let island = false;
+    if (IOS && STANDALONE && !el.classList.contains("long")) {
+      const pr = document.createElement("div");
+      pr.style.cssText = "position:fixed;top:env(safe-area-inset-top,0px);left:0;width:1px;height:1px;visibility:hidden";
+      document.body.appendChild(pr);
+      island = pr.getBoundingClientRect().top >= 51;
+      pr.remove();
+    }
+    el.classList.toggle("isl", island);
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1800);
+    const w = el.offsetWidth, side = Math.max(0, (w - (island ? 126 : 60)) / 2);
+    const closed = `inset(0px ${side}px round 999px)`, open = "inset(0px 0px round 999px)";
+    try {
+      // из «острова»: капсула размером с него опускается чуть ниже и раскрывается вширь
+      el.animate(island ? [{ clipPath: closed, transform: "translateX(-50%) translateY(-44px)" }, { clipPath: open, transform: "translateX(-50%)" }]
+        : [{ clipPath: closed, opacity: 0 }, { clipPath: open, opacity: 1 }], { duration: 460, easing: "cubic-bezier(.2, .9, .25, 1.04)" });
+      for (const c of el.children) c.animate([{ opacity: 0 }, { opacity: 0, offset: .25 }, { opacity: 1 }], { duration: 380, easing: "ease-out" });
+    } catch (e) { /* без анимации */ }
+    hideAnim = () => el.animate(island ? [{ clipPath: open, transform: "translateX(-50%)" }, { clipPath: closed, transform: "translateX(-50%) translateY(-44px)", opacity: 1, offset: .85 }, { clipPath: closed, transform: "translateX(-50%) translateY(-44px)", opacity: 0 }]
+      : [{ clipPath: open, opacity: 1 }, { clipPath: closed, opacity: 0 }], { duration: 300, easing: "cubic-bezier(.4, 0, .6, 1)", fill: "forwards" });
+    setTimeout(hide, action ? 4000 : 2000);
   }
 
   // ---------------- живое обновление ----------------
@@ -3623,6 +3812,14 @@ window.__appStart = () => {
       haptic("select");
       refreshNSummary();
       scheduleSave();
+    } else if (act === "ndel") {
+      const w = el.closest(".ncw");
+      if (w) ncRemove([w]);
+    } else if (act === "nclear") {
+      let ids = [];
+      try { ids = JSON.parse(el.dataset.ids || "[]"); } catch (e) { ids = []; }
+      const ws = [...app.querySelectorAll(".ncw")].filter((w) => ids.includes(w.dataset.nid));
+      if (ws.length) ncRemove(ws);
     } else if (act === "jump") {
       const date = el.dataset.date;
       const g = mem.g;
