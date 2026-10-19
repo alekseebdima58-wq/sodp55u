@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="cdc19fa3f0a9">
+<meta name="app-ver" content="d8517bf73883">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1401,7 +1401,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.2.7";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.3.1";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2313,6 +2313,17 @@ window.__appStart = () => {
     fetch(index.relay, { method: "POST", body, keepalive: true }).catch(() => fetch(index.relay, { method: "POST", body, mode: "no-cors" }).catch(() => {}));
   }
   document.addEventListener("visibilitychange", () => { if (document.hidden) try { diagSend(true); } catch (e) { /* ещё не готово */ } });
+  async function sendInst() {
+    if (!nkey || !index || !index.relay || !window.crypto || !crypto.subtle || store.get("instSent") === nkey) return;
+    try {
+      const kb = Uint8Array.from(nkey.match(/../g).map((h) => parseInt(h, 16)));
+      const t = Date.now();
+      const body = JSON.stringify({ q: "inst", t, h: await hmacRaw(kb, utf8(`inst|${t}`)) });
+      try { await fetch(index.relay, { method: "POST", body }); }
+      catch (e) { await fetch(index.relay, { method: "POST", body, mode: "no-cors" }); }
+      store.set("instSent", nkey);
+    } catch (e) { /* не страшно — кнопка просто ещё побудет */ }
+  }
   async function loadAdminStats(fresh) {
     if (!nkey || !window.crypto || !crypto.subtle) return null;
     const today = samaraNow().date;
@@ -3750,7 +3761,9 @@ window.__appStart = () => {
       const slot = pg.querySelector(dir > 0 ? ":scope > .page.next" : ":scope > .page.prev");
       if (slot) {
         slot.innerHTML = dayBodyHTML(c.data, np.w, np.d, view === "teacher", false);
-        pillGoal = np.w === c.p.w ? np.d : null;   // таблетка едет прямо к нужному дню (в той же неделе)
+        // таблетка едет прямо к нужному дню (в той же неделе); при смене недели стоит на месте —
+        // иначе она «перелетала» на соседний день, пока уезжала страница
+        pillGoal = np.w === c.p.w ? np.d : c.p.d;
         haptic("select");
         slideTo(pg, dir, 0, np);
         if (pgAnim) pgAnim.goal = np;
@@ -4566,6 +4579,21 @@ window.__appStart = () => {
     setTimeout(prefetchTeachers, 3000);
     setTimeout(() => checkAppVersion(true), 2500);
     resumeLink();
+    // боту — что установку уже открывали (или приложение уже стоит на экране): кнопку «Установить»
+    // под расписанием он больше не покажет
+    // из беседы кнопка открывает главное приложение бота со ссылкой ?startapp=install
+    let startParam = "";
+    try { startParam = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || new URLSearchParams(location.hash.slice(1)).get("tgWebAppStartParam") || QS.get("tgWebAppStartParam") || ""; } catch (e) { /* нет параметра */ }
+    const wantInstall = QS.get("open") === "install" || startParam === "install";
+    if (wantInstall || STANDALONE) setTimeout(sendInst, 1500);
+    // кнопка «Установить приложение» в боте: сразу открываем «Настройки» на шаге установки
+    if (wantInstall && !STANDALONE) {
+      store.set("installDone", "0");
+      go("settings");
+      // к заголовку «Приложение» — чтобы карточка установки была видна целиком, с отступом сверху
+      setTimeout(() => { const el = document.getElementById("asec") || document.querySelector(".iwiz");
+        if (el) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + scrollY - 12 - (tg && tg.isFullscreen ? 90 : 0)), behavior: REDUCED ? "auto" : "smooth" }); }, 250);
+    }
     if (QS.get("install") === "1" && !inTG) {
       // убираем служебные параметры из адреса — иконка на iPhone запомнит чистую ссылку
       try { history.replaceState(null, "", location.pathname); } catch (e) { /* не страшно */ }
