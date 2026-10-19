@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="a33d036e0b60">
+<meta name="app-ver" content="bad867a0b032">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -3147,7 +3147,9 @@ window.__appStart = () => {
     if (!mem[id]) app.innerHTML = skeletonHTML();
     let data;
     try {
-      data = await load(id);
+      // Подхват ленты на лету: новый день должен встать в тот же кадр — без ожидания (данные уже есть)
+      if (syncRender && mem[id] && (!isTeacher || index)) data = mem[id];
+      else data = await load(id);
       if (isTeacher && !index) index = await fetchJSON("data/index.json");
     } catch (e) {
       if (token === renderToken) app.innerHTML = errorHTML();
@@ -4182,7 +4184,7 @@ window.__appStart = () => {
   // ---- листание дней: как в iOS, через видеокарту ----
   // Дни (текущий и по соседу с каждой стороны) сдвигаются трансформом — это делает видеокарта,
   // главный поток не нагружается, поэтому без подёргиваний. Таблетка в полосе дней едет вместе с пальцем.
-  let pgDrag = null, pgAnim = null, pgX = 0;
+  let pgDrag = null, pgAnim = null, pgX = 0, syncRender = false;
   // Сдвиги — ровно по точкам экрана телефона: при дробных сдвигах текст выравнивается отдельно
   // от рамок и «дрожит» внутри карточки
   const DPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
@@ -4269,10 +4271,13 @@ window.__appStart = () => {
   // уехать на соседний день (dir = ±1) и сменить его (новый день встаёт ровно туда же — подмена незаметна)
   function slideTo(pg, dir, v, np, since) {
     const W = pg.clientWidth || 1;
+    const commit = () => { if (np) commitTo(np); else if (dir) commitDay(dir); };
     pagerAnim(pg, -dir * W, v, () => {
       pillGoal = null;
-      if (np) commitTo(np); else if (dir) commitDay(dir); else setPagerX(pg, 0);
+      if (dir) commit(); else setPagerX(pg, 0);
     }, since);
+    // если ленту подхватят пальцем на лету — этот день засчитываем сразу (см. pagerDown)
+    if (pgAnim && dir) { pgAnim.dir = dir; pgAnim.commit = commit; }
   }
   // дальний переход: лента уже стоит на нужном дне — фиксируем его без вибро и анимаций
   function commitTo(np) {
@@ -4288,8 +4293,22 @@ window.__appStart = () => {
   function pagerDown(e) {
     const t = e.touches[0];
     if (e.touches.length !== 1 || (stack.length && t.clientX <= 24 && !inTG)) { pgDrag = null; return; }   // у края — свайп «назад»
-    const pg = e.currentTarget;
-    if (pgAnim) pagerStop();   // подхватили на лету
+    let pg = e.currentTarget;
+    if (pgAnim) {
+      // Подхватили на лету. Раньше лента просто останавливалась, а день, к которому она ехала,
+      // не засчитывался: три быстрых свайпа подряд листали только на один день.
+      // Теперь этот день сразу становится текущим, а лента остаётся ровно там, где её видно.
+      const a = pgAnim;
+      pagerStop();
+      if (a.dir && a.commit) {
+        const x = pgX, W = pg.clientWidth || 1;
+        pillGoal = null;
+        syncRender = true;
+        try { a.commit(); } finally { syncRender = false; }
+        const npg = pagerEl();
+        if (npg) { pg = npg; pagerLayers(pg, true); setPagerX(pg, x + a.dir * W); }
+      }
+    }
     pagerTouch = true;
     pagerLayers(pg, true);   // слои готовим заранее, на касании — чтобы первый кадр движения не тормозил
     pgDrag = { pg, x: t.clientX, y: t.clientY, base: pgX, mode: 0, vx: 0, lx: t.clientX, lt: performance.now() };
