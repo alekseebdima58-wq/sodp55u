@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="bad867a0b032">
+<meta name="app-ver" content="52c9879544cb">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -3222,7 +3222,13 @@ window.__appStart = () => {
   function teacherListsHTML() {
     const subjects = groupTeacherSubjects();
     const q = query.trim().toLowerCase();
-    const all = index.teachers.filter((t) => !q || t.name.toLowerCase().includes(q));
+    // ищем по началу слов (фамилия, имя, отчество): «ис» — Исайчева, а не СтанИСлавовна и ЛарИСа
+    const words = q.split(/\s+/).filter(Boolean);
+    const all = index.teachers.filter((t) => {
+      if (!words.length) return true;
+      const parts = t.name.toLowerCase().replace(/ё/g, "е").split(/\s+/);
+      return words.every((w) => parts.some((p) => p.startsWith(w.replace(/ё/g, "е"))));
+    });
     const mine = all.filter((t) => subjects.has(t.id));
     const others = all.filter((t) => !subjects.has(t.id));
     let html = "";
