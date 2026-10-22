@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="ca5f8104111d">
+<meta name="app-ver" content="610c1aef149b">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1085,6 +1085,12 @@ html[data-theme="light"] .nc { background: var(--surface); box-shadow: 0 1px 2px
 .nc-arr svg { width: 16px; height: 16px; }
 .nc-was { font-size: 12.5px; color: var(--muted); }
 .nc:active { transform: scale(.98); transition: transform .08s; }
+/* Пока карточку тянут, у неё не должно быть ни «нажатого» уменьшения, ни плавного перехода трансформа:
+   палец двигает её каждые ~8 мс, а переход в 0,08 с догонял каждое новое положение — карточка
+   отставала и дёргалась туда-сюда (на записи экрана — скачки на 10–20 px между соседними кадрами) */
+.ncw.ncsw > .nc, .ncw.ncsw > .nc:active { transition: none; }
+/* то же при листании дней: палец начал на карточке пары — она не «вдавливается», пока едет лента */
+.pager.drag .cc:active, .pager.drag .item:active, .pager.drag .card:active, .pager.drag .hero:active { transform: none; transition: none; }
 @supports (corner-shape: squircle) { .nc { corner-shape: squircle; border-radius: 30px; } .nc-ic { corner-shape: squircle; border-radius: 13px; } }
 
 /* значки у переключателей уведомлений */
@@ -1410,7 +1416,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.3.7";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.3.8";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4426,7 +4432,7 @@ window.__appStart = () => {
       if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
       d.mode = Math.abs(dx) > Math.abs(dy) * 1.15 ? 1 : 2;   // 1 — листаем дни, 2 — прокрутка вверх-вниз
       d.x = t.clientX; d.base = pgX;                         // без рывка на величину «мёртвой зоны»
-      if (d.mode === 1) { scrolling = true; watchFrames("листание пальцем", 600); }
+      if (d.mode === 1) { scrolling = true; d.pg.classList.add("drag"); watchFrames("листание пальцем", 600); }
     }
     if (d.mode !== 1) return;
     if (e.cancelable) e.preventDefault();
@@ -4457,6 +4463,7 @@ window.__appStart = () => {
     if (!d || (e.touches && e.touches.length)) return;
     pgDrag = null;
     pagerTouch = false;
+    d.pg.classList.remove("drag");
     if (d.mode !== 1) { if (pgX && !pgAnim) slideTo(d.pg, 0, 0); else if (!pgAnim) pagerLayers(d.pg, false); return; }
     const W = d.pg.clientWidth || 1;
     // палец мог сдвинуться ещё немного между последним движением и отпусканием — учитываем
