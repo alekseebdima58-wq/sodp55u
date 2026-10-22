@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="bf5855585e77">
+<meta name="app-ver" content="ca5f8104111d">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1048,6 +1048,9 @@ html[data-theme="light"] .ibar { background: linear-gradient(180deg, rgba(255, 2
 .nc-del > * { opacity: var(--o, 1); transition: opacity .2s; }
 .nc-del span { white-space: nowrap; }
 .ncw.gone { pointer-events: none; }
+/* дотянул до «удалить сразу»: значок с подписью уезжает к пальцу (как в iPhone) — видно, что отпускать можно */
+.nc-del { transition: padding .18s ease; }
+.ncw.armed > .nc-del { align-items: flex-start; padding-left: 26px; }
 
 .nc { --tone: var(--warn-fg); --tone-bg: var(--warn-bg);
   display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 14px 16px 15px; text-align: left; color: var(--text);
@@ -1407,7 +1410,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.3.6";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.3.7";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2561,6 +2564,10 @@ window.__appStart = () => {
     del.style.width = `${Math.max(NC_BTN, r - NC_GAP)}px`;
     del.style.setProperty("--o", Math.max(0, Math.min(1, (r - 36) / 40)).toFixed(2));   // значок проявляется, когда кнопка почти выехала
     w.classList.toggle("ncsw", r > 0);
+    // «взведено»: отпустишь — удалится. Порог — чуть больше трети ширины; отыграл назад — снова обычная кнопка
+    // с запасом в 48 px: случайно дёрнувшийся при отпускании палец не снимает «взведено», а отвести назад можно
+    const T = Math.max(NC_OPEN + 40, w.offsetWidth * 0.38), armed = r > (w.classList.contains("armed") ? T - 48 : T);
+    if (armed !== w.classList.contains("armed")) { w.classList.toggle("armed", armed); if (!anim) haptic(armed ? "medium" : "light"); }
     if (anim) try {
       const o = { duration: 320, easing: "cubic-bezier(.25, .9, .3, 1)" };
       if (from[0] !== to[0]) card.animate([{ transform: from[0] }, { transform: to[0] }], o);
@@ -2693,9 +2700,11 @@ window.__appStart = () => {
     if (!d || d.mode !== 1) return;
     ncClickBlock = Date.now();
     const W = d.w.offsetWidth;
-    // решаем по месту, где отпустили; скорость — только если палец явно бросил в другую сторону
-    const back = d.vx > 0.8;
-    if ((d.x < -W * 0.5 && !back) || (d.vx < -0.5 && d.x < -60)) { ncRemove([d.w], d.vx); return; }
+    // решаем по месту, где отпустили. Взведено (дотянул больше чем на треть) — удаляем, даже если палец
+    // при отпускании чуть дёрнулся назад: раньше нужно было 50 % и ни малейшего движения обратно,
+    // и карточка часто просто возвращалась. Передумать — отвести палец назад до отпускания.
+    const back = d.vx > 1.2;
+    if (d.w.classList.contains("armed") || (d.vx < -0.5 && d.x < -60)) { ncRemove([d.w], Math.min(d.vx, 0)); return; }
     if (d.x < -NC_OPEN / 2 && !back) { ncSet(d.w, -NC_OPEN, true); ncOpenW = d.w; haptic("select"); }
     else { ncSet(d.w, 0, true); if (ncOpenW === d.w) ncOpenW = null; }
   };
