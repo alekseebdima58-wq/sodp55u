@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="edf8eaf59deb">
+<meta name="app-ver" content="2477c379e45f">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -303,11 +303,7 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
 /* Листание дней ведёт приложение само (как в приложениях iOS): лента идёт за пальцем 1:1,
    короткий быстрый бросок перелистывает день, медленный короткий — возвращает. Вертикальная прокрутка — родная. */
 .pager {
-  display: flex; margin: 0 calc(-1 * var(--side));
-  /* Safari/WebKit does not reliably apply scrollLeft to an overflow:hidden box.
-     The pager is moved by transforms during a swipe, but it still needs a real
-     horizontal scroll container when the pages are relaid out after the swipe. */
-  overflow-x: auto; overflow-y: hidden;
+  display: flex; margin: 0 calc(-1 * var(--side)); overflow: hidden;
   touch-action: pan-y; overscroll-behavior-x: contain; overflow-anchor: none; scrollbar-width: none;
 }
 .pager::-webkit-scrollbar { display: none; }
@@ -1598,9 +1594,13 @@ window.__appStart = () => {
     // блокировщика рекламы, переводчика страницы. Что сломалось, узнать нельзя, и к приложению это не относится —
     // не засоряем отчёты и не будим владельца из-за неё.
     if (/^script error\.?$/i.test(message) && !e.filename && !(e.error && e.error.stack)) return;
-    // ошибка внутри другого сайта/расширения (не нашей страницы) — тоже не наша
-    if (e.filename && !String(e.filename).startsWith(location.origin) && !/^(blob:|data:)/.test(String(e.filename)) && !(e.error && e.error.stack && String(e.error.stack).includes(location.origin))) return;
-    const at = e.filename ? `${String(e.filename).split("/").pop().split("?")[0]}:${e.lineno || 0}` : "";
+    // WebKit sometimes reports an inline same-page exception with filename
+    // "undefined". Treat that marker as an anonymous inline error; only a
+    // real external URL belongs to another site/extension and is ignored.
+    const filename = String(e.filename || "");
+    const anonymous = !filename || /^(undefined|null)$/i.test(filename);
+    if (!anonymous && !filename.startsWith(location.origin) && !/^(blob:|data:)/.test(filename) && !(e.error && e.error.stack && String(e.error.stack).includes(location.origin))) return;
+    const at = anonymous ? `inline:${e.lineno || 0}` : `${filename.split("/").pop().split("?")[0]}:${e.lineno || 0}`;
     DIAG.add("err", `${message}${at ? " @" + at : ""}`);
   });
   window.addEventListener("unhandledrejection", (e) => {
@@ -1676,7 +1676,11 @@ window.__appStart = () => {
     function onStart(e) {
       if (e.touches.length !== 1) { cancelAll(); return; }
       if (live.length) cancelAll();
-      const t = e.touches[0], now = e.timeStamp || performance.now();
+      // Use the time at which the handler actually ran.  Chromium's
+      // Input.dispatchTouchEvent and WebKit's synthetic TouchEvent may give
+      // every event the same (or a zero) timeStamp; using it makes a short,
+      // fast edge throw look like a slow drag with zero velocity.
+      const t = e.touches[0], now = performance.now();
       sx = t.clientX; sy = t.clientY; hist = [{ t: now, x: sx, y: sy }]; last = hist[0];
       bindTarget(e.target && e.target.addEventListener ? e.target : null);
       const p = { x: sx, y: sy, target: e.target, e };
@@ -1690,7 +1694,7 @@ window.__appStart = () => {
       if (!live.length) return;
       const t = e.touches[0];
       if (!t) return;
-      const now = e.timeStamp || performance.now();
+      const now = performance.now();
       last = { t: now, x: t.clientX, y: t.clientY };
       hist.push(last);
       while (hist.length > 2 && now - hist[0].t > 120) hist.shift();
@@ -1715,7 +1719,7 @@ window.__appStart = () => {
     function onEnd(e) {
       if (e.touches && e.touches.length) return;
       if (!live.length) return;
-      const now = e.timeStamp || performance.now();
+      const now = performance.now();
       if (e.type === "touchcancel") { cancelAll(); return; }
       // палец мог сдвинуться ещё немного между последним движением и отпусканием — учитываем
       const ct = e.changedTouches && e.changedTouches[0];
@@ -4378,6 +4382,16 @@ window.__appStart = () => {
   let loadedAt = Date.now(), loadedDate = samaraNow().date, reloading = false;
   // Принудительно: по кнопке «Повторить», при появлении сети и раз в минуту, пока показано сохранённое
   function refreshNow() { loadedAt = 0; reloadIfStale(true); }
+  // WebKit may keep the old document when a reload starts while offline.  In
+  // that case the cached schedule is still on screen, so update its state as
+  // soon as the browser reports the connection loss instead of waiting for a
+  // failed fetch or a successful reload.
+  window.addEventListener("offline", () => {
+    if (!mem.g || mem.g._offline) return;
+    mem.g._offline = true;
+    loadedAt = 0;
+    if (view === "schedule" || view === "teacher") render();
+  });
   window.addEventListener("online", () => { if (mem.g && mem.g._offline) refreshNow(); });
   setInterval(() => { if (mem.g && mem.g._offline && !document.hidden) refreshNow(); }, 60 * 1000);
   async function reloadIfStale(force, quiet) {
@@ -4565,10 +4579,15 @@ window.__appStart = () => {
   function pagerScrollToCurrent(pg) {
     if (!pg) return;
     const left = curIndex(pg) * pg.clientWidth;
-    pg.scrollLeft = left;
+    // Some WebKit versions report scrollLeft but do not move flex children.
+    // Keep a transform base as the authoritative page position.
+    pgBaseX = -left;
+    pg.scrollLeft = 0;
+    const base = snap(pgBaseX);
+    const t = base ? `translate3d(${base}px,0,0)` : "";
+    pagerPages(pg).forEach((el) => { el.style.transform = t; });
     // A second assignment after layout settles fixes Safari's delayed flex
     // measurement without affecting Chromium.
-    if (Math.abs(pg.scrollLeft - left) > 1) requestAnimationFrame(() => { pg.scrollLeft = left; });
   }
   function curPos() {
     if (view !== "schedule" && view !== "teacher") return null;
@@ -4601,7 +4620,7 @@ window.__appStart = () => {
   // ---- листание дней: как в iOS, через видеокарту ----
   // Дни (текущий и по соседу с каждой стороны) сдвигаются трансформом — это делает видеокарта,
   // главный поток не нагружается, поэтому без подёргиваний. Таблетка в полосе дней едет вместе с пальцем.
-  let pgDrag = null, pgAnim = null, pgX = 0, syncRender = false;
+  let pgDrag = null, pgAnim = null, pgX = 0, syncRender = false, pgBaseX = 0;
   // Сдвиги — ровно по точкам экрана телефона: при дробных сдвигах текст выравнивается отдельно
   // от рамок и «дрожит» внутри карточки
   const DPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
@@ -4632,8 +4651,8 @@ window.__appStart = () => {
   }
   function setPagerX(pg, x) {
     pgX = x;
-    const sx = snap(x);
-    const t = sx ? `translate3d(${sx}px,0,0)` : "";
+    const total = snap(pgBaseX + x);
+    const t = total ? `translate3d(${total}px,0,0)` : "";
     pagerPages(pg).forEach((el) => { el.style.transform = t; });
     const W = pg.clientWidth || 1, off = -x / W;            // -1 … 1, плюс — к следующему дню
     cascade(pg, off);
@@ -4794,9 +4813,19 @@ window.__appStart = () => {
         // Подхватили на лету: день, к которому ехала лента, сразу становится текущим, а лента остаётся
         // ровно там, где её видно (иначе три быстрых свайпа подряд листали только на один день).
         const a = pgAnim;
+        // Read the incoming page's actual position before relaying the
+        // three-page window.  WebKit can lag the Web Animation currentTime by
+        // a frame, which otherwise leaves the page 5–15 px away from the
+        // exact position seen under the finger.
+        const W0 = pg.clientWidth || 1;
+        const incoming = pg.querySelector(a.dir > 0 ? ":scope > .page.next" : ":scope > .page.prev");
+        const pgLeft = pg.getBoundingClientRect().left;
+        const incomingLeft = incoming && incoming.getBoundingClientRect().left;
+        const visualX = incoming && Number.isFinite(incomingLeft) ? incomingLeft - pgLeft - a.dir * W0 : null;
         pagerStop();
         if (a.dir && a.commit) {
-          const x = pgX, W = pg.clientWidth || 1;
+          const W = pg.clientWidth || 1;
+          const x = visualX == null ? pgX : visualX;
           pillGoal = null;
           syncRender = true;
           try { a.commit(); } finally { syncRender = false; }
