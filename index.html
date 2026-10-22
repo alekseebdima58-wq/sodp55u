@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="74b5efd0d303">
+<meta name="app-ver" content="1269883967cb">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1042,7 +1042,7 @@ html[data-theme="light"] .ibar { background: linear-gradient(180deg, rgba(255, 2
 .ncw.ncsw > .nc { will-change: transform; }
 .nc-del { position: absolute; z-index: 0; top: 0; bottom: 0; right: 0; width: 84px; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0; border: 0; border-radius: 22px;
-  background: #E5484D; color: #fff; font: inherit; font-size: 12px; font-weight: 700; transform: translate3d(92px, 0, 0); visibility: hidden; }
+  background: #E5484D; color: #fff; font: inherit; font-size: 12px; font-weight: 700; transform: scale(0); visibility: hidden; }
 .ncw.ncsw > .nc-del, .ncw.closing > .nc-del { visibility: visible; }
 /* пока карточку тянут или она закрывается — всё, что правее карточки, обрезается: кнопка не торчит за краем */
 .ncw.ncsw, .ncw.closing { clip-path: inset(0 0 0 -100vw round 0 22px 22px 0); }
@@ -1418,7 +1418,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.3.9";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.4.0";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2562,42 +2562,44 @@ window.__appStart = () => {
   // Красная «Удалить» — отдельная капсула справа, всегда в 8 px от края карточки: выезжает из-за края
   // экрана вместе с карточкой (оба — трансформом, синхронно). Дальше кнопки — растягивается к пальцу.
   const NC_GAP = 8, NC_BTN = NC_OPEN - NC_GAP;
+  // Красная кнопка — как в «Сообщениях» iOS 26: она НЕ едет за карточкой. Стоит у правого края,
+  // сначала вырастает из точки на своём месте, а когда места хватает — тянется влево вслед за пальцем.
+  const ncDelT = (r) => {
+    const s = Math.max(0, Math.min(1, (r - 50) / (NC_OPEN - 50)));
+    return s >= 1 ? "none" : `scale(${s.toFixed(3)})`;
+  };
   const ncSet = (w, x, anim) => {
     const card = w.querySelector(".nc"), del = w.querySelector(".nc-del");
     const r = Math.max(0, -x);
     if (w._closing) { clearTimeout(w._closing); w._closing = 0; w.classList.remove("closing"); }
-    // Закрытие: красная кнопка остаётся на месте, а карточка наезжает на неё и закрывает.
-    // Раньше кнопка одновременно уезжала вправо — за край карточки, и на долю секунды справа
-    // торчала красная полоска.
+    const from = [card.style.transform || "none", del.style.transform || "scale(0)", del.style.width || `${NC_BTN}px`];
+    const to = [r ? `translate3d(${-r}px,0,0)` : "none", ncDelT(r), `${Math.max(NC_BTN, r - NC_GAP)}px`];
+    const o = { duration: 320, easing: "cubic-bezier(.25, .9, .3, 1)" };
+    // Закрытие: карточка возвращается, а кнопка одновременно сжимается обратно в точку и гаснет.
     if (!r && anim && w.classList.contains("ncsw")) {
-      const from = card.style.transform || "none";
       card.style.transform = "";
+      del.style.transform = "scale(0)"; del.style.width = `${NC_BTN}px`;
       w.classList.add("closing");
       w.classList.remove("ncsw", "armed");
-      try { card.animate([{ transform: from }, { transform: "none" }], { duration: 300, easing: "cubic-bezier(.25, .9, .3, 1)" }); } catch (e) { /* без анимации */ }
-      w._closing = setTimeout(() => {
-        w._closing = 0;
-        w.classList.remove("closing");
-        del.style.transform = `translate3d(${NC_OPEN}px,0,0)`;
-        del.style.width = `${NC_BTN}px`;
-      }, 320);
+      try {
+        card.animate([{ transform: from[0] }, { transform: "none" }], o);
+        del.animate([{ transform: from[1], width: from[2], opacity: 1 }, { transform: "scale(0)", width: `${NC_BTN}px`, opacity: 0 }], { duration: 260, easing: o.easing });
+      } catch (e) { /* без анимации */ }
+      w._closing = setTimeout(() => { w._closing = 0; w.classList.remove("closing"); }, 330);
       return;
     }
-    const from = [card.style.transform || "none", del.style.transform || "none"];
-    const to = [r ? `translate3d(${-r}px,0,0)` : "none", `translate3d(${Math.max(0, NC_OPEN - r)}px,0,0)`];
     card.style.transform = r ? to[0] : "";
     del.style.transform = to[1];
-    del.style.width = `${Math.max(NC_BTN, r - NC_GAP)}px`;
-    del.style.setProperty("--o", Math.max(0, Math.min(1, (r - 36) / 40)).toFixed(2));   // значок проявляется, когда кнопка почти выехала
+    del.style.width = to[2];
+    del.style.setProperty("--o", Math.max(0, Math.min(1, (r - 60) / 32)).toFixed(2));   // значок проявляется, когда кнопка почти выросла
     w.classList.toggle("ncsw", r > 0);
     // «взведено»: отпустишь — удалится. Порог — чуть больше трети ширины; отыграл назад — снова обычная кнопка
     // с запасом в 48 px: случайно дёрнувшийся при отпускании палец не снимает «взведено», а отвести назад можно
     const T = Math.max(NC_OPEN + 40, w.offsetWidth * 0.38), armed = r > (w.classList.contains("armed") ? T - 48 : T);
     if (armed !== w.classList.contains("armed")) { w.classList.toggle("armed", armed); if (!anim) haptic(armed ? "medium" : "light"); }
     if (anim) try {
-      const o = { duration: 320, easing: "cubic-bezier(.25, .9, .3, 1)" };
       if (from[0] !== to[0]) card.animate([{ transform: from[0] }, { transform: to[0] }], o);
-      if (from[1] !== to[1]) del.animate([{ transform: from[1] }, { transform: to[1] }], o);
+      if (from[1] !== to[1] || from[2] !== to[2]) del.animate([{ transform: from[1], width: from[2] }, { transform: to[1], width: to[2] }], o);
     } catch (e) { /* без анимации */ }
   };
   function ncClose(anim) { if (ncOpenW && ncOpenW.isConnected) ncSet(ncOpenW, 0, anim); ncOpenW = null; }
