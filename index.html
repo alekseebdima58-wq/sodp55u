@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="1269883967cb">
+<meta name="app-ver" content="5f4b79c71571">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1218,6 +1218,85 @@ html[data-theme="dark"] .c1 { background: #3987e5; } html[data-theme="dark"] .c2
 .schips { display: flex; flex-wrap: wrap; gap: 6px; }
 .schips span { padding: 6px 10px; border-radius: 99px; background: var(--surface); border: 1px solid var(--hair); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .schips span b { color: var(--muted); font-weight: 600; margin-left: 4px; }
+
+/* ================= Ещё больше iOS 26 =================
+   1. «Линза» выбранной вкладки — отдельный кусок стекла, который переезжает между вкладками
+      с пружиной и чуть растягивается в пути (как капля), а не перескакивает.
+   2. Крупный заголовок экрана при прокрутке уходит под стеклянную плашку сверху,
+      а в ней появляется маленький заголовок по центру (и кнопка «назад», если она есть).
+   3. Переключатель темы — ползунок из стекла едет к выбранному варианту.
+   4. Кнопка «Удалить» при свайпе — круг, который тянется в таблетку (как в «Сообщениях»).
+   5. Поиск — капсула. */
+
+/* 1. линза нижней панели */
+.tabs .in { position: relative; }
+.tab { position: relative; z-index: 1; }
+.tab.on, html[data-theme="light"] .tab.on { background: transparent; box-shadow: none; }
+.tabs .lens {
+  position: absolute; z-index: 0; top: 0; bottom: 0; left: 0; width: calc(100% / 3); border-radius: 28px; pointer-events: none;
+  background: rgba(255, 255, 255, .12); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), inset 0 0 0 1px rgba(255, 255, 255, .06);
+  transform: translate3d(calc(var(--ti, 0) * 100%), 0, 0);
+  transition: transform .5s var(--ease-spring, cubic-bezier(.3, 1.3, .5, 1));
+}
+html[data-theme="light"] .tabs .lens { background: rgba(255, 255, 255, .85); box-shadow: inset 0 1px 0 #FFFFFF, 0 2px 8px rgba(20, 30, 60, .12); }
+.tabs .lens.mv { animation: lensMv .5s cubic-bezier(.3, .7, .4, 1); }
+@keyframes lensMv { 0% { scale: 1 1; } 35% { scale: 1.16 .9; } 100% { scale: 1 1; } }
+@supports (corner-shape: squircle) { .tabs .lens { border-radius: 34px; } }
+
+/* 2. стеклянная плашка с маленьким заголовком */
+.navbar {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 11; height: calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 46px);
+  padding-top: calc(var(--safe-top, 0px) + var(--top-gap, 0px)); display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 9, 11, .78);
+  -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .07);
+  opacity: 0; visibility: hidden; transition: opacity .22s ease, visibility 0s .22s;
+}
+html[data-theme="light"] .navbar { background: rgba(250, 250, 252, .82); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .07); }
+/* под плашкой — мягкое затухание, как у iOS 26: край без резкой черты */
+.navbar::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 18px; pointer-events: none;
+  background: linear-gradient(rgba(8, 9, 11, .55), rgba(8, 9, 11, 0)); }
+html[data-theme="light"] .navbar::after { background: linear-gradient(rgba(250, 250, 252, .6), rgba(250, 250, 252, 0)); }
+html.nb-on .navbar { opacity: 1; visibility: visible; transition: opacity .22s ease; }
+.nb-title {
+  max-width: calc(100% - 140px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 17px; font-weight: 650; color: var(--text); transform: translate3d(0, 8px, 0); opacity: 0;
+  transition: transform .35s var(--ease-spring, ease), opacity .2s ease;
+}
+html.nb-on .nb-title { transform: none; opacity: 1; }
+.nb-back {
+  position: absolute; left: 14px; bottom: 4px; width: 38px; height: 38px; border-radius: 50%; border: 0; padding: 0;
+  display: none; align-items: center; justify-content: center; color: var(--text);
+  background: rgba(255, 255, 255, .1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2);
+}
+html[data-theme="light"] .nb-back { background: rgba(255, 255, 255, .9); box-shadow: inset 0 1px 0 #FFF, 0 1px 4px rgba(0, 0, 0, .1); }
+html.nb-back-on .nb-back { display: flex; }
+.nb-back:active { transform: scale(.9); }
+/* крупный заголовок плавно гаснет, уходя под плашку */
+#app > .top h1 { transition: opacity .2s ease; }
+html.nb-on #app > .top h1, html.nb-on #app > .top .eyebrow { opacity: 0; }
+
+/* 3. ползунок переключателя темы */
+.seg3 { position: relative; }
+.seg3 button { position: relative; z-index: 1; }
+.seg3 button.on, html[data-theme="light"] .seg3 button.on { background: transparent; border-color: transparent; box-shadow: none; }
+.seg3 .thumb {
+  position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 17px; pointer-events: none;
+  background: var(--surface2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 0 0 1px var(--border);
+}
+.seg3 .thumb.go { transition: transform .45s var(--ease-spring, ease), width .45s var(--ease-spring, ease); }
+html[data-theme="light"] .seg3 .thumb { background: #FFFFFF; box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+.seg3 .thumb.mv { animation: lensMv .45s cubic-bezier(.3, .7, .4, 1); }
+
+/* 4. круглая кнопка «Удалить» (размеры — в NC_* в 14-notif-swipe.js) */
+.nc-del { top: calc(50% - 28px); bottom: auto; height: 56px; border-radius: 28px; gap: 0; }
+.nc-del span { display: none; }
+.nc-del svg { width: 24px; height: 24px; }
+.ncw.armed > .nc-del { padding-left: 16px; }
+@supports (corner-shape: squircle) { .nc-del { corner-shape: round; } }
+
+/* 5. поиск — капсула */
+.search { border-radius: 25px; }
 </style>
 </head>
 <body>
@@ -1249,8 +1328,11 @@ html[data-theme="dark"] .c1 { background: #3987e5; } html[data-theme="dark"] .c2
 <div id="app"></div>
 <div class="topveil" aria-hidden="true"></div>
 
+<div class="navbar"><button class="nb-back" type="button" tabindex="-1" aria-label="Назад"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="nb-title"></span></div>
+
 <nav class="tabs" aria-label="Разделы">
   <div class="in">
+    <span class="lens" aria-hidden="true"></span>
     <button class="tab on" data-tab="schedule">
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="12" cy="16" r="1.5"/></svg>
       Расписание
@@ -1414,11 +1496,148 @@ window.__appStart = () => {
     requestAnimationFrame(step);
   }
 
+  // ---------------- общий движок жестов ----------------
+  // Все жесты приложения — листание дней, свайп уведомления, «потяни — обновится», свайп «назад» от края —
+  // идут через один обработчик касаний. Раньше у каждого был свой: свои пороги, три разных способа считать
+  // скорость пальца и свои правила, кто кому уступает. Теперь:
+  //  • касание видят все жесты сразу (в порядке приоритета), а забирает его первый, кто «узнал» своё
+  //    движение; остальные тут же отпускаются — два жеста одновременно больше не бывают;
+  //  • «мёртвая зона» (первые ~7 px) не даёт рывка: движение считается от точки, где жест узнан;
+  //  • скорость пальца — одна для всех: по всем касаниям за последние 80 мс, как в iOS; если палец перед
+  //    отпусканием постоял (>90 мс) — броска нет;
+  //  • после отпускания всё доезжает по одной физике (fling): ровно с той скоростью, с которой отпустил палец,
+  //    и мягко останавливается — без скачка скорости в первом кадре.
+  const Gesture = (() => {
+    const list = [];
+    let live = [], owner = null, hist = [], last = null, sx = 0, sy = 0, tgt = null;
+    // Событие касания приходит туда, где палец коснулся, даже если этот элемент потом убрали со страницы
+    // (день перестроился прямо под пальцем). До документа такие события уже не доходят — поэтому слушаем
+    // ещё и сам элемент под пальцем; одно и то же событие обрабатываем один раз.
+    const seen = new WeakSet();
+    const once = (fn) => (e) => { if (seen.has(e)) return; seen.add(e); fn(e); };
+    function bindTarget(el) {
+      if (tgt) { tgt.removeEventListener("touchmove", tMove, { capture: true }); tgt.removeEventListener("touchend", tEnd, { capture: true }); tgt.removeEventListener("touchcancel", tEnd, { capture: true }); }
+      tgt = el;
+      if (!el) return;
+      el.addEventListener("touchmove", tMove, { passive: false, capture: true });
+      el.addEventListener("touchend", tEnd, { passive: true, capture: true });
+      el.addEventListener("touchcancel", tEnd, { passive: true, capture: true });
+    }
+    const VEL_MS = 80, STOP_MS = 90;
+    function velocity(now) {
+      if (!last || now - last.t > STOP_MS) return { vx: 0, vy: 0 };
+      const h = hist.filter((p) => last.t - p.t <= VEL_MS);
+      if (h.length < 2) return { vx: 0, vy: 0 };
+      const a = h[0], b = h[h.length - 1], dt = b.t - a.t;
+      return dt >= 8 ? { vx: (b.x - a.x) / dt, vy: (b.y - a.y) / dt } : { vx: 0, vy: 0 };
+    }
+    // стандартное «узнавание»: сдвиг больше slop и вдоль своей оси заметно сильнее, чем поперёк
+    function decideAxis(g, dx, dy) {
+      const s = g.slop || 7, r = g.ratio || 1.15;
+      if (Math.abs(dx) < s && Math.abs(dy) < s) return 0;
+      const main = g.axis === "y" ? dy : dx, cross = g.axis === "y" ? dx : dy;
+      return Math.abs(main) > Math.abs(cross) * r ? 1 : -1;
+    }
+    function finish(c, info) { try { c.g.end && c.g.end(c.st, info); } catch (err) { try { DIAG.add("err", "жест: " + String(err && err.message || err).slice(0, 120)); } catch (x) { /* без отчёта */ } } }
+    function cancelAll() {
+      const was = live; live = []; const o = owner; owner = null;
+      for (const c of was) finish(c, { claimed: c === o, cancelled: true, vx: 0, vy: 0, dx: 0, dy: 0 });
+    }
+    function onStart(e) {
+      if (e.touches.length !== 1) { cancelAll(); return; }
+      if (live.length) cancelAll();
+      const t = e.touches[0], now = e.timeStamp || performance.now();
+      sx = t.clientX; sy = t.clientY; hist = [{ t: now, x: sx, y: sy }]; last = hist[0];
+      bindTarget(e.target && e.target.addEventListener ? e.target : null);
+      const p = { x: sx, y: sy, target: e.target, e };
+      for (const g of list) {
+        let st = null;
+        try { st = g.start(p); } catch (err) { st = null; }
+        if (st) live.push({ g, st, cx: sx, cy: sy });
+      }
+    }
+    function onMove(e) {
+      if (!live.length) return;
+      const t = e.touches[0];
+      if (!t) return;
+      const now = e.timeStamp || performance.now();
+      last = { t: now, x: t.clientX, y: t.clientY };
+      hist.push(last);
+      while (hist.length > 2 && now - hist[0].t > 120) hist.shift();
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (!owner) {
+        for (const c of [...live]) {
+          const r = c.g.decide ? c.g.decide(c.st, dx, dy, decideAxis) : decideAxis(c.g, dx, dy);
+          if (r > 0) {
+            owner = c; c.cx = t.clientX; c.cy = t.clientY;   // считаем от точки узнавания — без рывка
+            for (const o of live) if (o !== c) finish(o, { claimed: false, dropped: true, vx: 0, vy: 0, dx, dy });
+            live = [c];
+            c.g.claim && c.g.claim(c.st, { x: t.clientX, y: t.clientY });
+            break;
+          }
+          if (r < 0) { live = live.filter((o) => o !== c); finish(c, { claimed: false, dropped: true, vx: 0, vy: 0, dx, dy }); }
+        }
+        if (!owner) return;
+      }
+      if (owner.g.prevent !== false && e.cancelable) e.preventDefault();
+      owner.g.move(owner.st, { x: t.clientX, y: t.clientY, dx: t.clientX - owner.cx, dy: t.clientY - owner.cy, t: now }, e);
+    }
+    function onEnd(e) {
+      if (e.touches && e.touches.length) return;
+      if (!live.length) return;
+      const now = e.timeStamp || performance.now();
+      if (e.type === "touchcancel") { cancelAll(); return; }
+      // палец мог сдвинуться ещё немного между последним движением и отпусканием — учитываем
+      const ct = e.changedTouches && e.changedTouches[0];
+      if (ct && last && Math.hypot(ct.clientX - last.x, ct.clientY - last.y) >= 1 && Math.abs(ct.clientX - last.x) < 80) {
+        last = { t: now, x: ct.clientX, y: ct.clientY }; hist.push(last);
+      }
+      const v = velocity(now), was = live, o = owner;
+      live = []; owner = null;
+      for (const c of was) {
+        const x = last ? last.x : sx, y = last ? last.y : sy;
+        finish(c, { claimed: c === o, vx: v.vx, vy: v.vy, x, y, dx: x - c.cx, dy: y - c.cy, moved: c === o && last !== hist[0], e });
+      }
+    }
+    const dMove = once(onMove), dEnd = once(onEnd), tMove = once(onMove), tEnd = once(onEnd);
+    let on = false;
+    function add(g) {   // g.prio — кто раньше узнаёт своё движение (свайп «назад» от края — первым)
+      list.push(g);
+      list.sort((a, b) => (b.prio || 0) - (a.prio || 0));
+      if (on) return;
+      on = true;
+      document.addEventListener("touchstart", onStart, { passive: true, capture: true });
+      document.addEventListener("touchmove", dMove, { passive: false, capture: true });
+      document.addEventListener("touchend", dEnd, { passive: true, capture: true });
+      document.addEventListener("touchcancel", dEnd, { passive: true, capture: true });
+      document.addEventListener("visibilitychange", () => { if (document.hidden) cancelAll(); });
+    }
+    const busy = () => !!owner;
+    return { add, busy, cancelAll };
+  })();
+
+  // Общая физика «доезда» после отпускания. dist — сколько осталось проехать (px, со знаком),
+  // v — скорость пальца (px/мс, тот же знак — значит палец толкал туда же).
+  // Кривая — cubic-bezier(1/3, a/3, 2/3, 1): её начальный наклон равен скорости пальца, поэтому
+  // движение продолжается без скачка, а в конце мягко останавливается. Её же можно отдать браузеру
+  // (WAAPI) — тогда она идёт в потоке видеокарты.
+  function fling(dist, v, o = {}) {
+    const D = Math.abs(dist), sg = Math.sign(dist) || 1, full = o.full || 390;
+    const tMax = o.tMax || (200 + 220 * Math.min(1, D / full)), tMin = o.tMin || 140;
+    let v0 = v || 0;
+    let T = v0 * sg > 0.05 ? Math.max(tMin, Math.min(tMax, 2 * D / (v0 * sg))) : tMax;
+    if (!v) v0 = sg * 0.8 * D / T;                       // без броска — трогается сразу, без «раскачки»
+    if (v0 * sg * T > 3 * D) v0 = sg * 3 * D / T;        // не быстрее, чем можно без проскока
+    const a = D ? (v0 * T) / dist : 0;
+    return { T: Math.round(T), a, ease: `cubic-bezier(0.3333, ${(a / 3).toFixed(4)}, 0.6667, 1)` };
+  }
+  // та же кривая для покадровой анимации: доля пути в момент k (0…1)
+  function flingAt(k, a) { const u = 1 - k; return 3 * u * u * k * (a / 3) + 3 * u * k * k + k * k * k; }
   // ---------------- настройки уведомлений ----------------
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.4.0";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.5.0";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -1709,6 +1928,7 @@ window.__appStart = () => {
   function syncTabs() {
     const tab = view === "teacher" ? "teachers" : view === "notif" ? "schedule" : view === "stats" ? "settings" : view;
     tabs.forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
+    syncLens();
   }
   function syncBack() {
     if (!tg || !tg.BackButton || !tgAtLeast("6.1")) return;
@@ -2557,15 +2777,16 @@ window.__appStart = () => {
   // ---- удаление уведомлений свайпом, как в iPhone ----
   // Влево — под карточкой появляется красная «Удалить». Дотянул больше чем до середины или резко
   // смахнул — удаляется сразу; чуть-чуть — карточка останавливается с открытой кнопкой.
-  const NC_OPEN = 92;   // насколько открывается карточка, чтобы показать кнопку
-  let ncSw = null, ncOpenW = null, ncClickBlock = 0;
+  const NC_OPEN = 70;   // насколько открывается карточка, чтобы показать кнопку (круг 56 px + зазор)
+  let ncOpenW = null, ncClickBlock = 0;
   // Красная «Удалить» — отдельная капсула справа, всегда в 8 px от края карточки: выезжает из-за края
   // экрана вместе с карточкой (оба — трансформом, синхронно). Дальше кнопки — растягивается к пальцу.
-  const NC_GAP = 8, NC_BTN = NC_OPEN - NC_GAP;
+  const NC_GAP = 14, NC_BTN = NC_OPEN - NC_GAP;
+  const NC_STAY = 46;   // отпустил дальше — карточка остаётся открытой; ближе — закрывается
   // Красная кнопка — как в «Сообщениях» iOS 26: она НЕ едет за карточкой. Стоит у правого края,
   // сначала вырастает из точки на своём месте, а когда места хватает — тянется влево вслед за пальцем.
   const ncDelT = (r) => {
-    const s = Math.max(0, Math.min(1, (r - 50) / (NC_OPEN - 50)));
+    const s = Math.max(0, Math.min(1, (r - 14) / (NC_OPEN - 14)));
     return s >= 1 ? "none" : `scale(${s.toFixed(3)})`;
   };
   const ncSet = (w, x, anim) => {
@@ -2591,7 +2812,7 @@ window.__appStart = () => {
     card.style.transform = r ? to[0] : "";
     del.style.transform = to[1];
     del.style.width = to[2];
-    del.style.setProperty("--o", Math.max(0, Math.min(1, (r - 60) / 32)).toFixed(2));   // значок проявляется, когда кнопка почти выросла
+    del.style.setProperty("--o", Math.max(0, Math.min(1, (r - 36) / 24)).toFixed(2));   // значок проявляется, когда кнопка почти выросла
     w.classList.toggle("ncsw", r > 0);
     // «взведено»: отпустишь — удалится. Порог — чуть больше трети ширины; отыграл назад — снова обычная кнопка
     // с запасом в 48 px: случайно дёрнувшийся при отпускании палец не снимает «взведено», а отвести назад можно
@@ -2692,52 +2913,39 @@ window.__appStart = () => {
       syncBadge();
     });
   }
-  app.addEventListener("touchstart", (e) => {
-    const w = e.target.closest && e.target.closest(".ncw");
-    if (ncOpenW && ncOpenW !== w) ncClose(true);
-    if (!w || e.touches.length !== 1 || e.target.closest(".nc-del")) { ncSw = null; return; }
-    const t = e.touches[0];
-    const card = w.querySelector(".nc"), m = /translate3d\((-?[\d.]+)px/.exec(card.style.transform || "");
-    ncSw = { w, x0: t.clientX, y0: t.clientY, base: m ? +m[1] : 0, mode: 0, x: 0, vx: 0, lx: t.clientX, lt: e.timeStamp || performance.now() };
-  }, { passive: true });
-  app.addEventListener("touchmove", (e) => {
-    const d = ncSw;
-    if (!d) return;
-    const t = e.touches[0], dx = t.clientX - d.x0, dy = t.clientY - d.y0;
-    if (d.mode === 0) {
-      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      d.mode = Math.abs(dx) > Math.abs(dy) * 1.2 && (dx < 0 || d.base < 0) ? 1 : 2;
-      if (d.mode === 2) { ncSw = null; return; }
-      d.x0 = t.clientX;
-    }
-    if (e.cancelable) e.preventDefault();
-    let x = d.base + (t.clientX - d.x0);
-    if (x > 0) x = x / 4;                                   // вправо — только туго, как резинка
-    d.x = x;
-    const now = e.timeStamp || performance.now();
-    (d.h || (d.h = [])).push([now, t.clientX]);
-    while (d.h.length > 2 && now - d.h[0][0] > 100) d.h.shift();
-    const h0 = d.h[0];                                       // скорость — по движению за последние ~0,1 с, а не по одному касанию
-    d.vx = now - h0[0] >= 8 ? (t.clientX - h0[1]) / (now - h0[0]) : d.vx;
-    d.lx = t.clientX; d.lt = now;
-    ncSet(d.w, Math.min(0, x));
-  }, { passive: false });
-  const ncEnd = () => {
-    const d = ncSw;
-    ncSw = null;
-    if (!d || d.mode !== 1) return;
-    ncClickBlock = Date.now();
-    const W = d.w.offsetWidth;
-    // решаем по месту, где отпустили. Взведено (дотянул больше чем на треть) — удаляем, даже если палец
-    // при отпускании чуть дёрнулся назад: раньше нужно было 50 % и ни малейшего движения обратно,
-    // и карточка часто просто возвращалась. Передумать — отвести палец назад до отпускания.
-    const back = d.vx > 1.2;
-    if (d.w.classList.contains("armed") || (d.vx < -0.5 && d.x < -60)) { ncRemove([d.w], Math.min(d.vx, 0)); return; }
-    if (d.x < -NC_OPEN / 2 && !back) { ncSet(d.w, -NC_OPEN, true); ncOpenW = d.w; haptic("select"); }
-    else { ncSet(d.w, 0, true); if (ncOpenW === d.w) ncOpenW = null; }
-  };
-  app.addEventListener("touchend", ncEnd, { passive: true });
-  app.addEventListener("touchcancel", ncEnd, { passive: true });
+  // Свайп карточки уведомления — через общий движок жестов (05-gestures.js)
+  Gesture.add({
+    name: "уведомление",
+    start(p) {
+      const w = p.target.closest && p.target.closest(".ncw");
+      if (ncOpenW && ncOpenW !== w) ncClose(true);
+      if (!w || !app.contains(w) || p.target.closest(".nc-del")) return null;
+      const card = w.querySelector(".nc"), m = /translate3d\((-?[\d.]+)px/.exec(card.style.transform || "");
+      return { w, base: m ? +m[1] : 0, x: 0 };
+    },
+    // своё: влево — всегда, вправо — только если карточка уже открыта (закрыть)
+    decide(d, dx, dy) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return 0;
+      return Math.abs(dx) > Math.abs(dy) * 1.2 && (dx < 0 || d.base < 0) ? 1 : -1;
+    },
+    move(d, p) {
+      let x = d.base + p.dx;
+      if (x > 0) x = x / 4;                                   // вправо — только туго, как резинка
+      d.x = x;
+      ncSet(d.w, Math.min(0, x));
+    },
+    end(d, info) {
+      if (!info.claimed) return;
+      ncClickBlock = Date.now();
+      if (info.cancelled) { ncSet(d.w, d.x < -NC_STAY ? -NC_OPEN : 0, true); if (d.x < -NC_STAY) ncOpenW = d.w; return; }
+      // решаем по месту, где отпустили. Взведено (дотянул больше чем на треть) — удаляем, даже если палец
+      // при отпускании чуть дёрнулся назад. Передумать — отвести палец назад до отпускания.
+      const vx = info.vx, back = vx > 1.2;
+      if (d.w.classList.contains("armed") || (vx < -0.5 && d.x < -60)) { ncRemove([d.w], Math.min(vx, 0)); return; }
+      if (d.x < -NC_STAY && !back) { ncSet(d.w, -NC_OPEN, true); ncOpenW = d.w; haptic("select"); }
+      else { ncSet(d.w, 0, true); if (ncOpenW === d.w) ncOpenW = null; }
+    },
+  });
   // после свайпа «клик» по карточке не открывает день; по открытой карточке — просто закрыть
   app.addEventListener("click", (e) => {
     const card = e.target.closest && e.target.closest(".ncw .nc");
@@ -3173,6 +3381,7 @@ window.__appStart = () => {
     }
   }
 
+  // ---------------- экраны «Расписание» и «Преподаватели» ----------------
   // Бот обновляет расписание преподавателя часто, только пока его кто-то смотрит; остальных — раз в сутки.
   // Отсюда бот не видит, что открыли в приложении, — поэтому коротко сообщаем в канал (без данных о человеке),
   // не чаще раза в 6 часов на преподавателя.
@@ -3294,7 +3503,6 @@ window.__appStart = () => {
       <label class="search">${I.search}<input id="q" type="search" placeholder="Поиск по фамилии" aria-label="Поиск преподавателя" autocomplete="off" value="${esc(query)}"></label>
       <div id="tlists">${teacherListsHTML()}</div>`;
   }
-
   // ---------------- установка на главный экран ----------------
   const STANDALONE = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
   const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -3649,6 +3857,7 @@ window.__appStart = () => {
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
         <br><span class="ver">${APP_LABEL} · ${esc(((document.querySelector('meta[name="app-ver"]') || {}).content || "").slice(0, 6))}</span></p>`;
+    placeSegThumbs();
   }
 
   // Всплывающие подсказки — тем же стеклом, что и нижняя панель: значок по смыслу, текст, кнопка действия
@@ -3721,6 +3930,16 @@ window.__appStart = () => {
       if (!animate) { void en.offsetWidth; row.classList.remove("quiet"); }
     }
   }
+
+  // Надписи «сейчас» расставляются сами после ЛЮБОЙ перестройки разметки (новый день, соседняя страница,
+  // перерисованная карточка): раньше это надо было не забыть вызвать вручную, и пару раз забывали — тогда
+  // «сейчас 12:14» ложилось на время конца пары. Наблюдатель срабатывает до отрисовки кадра, так что мигания нет.
+  const domWatch = new MutationObserver((recs) => {
+    for (const r of recs) for (const n of r.addedNodes) {
+      if (n.nodeType === 1 && (n.matches(".row.live") || n.querySelector(".row.live"))) { placeNowLabels(false); return; }
+    }
+  });
+  domWatch.observe(app, { childList: true, subtree: true });
 
   // Раз в 15 секунд: если статусы пар не поменялись — двигаем только шкалу и подписи,
   // чтобы не перезапускать анимации; если поменялись — перерисовываем день целиком.
@@ -3963,6 +4182,7 @@ window.__appStart = () => {
     } else if (act === "install-again") {
       haptic("light"); store.set("installDone", "0"); renderSettings();
     } else if (act === "theme") {
+      rememberSeg(el.closest(".seg3"));
       store.set("theme", el.dataset.v);
       applyTheme();
       haptic("select");
@@ -4224,10 +4444,6 @@ window.__appStart = () => {
     if (!pg) return;
     fitPager();
     pg.scrollLeft = curIndex(pg) * pg.clientWidth;   // лента сама не прокручивается — двигаем дни трансформом
-    pg.addEventListener("touchstart", pagerDown, { passive: true });
-    pg.addEventListener("touchmove", pagerMove, { passive: false });
-    pg.addEventListener("touchend", pagerUp, { passive: true });
-    pg.addEventListener("touchcancel", pagerUp, { passive: true });
     setupPill();
   }
 
@@ -4274,7 +4490,7 @@ window.__appStart = () => {
     if (Math.abs(off) < 0.02) previewChips(0);
   }
   // кривая листания: путь (доля) за время k при начальной скорости a (в долях пути за всё время)
-  const pagerCurve = (k, a) => { const k2 = k * k, k3 = k2 * k; return 3 * k2 - 2 * k3 + a * (k - 2 * k2 + k3); };
+  const pagerCurve = flingAt;
   // остановить листание на лету (подхватили пальцем): лента остаётся ровно там, где её видно
   function pagerStop() {
     const a = pgAnim;
@@ -4296,23 +4512,11 @@ window.__appStart = () => {
     // День продолжает движение ровно с той скоростью, с которой его отпустил палец, плавно
     // разгоняется (если палец был медленным) и мягко тормозит у места — без скачка скорости.
     // Раньше после отпускания скорость сразу вырастала в 2–3 раза: глаз видел рывок и «30 кадров».
-    const W = pg.clientWidth || 390, D = Math.abs(dist), sg = Math.sign(dist);
-    let v0 = v || 0;                                   // px/мс, как у пальца (плюс — вправо)
-    const tMax = 200 + 220 * Math.min(1, D / W);       // целый день — 0,42 с, остаток пути — быстрее
-    let T = v0 * sg > 0.05 ? Math.max(140, Math.min(tMax, 2 * D / (v0 * sg))) : tMax;
-    if (!v) v0 = sg * 0.8 * D / T;                     // по нажатию — трогается сразу, без «раскачки»
-    if (v0 * sg * T > 3 * D) v0 = sg * 3 * D / T;      // быстрее нельзя — проскочил бы мимо дня
-    const a3 = v0 * T;                                 // начальная скорость в долях пути
-    // отсчёт — с последнего движения пальца: первый кадр после отпускания не «замирает»
-    // since — время кадра, в котором показано последнее положение пальца: движение продолжается
-    // ровно с него, и следующий кадр сдвигается на один кадр пути — без «прыжка» и без «замирания»
+    const f = fling(dist, v, { full: pg.clientWidth || 390 }), T = f.T, a = f.a;
+    // отсчёт — с кадра, в котором показано последнее положение пальца (since): движение продолжается ровно с него
     const now0 = performance.now(), t0 = since && now0 - since < 50 ? since : 0;
-    // Эта кривая — ровно cubic-bezier(1/3, a/3, 2/3, 1): отдаём её браузеру целиком, и дни, таблетка
-    // и цифры в ней едут в отдельном потоке видеокарты с частотой экрана (60 или 120 кадров)
-    const a = a3 / dist;
     const pill = pillEl(), on = pill && pill.parentNode.querySelector(".days-on");
-    const anims = gpuMove([...pagerPages(pg), pill, on, on && on.firstElementChild], () => setPagerX(pg, to), T,
-      `cubic-bezier(0.3333, ${(a / 3).toFixed(4)}, 0.6667, 1)`);
+    const anims = gpuMove([...pagerPages(pg), pill, on, on && on.firstElementChild], () => setPagerX(pg, to), T, f.ease);
     if (t0) anims.forEach((x) => { try { x.startTime = t0; } catch (e) { /* не умеет — начнёт со следующего кадра */ } });
     tok = pgAnim = { pg, from, dist, a, T, t0: t0 || now0, anims };
     watchFrames(since ? "листание (бросок)" : "листание (нажатие)", T);
@@ -4370,9 +4574,8 @@ window.__appStart = () => {
     pagerPages(pg).forEach((el) => { el.style.opacity = ""; });
     fitPager();
     putPill(np.d);
-    placeNowLabels(false);
     // недостающих соседей достраиваем после того, как новый день уже показан (следующий кадр не ждёт);
-    // если палец успел раньше — их построит касание (ensureNeighbors в pagerDown)
+    // если палец успел раньше — их построит касание (ensureNeighbors в начале жеста «листание дней»)
     const later = () => { if (ensureNeighbors(true)) setTimeout(later, 0); };   // по одному дню за раз — без долгих задач
     requestAnimationFrame(() => setTimeout(later, 0));
     return true;
@@ -4393,9 +4596,8 @@ window.__appStart = () => {
       if (dir < 0) pg.scrollLeft = curIndex(pg) * pg.clientWidth;   // слева добавился день — лента остаётся на месте
       if (pgX) pagerPages(pg).forEach((el) => { el.style.transform = cur.style.transform; });
       added = true;
-      if (one) { placeNowLabels(false); return true; }   // ещё может не хватать второго — позовут снова
+      if (one) return true;   // ещё может не хватать второго — позовут снова (надписи «сейчас» расставит domWatch)
     }
-    if (added) placeNowLabels(false);
     return false;
   }
   // уехать на соседний день (dir = ±1) и сменить его (новый день встаёт ровно туда же — подмена незаметна)
@@ -4421,92 +4623,67 @@ window.__appStart = () => {
     pgX = 0;
     render();
   }
-  function pagerDown(e) {
-    const t = e.touches[0];
-    if (e.touches.length !== 1 || (stack.length && t.clientX <= 24 && !inTG)) { pgDrag = null; return; }   // у края — свайп «назад»
-    let pg = e.currentTarget;
-    if (!pgAnim) ensureNeighbors();
-    if (pgAnim) {
-      // Подхватили на лету. Раньше лента просто останавливалась, а день, к которому она ехала,
-      // не засчитывался: три быстрых свайпа подряд листали только на один день.
-      // Теперь этот день сразу становится текущим, а лента остаётся ровно там, где её видно.
-      const a = pgAnim;
-      pagerStop();
-      if (a.dir && a.commit) {
-        const x = pgX, W = pg.clientWidth || 1;
-        pillGoal = null;
-        syncRender = true;
-        try { a.commit(); } finally { syncRender = false; }
-        const npg = pagerEl();
-        if (npg) { pg = npg; pagerLayers(pg, true); setPagerX(pg, x + a.dir * W); }
-      }
-    }
-    pagerTouch = true;
-    pagerLayers(pg, true);   // слои готовим заранее, на касании — чтобы первый кадр движения не тормозил
-    pgDrag = { pg, x: t.clientX, y: t.clientY, base: pgX, mode: 0, vx: 0, lx: t.clientX, lt: performance.now() };
-  }
-  function pagerMove(e) {
-    const d = pgDrag;
-    if (!d) return;
-    const t = e.touches[0];
-    const dx = t.clientX - d.x, dy = t.clientY - d.y;
-    if (d.mode === 0) {
-      if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
-      d.mode = Math.abs(dx) > Math.abs(dy) * 1.15 ? 1 : 2;   // 1 — листаем дни, 2 — прокрутка вверх-вниз
-      d.x = t.clientX; d.base = pgX;                         // без рывка на величину «мёртвой зоны»
-      if (d.mode === 1) { scrolling = true; d.pg.classList.add("drag"); watchFrames("листание пальцем", 600); }
-    }
-    if (d.mode !== 1) return;
-    if (e.cancelable) e.preventDefault();
-    const W = d.pg.clientWidth || 1;
-    let x = d.base + (t.clientX - d.x);
-    // дальше дней нет — тянется туго, как резинка
+  // Листание дней пальцем — через общий движок жестов (05-gestures.js): он узнаёт горизонтальное
+  // движение, считает скорость и отдаёт жест одному владельцу. Здесь — только то, что касается ленты.
+  const pagerRubber = (x, W) => {   // дальше дней нет — тянется туго, как резинка
     const minX = hasNeighbor(1) ? -W : 0, maxX = hasNeighbor(-1) ? W : 0;
     if (x < minX) x = minX - (minX - x) / 3;
     if (x > maxX) x = maxX + (x - maxX) / 3;
-    setPagerX(d.pg, x);
-    // скорость пальца — по всем касаниям за последние ~80 мс (как в iOS), а не по одному-двум:
-    // при быстром броске касаний мало, и прежний расчёт занижал скорость — после отпускания день «тормозил»
-    const now = e.timeStamp || performance.now();
-    (d.hist || (d.hist = [])).push([now, t.clientX]);
-    // запоминаем кадр, в котором это положение появилось на экране
-    if (!d.raf) d.raf = requestAnimationFrame((ts) => { d.raf = 0; d.shownAt = ts; d.shownX = pgX; });
-    while (d.hist.length > 2 && now - d.hist[0][0] > 100) d.hist.shift();
-    d.lx = t.clientX; d.lt = now;
-  }
-  function fingerSpeed(d, now) {   // px/мс, плюс — палец вправо
-    const h = (d.hist || []).filter((p) => now - p[0] <= 80);
-    if (h.length < 2) return 0;
-    const [t0, x0] = h[0], [t1, x1] = h[h.length - 1];
-    return t1 - t0 >= 8 ? (x1 - x0) / (t1 - t0) : 0;
-  }
-  function pagerUp(e) {
-    const d = pgDrag;
-    if (!d || (e.touches && e.touches.length)) return;
-    pgDrag = null;
-    pagerTouch = false;
-    d.pg.classList.remove("drag");
-    if (d.mode !== 1) { if (pgX && !pgAnim) slideTo(d.pg, 0, 0); else if (!pgAnim) pagerLayers(d.pg, false); return; }
-    const W = d.pg.clientWidth || 1;
-    // палец мог сдвинуться ещё немного между последним движением и отпусканием — учитываем
-    const ct = e.changedTouches && e.changedTouches[0], upT = e.timeStamp || performance.now();
-    if (ct && Math.abs(ct.clientX - d.lx) >= 1 && Math.abs(ct.clientX - d.lx) < 80) {
-      let x = d.base + (ct.clientX - d.x);
-      const minX = hasNeighbor(1) ? -W : 0, maxX = hasNeighbor(-1) ? W : 0;
-      if (x < minX) x = minX - (minX - x) / 3;
-      if (x > maxX) x = maxX + (x - maxX) / 3;
-      setPagerX(d.pg, x);
-      d.hist.push([upT, ct.clientX]); d.lx = ct.clientX; d.lt = upT;
-    }
-    d.vx = upT - d.lt > 90 ? 0 : fingerSpeed(d, d.lt);   // палец остановился — броска нет
-    const off = -pgX / W;                                   // плюс — тянем к следующему дню
-    let dir = 0;
-    if (d.vx < -0.3 || (off > 0.35 && d.vx < 0.25)) dir = 1;
-    else if (d.vx > 0.3 || (off < -0.35 && d.vx > -0.25)) dir = -1;
-    if (dir && !hasNeighbor(dir)) dir = 0;
-    if (d.raf) { cancelAnimationFrame(d.raf); d.raf = 0; }
-    slideTo(d.pg, dir, d.vx, null, d.vx && d.shownX === pgX ? d.shownAt : 0);
-  }
+    return x;
+  };
+  Gesture.add({
+    name: "листание дней",
+    axis: "x", slop: 7, ratio: 1.15,
+    start(p) {
+      let pg = p.target.closest && p.target.closest("[data-pager]");
+      if (!pg || !app.contains(pg)) return null;
+      if (stack.length && p.x <= 24 && !inTG) return null;   // у края — свайп «назад»
+      if (!pgAnim) ensureNeighbors();
+      if (pgAnim) {
+        // Подхватили на лету: день, к которому ехала лента, сразу становится текущим, а лента остаётся
+        // ровно там, где её видно (иначе три быстрых свайпа подряд листали только на один день).
+        const a = pgAnim;
+        pagerStop();
+        if (a.dir && a.commit) {
+          const x = pgX, W = pg.clientWidth || 1;
+          pillGoal = null;
+          syncRender = true;
+          try { a.commit(); } finally { syncRender = false; }
+          const npg = pagerEl();
+          if (npg) { pg = npg; pagerLayers(pg, true); setPagerX(pg, x + a.dir * W); }
+        }
+      }
+      pagerTouch = true;
+      pagerLayers(pg, true);   // слои готовим заранее, на касании — чтобы первый кадр движения не тормозил
+      return (pgDrag = { pg, base: pgX });
+    },
+    claim(d) {
+      d.base = pgX;
+      scrolling = true; d.pg.classList.add("drag"); watchFrames("листание пальцем", 600);
+    },
+    move(d, p) {
+      setPagerX(d.pg, pagerRubber(d.base + p.dx, d.pg.clientWidth || 1));
+      // запоминаем кадр, в котором это положение появилось на экране: после отпускания движение
+      // продолжается ровно с него — без «прыжка» и без «замирания»
+      if (!d.raf) d.raf = requestAnimationFrame((ts) => { d.raf = 0; d.shownAt = ts; d.shownX = pgX; });
+    },
+    end(d, info) {
+      if (pgDrag === d) pgDrag = null;
+      pagerTouch = false;
+      d.pg.classList.remove("drag");
+      if (!info.claimed) { if (pgX && !pgAnim) slideTo(d.pg, 0, 0); else if (!pgAnim) pagerLayers(d.pg, false); return; }
+      const W = d.pg.clientWidth || 1;
+      if (!info.cancelled) setPagerX(d.pg, pagerRubber(d.base + info.dx, W));   // последний сдвиг пальца — тоже в счёт
+      const vx = info.vx;
+      const off = -pgX / W;                                   // плюс — тянем к следующему дню
+      let dir = 0;
+      if (vx < -0.3 || (off > 0.35 && vx < 0.25)) dir = 1;
+      else if (vx > 0.3 || (off < -0.35 && vx > -0.25)) dir = -1;
+      if (dir && !hasNeighbor(dir)) dir = 0;
+      if (d.raf) { cancelAnimationFrame(d.raf); d.raf = 0; }
+      slideTo(d.pg, dir, vx, null, vx && d.shownX === pgX ? d.shownAt : 0);
+    },
+  });
 
   // ---- таблетка выбранного дня: плавно едет за листанием и к нажатому дню ----
   let pillPos = [];
@@ -4635,6 +4812,71 @@ window.__appStart = () => {
     resizeTimer = setTimeout(() => { if ((view === "schedule" || view === "teacher") && !scrolling) render(); }, 150);
   });
 
+  // ---------------- ещё больше iOS 26: линза вкладок, сжимающийся заголовок, ползунок темы ----------------
+  // (оформление — в css/13-ios26.css)
+
+  // Линза выбранной вкладки едет к новой вкладке и чуть растягивается в пути.
+  // syncTabs() зовёт её при каждой смене экрана.
+  let lensTi = -1;
+  function syncLens() {
+    const inn = document.querySelector(".tabs .in"), lens = inn && inn.querySelector(".lens");
+    if (!lens) return;
+    const i = [...tabs].findIndex((b) => b.classList.contains("on"));
+    if (i < 0 || i === lensTi) return;
+    const first = lensTi < 0;
+    lensTi = i;
+    if (first) { lens.style.transition = "none"; inn.style.setProperty("--ti", i); void lens.offsetWidth; lens.style.transition = ""; return; }
+    inn.style.setProperty("--ti", i);
+    if (!REDUCED) { lens.classList.remove("mv"); void lens.offsetWidth; lens.classList.add("mv"); }
+  }
+
+  // Крупный заголовок → маленький по центру стеклянной плашки, когда он уходит под верх экрана.
+  // На «Расписании» своя липкая шапка с днями — там плашка не нужна.
+  const navbar = document.querySelector(".navbar"), nbTitle = navbar && navbar.querySelector(".nb-title");
+  let nbRaf = 0, nbOn = false;
+  function syncNavbar() {
+    nbRaf = 0;
+    if (!navbar) return;
+    const h1 = (view === "teachers" || view === "settings" || view === "notif" || view === "stats") && app.querySelector(":scope > .top h1");
+    let on = false;
+    if (h1) {
+      const barBottom = navbar.getBoundingClientRect().height;
+      on = h1.getBoundingClientRect().bottom < barBottom + 2;
+      if (on && nbTitle.textContent !== h1.textContent) nbTitle.textContent = h1.textContent;
+    }
+    if (on !== nbOn) { nbOn = on; ROOT.classList.toggle("nb-on", on); }
+    ROOT.classList.toggle("nb-back-on", on && !!stack.length);
+  }
+  const nbQueue = () => { if (!nbRaf) nbRaf = requestAnimationFrame(syncNavbar); };
+  window.addEventListener("scroll", nbQueue, { passive: true });
+  window.addEventListener("resize", nbQueue, { passive: true });
+  // смена экрана — заголовок новый, решаем заново (экран мог открыться уже прокрученным)
+  new MutationObserver(nbQueue).observe(app, { childList: true });
+  if (navbar) navbar.querySelector(".nb-back").addEventListener("click", () => { haptic("light"); goBack(); });
+
+  // Ползунок переключателя: стоит под выбранным вариантом; если выбор поменяли — переезжает со старого места.
+  let segFrom = null;   // { left, width } прежнего варианта — запоминается перед перерисовкой
+  function rememberSeg(seg) {
+    const on = seg && seg.querySelector("button.on");
+    if (on) segFrom = { left: on.offsetLeft, width: on.offsetWidth };
+  }
+  function placeSegThumbs() {
+    for (const seg of app.querySelectorAll(".seg3")) {
+      let th = seg.querySelector(".thumb");
+      if (!th) { th = document.createElement("span"); th.className = "thumb"; th.setAttribute("aria-hidden", "true"); seg.prepend(th); }
+      const on = seg.querySelector("button.on");
+      if (!on) { th.style.width = "0"; continue; }
+      const to = { left: on.offsetLeft, width: on.offsetWidth };
+      if (segFrom && !REDUCED && (segFrom.left !== to.left)) {
+        th.classList.remove("go");
+        th.style.transform = `translate3d(${segFrom.left}px,0,0)`; th.style.width = `${segFrom.width}px`;
+        void th.offsetWidth;
+        th.classList.add("go", "mv");
+      }
+      th.style.transform = `translate3d(${to.left}px,0,0)`; th.style.width = `${to.width}px`;
+    }
+    segFrom = null;
+  }
   // ---------------- полноэкранный режим ----------------
   // Только на телефонах (на компьютере «во весь экран» — это весь монитор). По умолчанию включён.
   const MOBILE = inTG && /^(ios|android|android_x)$/.test(String(tg.platform));
@@ -4831,7 +5073,7 @@ window.__appStart = () => {
     const ticks = [...ptr.querySelectorAll(".tk")];
     const svgEl = ptr.firstElementChild;
     const PULL = 84, HOLD = 58;      // сколько тянуть до обновления и на какой высоте держать экран
-    let y0 = null, x0 = 0, dist = 0, active = false, busy = false, ready = false;
+    let dist = 0, active = false, busy = false, ready = false;
     // резинка как в iOS: чем дальше тянешь, тем туже
     const rubber = (d) => { const H = Math.max(500, innerHeight); return (1 - 1 / (d * 0.55 / H + 1)) * H; };
     const ease = "cubic-bezier(.25, 1, .35, 1)";
@@ -4857,34 +5099,38 @@ window.__appStart = () => {
         ROOT.style.overscrollBehaviorY = ""; ROOT.classList.remove("ptr-busy");
       }, ms + 30);
     }
-    document.addEventListener("touchstart", (e) => {
-      y0 = null;
-      if (busy || e.touches.length !== 1 || window.scrollY > 0 || ROOT.classList.contains("swiping")
-        || document.querySelector(".sheet, .iwrap")) return;
-      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; active = false; dist = 0; ready = false;
-      ROOT.style.overscrollBehaviorY = "none";   // родная «резинка» страницы сверху не мешает нашей
-    }, { passive: true });
-    document.addEventListener("touchmove", (e) => {
-      if (y0 === null) return;
-      const dy = e.touches[0].clientY - y0, dx = e.touches[0].clientX - x0;
-      if (!active) {
-        if (dy > 6 && dy > Math.abs(dx) * 1.5 && window.scrollY <= 0) {
-          active = true; y0 = e.touches[0].clientY - 1;   // без рывка на «мёртвую зону»
-          ROOT.classList.add("ptr-hold");
-          app.style.transition = ""; ptr.style.transition = "";
-        } else if (Math.abs(dx) > 8 || dy < -4) { y0 = null; ROOT.style.overscrollBehaviorY = ""; return; }
-        else return;
-      }
-      dist = rubber(Math.max(0, e.touches[0].clientY - y0));
-      place(dist);
-      const prog = Math.min(1, dist / PULL);
-      ptr.style.opacity = String(Math.min(1, dist / 30));
-      showTicks(prog);
-      if ((prog >= 1) !== ready) { ready = prog >= 1; haptic("light"); }
-    }, { passive: true });
+    Gesture.add({
+      name: "потяни — обновится",
+      prevent: false,
+      start(p) {
+        if (busy || window.scrollY > 0 || ROOT.classList.contains("swiping") || document.querySelector(".sheet, .iwrap")) return null;
+        ROOT.style.overscrollBehaviorY = "none";   // родная «резинка» страницы сверху не мешает нашей
+        return {};
+      },
+      decide(st, dx, dy) {
+        if (dy > 6 && dy > Math.abs(dx) * 1.5 && window.scrollY <= 0) return 1;
+        return Math.abs(dx) > 8 || dy < -4 ? -1 : 0;
+      },
+      claim() {
+        active = true; dist = 0; ready = false;
+        ROOT.classList.add("ptr-hold");
+        app.style.transition = ""; ptr.style.transition = "";
+      },
+      move(st, p) {
+        dist = rubber(Math.max(0, p.dy + 1));
+        place(dist);
+        const prog = Math.min(1, dist / PULL);
+        ptr.style.opacity = String(Math.min(1, dist / 30));
+        showTicks(prog);
+        if ((prog >= 1) !== ready) { ready = prog >= 1; haptic("light"); }
+      },
+      end(st, info) {
+        if (!info.claimed) { ROOT.style.overscrollBehaviorY = ""; return; }
+        if (info.cancelled) ready = false;
+        end();
+      },
+    });
     const end = async () => {
-      if (y0 === null) return;
-      y0 = null;
       if (!active) { ROOT.style.overscrollBehaviorY = ""; return; }
       active = false;
       busy = true;
@@ -4906,16 +5152,13 @@ window.__appStart = () => {
       release(420);
       if (ok) setTimeout(() => toast(view === "stats" ? "Статистика обновлена" : "Расписание обновлено"), 200);
     };
-    document.addEventListener("touchend", end, { passive: true });
-    document.addEventListener("touchcancel", end, { passive: true });
   }
 
   // --- свайп от левого края — назад, как в iOS ---
   // Текущий экран едет за пальцем (с тенью слева), под ним — предыдущий: сдвинут влево, затемнён
   // и выезжает навстречу. Отпустили — решаем по пройденному пути и скорости броска.
   if (!inTG) {
-    let sx = null, sy = 0, dx = 0, mode = 0, lockedPager = null, under = null, dim = null;
-    let vx = 0, lastX = 0, lastT = 0, animating = false;
+    let dx = 0, mode = 0, lockedPager = null, under = null, dim = null, vx = 0, animating = false;
     const W = () => app.getBoundingClientRect().width || innerWidth;
     const unlockPager = () => { if (lockedPager) { lockedPager.style.overflowX = ""; lockedPager = null; } };
     function begin() {
@@ -4946,14 +5189,13 @@ window.__appStart = () => {
     function settle(goBack) {
       animating = true;
       const w = W(), p0 = Math.max(0, Math.min(1, dx / w)), to = goBack ? 1 : 0;
-      const dist = Math.abs(to - p0) * w;
-      // быстрее бросили — быстрее доезжает; но не дольше 0,33 с и не резче 0,14 с
-      const dur = REDUCED ? 1 : Math.max(140, Math.min(330, dist / Math.max(Math.abs(vx), 0.9)));
+      // общая физика доезда (fling): экран продолжает движение со скоростью пальца и мягко встаёт
+      const f = fling((to - p0) * w, vx, { full: w, tMin: 140, tMax: 330 });
+      const dur = REDUCED ? 1 : f.T;
       const t0 = performance.now();
       const step = (now) => {
         const k = Math.min(1, (now - t0) / dur);
-        const e = 1 - Math.pow(1 - k, 3);
-        setP(p0 + (to - p0) * e);
+        setP(p0 + (to - p0) * flingAt(k, f.a));
         if (k < 1) { requestAnimationFrame(step); return; }
         if (!goBack) { cleanup(); animating = false; return; }
         // настоящий прошлый экран рисуем, пока он ещё скрыт снимком, и только потом убираем снимок
@@ -4961,52 +5203,34 @@ window.__appStart = () => {
       };
       requestAnimationFrame(step);
     }
-    const abort = () => {   // жест прерван (второй палец, отмена, сворачивание) — экран на место
-      if (animating) return;
-      const was = sx !== null && mode === 1;
-      sx = null; mode = 0; unlockPager();
-      if (was) { vx = 0; settle(false); } else if (app.style.transform && !ROOT.classList.contains("ptr-busy") && !ROOT.classList.contains("nav-anim")) cleanup();
-    };
-    window.resetEdgeSwipe = () => { if (animating || mode === 1 || ROOT.classList.contains("nav-anim")) return; sx = null; unlockPager(); cleanup(); };
-    document.addEventListener("touchstart", (e) => {
-      if (animating) return;
-      if (sx !== null) { abort(); return; }
-      const t = e.touches[0];
-      if (e.touches.length !== 1 || !stack.length || t.clientX > 24 || document.querySelector(".isheet")
-        || ROOT.classList.contains("ptr-busy") || ROOT.classList.contains("nav-anim")) return;
-      sx = t.clientX; sy = t.clientY; dx = 0; mode = 0; vx = 0; lastX = t.clientX; lastT = performance.now();
-      const pg = e.target.closest && e.target.closest("[data-pager]");
-      if (pg) { lockedPager = pg; pg.style.overflowX = "hidden"; }   // у края — жест «назад», а не листание дней
-    }, { passive: true });
-    document.addEventListener("touchmove", (e) => {
-      if (sx === null) return;
-      const t = e.touches[0];
-      if (!t) return;
-      dx = t.clientX - sx;
-      const dy = t.clientY - sy;
-      if (mode === 0) {
-        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-        if (dx > 0 && dx >= Math.abs(dy)) { mode = 1; begin(); }
-        else { sx = null; unlockPager(); return; }
-      }
-      if (e.cancelable) e.preventDefault();
-      const now = performance.now(), dt = Math.max(1, now - lastT);
-      vx = 0.7 * ((t.clientX - lastX) / dt) + 0.3 * vx;   // px/мс, сглаженно
-      lastX = t.clientX; lastT = now;
-      setP(Math.max(0, dx) / W());
-    }, { passive: false });
-    document.addEventListener("touchend", (e) => {
-      if (e.touches && e.touches.length) return;
-      if (sx === null) return;
-      const was = mode === 1;
-      sx = null; mode = 0; unlockPager();
-      if (!was) return;
-      if (performance.now() - lastT > 80) vx = 0;   // палец остановился перед отпусканием — броска нет
-      const p = Math.max(0, dx) / W();
-      settle(vx > 0.45 || (p > 0.45 && vx > -0.2));
-    }, { passive: true });
-    document.addEventListener("touchcancel", abort, { passive: true });
-    document.addEventListener("visibilitychange", () => { if (document.hidden) abort(); });
+    window.resetEdgeSwipe = () => { if (animating || mode === 1 || ROOT.classList.contains("nav-anim")) return; unlockPager(); cleanup(); };
+    Gesture.add({
+      name: "назад от края",
+      prio: 10,
+      start(p) {
+        if (animating || !stack.length || p.x > 24 || document.querySelector(".isheet")
+          || ROOT.classList.contains("ptr-busy") || ROOT.classList.contains("nav-anim")) return null;
+        dx = 0; mode = 0; vx = 0;
+        const pg = p.target.closest && p.target.closest("[data-pager]");
+        if (pg) { lockedPager = pg; pg.style.overflowX = "hidden"; }   // у края — жест «назад», а не листание дней
+        return { sx: p.x };
+      },
+      decide(st, ddx, ddy) {
+        if (Math.abs(ddx) < 6 && Math.abs(ddy) < 6) return 0;
+        return ddx > 0 && ddx >= Math.abs(ddy) ? 1 : -1;
+      },
+      claim() { mode = 1; begin(); },
+      move(st, p) { dx = p.x - st.sx; setP(Math.max(0, dx) / W()); },
+      end(st, info) {
+        const was = info.claimed;
+        mode = 0; unlockPager();
+        if (!was) return;
+        if (info.cancelled) { vx = 0; settle(false); return; }
+        dx = info.x - st.sx; vx = info.vx;
+        const p = Math.max(0, dx) / W();
+        settle(vx > 0.45 || (p > 0.45 && vx > -0.2));
+      },
+    });
     window.addEventListener("pageshow", () => window.resetEdgeSwipe());
   }
 
