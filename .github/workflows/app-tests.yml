@@ -1,6 +1,10 @@
 # Проверка приложения перед выпуском: те же тесты в двух движках — Chromium и WebKit (движок Safari на iPhone).
 # Запускается, когда скрипт обновления присылает ветку ci/… с новой сборкой; скрипт ждёт итога
 # и ставит новую версию, только если всё прошло. Можно запустить и вручную (Actions → Run workflow).
+#
+# Быстро: браузеры не ставятся каждый раз — берём готовый образ Playwright, где они уже есть
+# (раньше одна установка WebKit занимала до 25 минут), а тесты делим на 3 части, они идут одновременно:
+# 2 движка × 3 части = 6 параллельных заданий (для открытого репозитория это бесплатно).
 name: Проверка приложения
 on:
   push:
@@ -13,32 +17,35 @@ concurrency:
   cancel-in-progress: true
 jobs:
   test:
-    name: ${{ matrix.browser }}
+    name: ${{ matrix.browser }} ${{ matrix.shard }}/3
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.0-noble
+      options: --ipc=host
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, webkit]
+        shard: [1, 2, 3]
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      HOME: /root
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Установить Playwright и браузер
+      - name: Playwright (браузеры уже в образе)
         working-directory: ci
-        run: |
-          npm install --no-audit --no-fund
-          npx playwright install --with-deps ${{ matrix.browser }}
+        run: npm install --no-audit --no-fund
       - name: Тесты
         working-directory: ci
         env:
           BROWSER: ${{ matrix.browser }}
+          SHARD: ${{ matrix.shard }}/3
         run: node run.mjs
       - name: Скриншоты и отчёты при провале
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: out-${{ matrix.browser }}
+          name: out-${{ matrix.browser }}-${{ matrix.shard }}
           path: ci/out
           retention-days: 7
