@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="bdccaa724710">
+<meta name="app-ver" content="3326476e58e8">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1218,6 +1218,9 @@ html[data-theme="dark"] .c1 { background: #3987e5; } html[data-theme="dark"] .c2
 .schips { display: flex; flex-wrap: wrap; gap: 6px; }
 .schips span { padding: 6px 10px; border-radius: 99px; background: var(--surface); border: 1px solid var(--hair); font-size: calc(13px * var(--fs, 1)); font-weight: 600; font-variant-numeric: tabular-nums; }
 .schips span b { color: var(--muted); font-weight: 600; margin-left: 4px; }
+/* сбой из прошлых версий: в текущей не повторялся — приглушён, с зелёной пометкой */
+.dg-row.old > .sic, .dg-row.old .dg-k, .dg-row.old .dg-m, .dg-row.old .dg-cnt { opacity: .5; }
+.dg-pills i.ok { background: var(--tag-bg); color: var(--tag-fg); }
 
 /* ================= Ещё больше iOS 26 =================
    1. «Линза» выбранной вкладки — отдельный кусок стекла, который переезжает между вкладками
@@ -1471,13 +1474,20 @@ html.glass .row.past .cc { background: rgba(255, 255, 255, .05); box-shadow: ins
 html.glass[data-theme="light"] .row.past .cc { background: #F3F4F7; box-shadow: inset 0 0 0 1px rgba(20, 30, 60, .05); }
 html.glass .offline.stale { background: linear-gradient(160deg, rgba(255, 181, 71, .28), rgba(255, 181, 71, .10)); }
 
-/* выбранный день — белая «капля», как в концепте */
-html.glass .days .pill { background: rgba(255, 255, 255, .94); box-shadow: 0 6px 18px rgba(0, 0, 0, .22); }
-html.glass .days-on-in { color: #1A1F4D; }
-html.glass .days-on .dots i { background: #1A1F4D; }
-html.glass[data-theme="light"] .days .pill { background: #1A1F4D; }
-html.glass[data-theme="light"] .days-on-in { color: #FFFFFF; }
-html.glass[data-theme="light"] .days-on .dots i { background: #FFFFFF; }
+/* выбранный день — стеклянная линза, как у вкладок внизу: светлый блик сверху, тонкая кромка, фон чуть просвечивает */
+html.glass .days .pill {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .30), rgba(255, 255, 255, .10) 55%, rgba(255, 255, 255, .16));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .65), inset 0 0 0 1px rgba(255, 255, 255, .16), inset 0 -6px 14px rgba(255, 255, 255, .06), 0 8px 20px rgba(0, 0, 0, .45);
+  -webkit-backdrop-filter: blur(8px) saturate(1.8); backdrop-filter: blur(8px) saturate(1.8);
+}
+html.glass .days-on-in { color: #FFFFFF; }
+html.glass .days-on .dots i { background: #FFFFFF; }
+html.glass[data-theme="light"] .days .pill {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(255, 255, 255, .72));
+  box-shadow: inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(20, 30, 60, .07), 0 6px 16px rgba(20, 30, 60, .16);
+}
+html.glass[data-theme="light"] .days-on-in { color: #0A6CFF; }
+html.glass[data-theme="light"] .days-on .dots i { background: #0A6CFF; }
 
 /* «Сейчас»: стекло с подсветкой цветом пары */
 html.glass .hero {
@@ -1578,6 +1588,15 @@ html.glass .a3g .o-arrow::after { border-color: var(--o-ink); }
 /* плашка «Установи на главный экран» — тоже стекло */
 html.glass .ibar { background: rgba(28, 30, 38, .82); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 0 0 1px rgba(255, 255, 255, .08), 0 16px 36px rgba(0, 0, 0, .45); }
 html.glass[data-theme="light"] .ibar { background: rgba(255, 255, 255, .9); box-shadow: inset 0 0 0 1px rgba(20, 30, 60, .06), 0 14px 30px rgba(40, 50, 110, .14); }
+
+/* шторка под часами (установленное приложение, полный экран) — на 8px ниже: закрывает щель между ней и шапкой недели.
+   В щели цветная тень фона просвечивала без затемнения и выглядела синей полоской */
+html.glass .topveil { height: calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 8px); }
+
+/* блик на линзе дня: вместо «капли» над подписью — мягкий отсвет по всей верхней половине, как на стекле */
+html.glass .days .pill::after { left: 1px; right: 1px; top: 1px; height: 48%; border-radius: 17px 17px 40% 40% / 17px 17px 12px 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .20), rgba(255, 255, 255, 0)); }
+html.glass[data-theme="light"] .days .pill::after { background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0)); }
 </style>
 </head>
 <body>
@@ -1938,7 +1957,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.6.4";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.6.7";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2902,14 +2921,21 @@ window.__appStart = () => {
       return `${+d.slice(8, 10)} ${MSHORT[+d.slice(5, 7) - 1]}`; };
     const issues = g.issues || [];
     const errs = n(w.err), janks = n(w.jank) + n(w.slow);
+    // текущая версия (сервер берёт её из выложенной страницы): сбои в ней — главное, старые — для истории
+    const cur = g.cur || "", nw = g.now || null;
+    const errsNow = nw ? n(nw.err) : errs, janksNow = nw ? n(nw.jank) + n(nw.slow) : janks;
     const last = issues.filter((x) => x.k !== "dbl").reduce((a, x) => (x.last > a ? x.last : a), "");
     const devs = (k) => issues.filter((x) => x.k === k).reduce((a, x) => a + n(x.dev), 0);
     // главная карточка: состояние одним словом + столбики за 14 дней
-    const st = errs ? ["bad", "Есть ошибки", IC.err] : janks ? ["warn", "Есть рывки", IC.jank] : ["ok", "Всё работает", IC.ok];
+    const st = errsNow ? ["bad", "Есть ошибки", IC.err] : janksNow ? ["warn", "Есть рывки", IC.jank]
+      : ["ok", errs || janks ? `В ${cur || "текущей версии"} сбоев нет` : "Всё работает", IC.ok];
     const parts = [];
     if (errs) parts.push(`${errs} ${plural(errs, "ошибка", "ошибки", "ошибок")} на ${devs("err")} ${plural(devs("err"), "устройстве", "устройствах", "устройствах")}`);
     if (janks) parts.push(`${janks} ${plural(janks, "рывок", "рывка", "рывков")}`);
-    const sub = parts.length ? `${parts.join(" и ")} · последний ${ago(last)}` : "Ни ошибок, ни рывков ни у кого за неделю";
+    const nowTxt = cur && nw && (errs || janks) ? (errsNow || janksNow
+      ? ` · в ${cur}: ${[errsNow ? `${errsNow} ${plural(errsNow, "ошибка", "ошибки", "ошибок")}` : "", janksNow ? `${janksNow} ${plural(janksNow, "рывок", "рывка", "рывков")}` : ""].filter(Boolean).join(", ")}`
+      : " · все — в прошлых версиях") : "";
+    const sub = parts.length ? `${parts.join(" и ")} за неделю${nowTxt} · последний ${ago(last)}` : "Ни ошибок, ни рывков ни у кого за неделю";
     const days = (g.daily || []).slice(-14), top = Math.max(1, ...days.map((d) => n(d.err) + n(d.jank)));
     const W = 280, H = 40, gap = 4, bw = (W - gap * 13) / 14;
     const bars = days.map((d, i) => {
@@ -2919,7 +2945,7 @@ window.__appStart = () => {
       return (he ? `<rect class="de" x="${x}" y="${(H - he).toFixed(1)}" width="${bw.toFixed(1)}" height="${he.toFixed(1)}" rx="2.5"/>` : "") +
         (hj ? `<rect class="dj" x="${x}" y="${(H - he - (he ? 2 : 0) - hj).toFixed(1)}" width="${bw.toFixed(1)}" height="${hj.toFixed(1)}" rx="2.5"/>` : "");
     }).join("");
-    if (st[0] === "ok") {
+    if (st[0] === "ok" && !errs && !janks) {
       return `<h2 class="sec">Ошибки и сбои</h2><div class="dg-hero ok"><div class="dg-head"><span class="sic ${st[2][0]}" aria-hidden="true">${st[2][1]}</span>
         <span class="dg-ht"><b>${st[1]}</b></span></div></div>`;
     }
@@ -2938,9 +2964,11 @@ window.__appStart = () => {
         const ic = IC[it.k] || IC.dbl;
         const [p, m] = String(it.p || "").split(".");
         const extra = it.k === "jank" ? `до ${n(it.x)} мс` : it.k === "slow" ? `до ${(n(it.x) / 1000).toFixed(1)} с` : "";
-        return `<div class="dg-row"><span class="sic ${ic[0]}" aria-hidden="true">${ic[1]}</span>
+        const old = cur && nw && !it.cur;   // в текущей версии этот сбой ни разу не повторился
+        const ver = it.lv || it.v;
+        return `<div class="dg-row${old ? " old" : ""}"><span class="sic ${ic[0]}" aria-hidden="true">${ic[1]}</span>
           <span class="dg-body"><span class="dg-k">${ic[2]}${extra ? ` · ${extra}` : ""} · ${ago(it.last)}</span><span class="dg-m">${esc(it.m)}</span>
-            <span class="dg-pills">${it.v ? `<i>${esc(it.v)}</i>` : ""}${PL[p] ? `<i>${PL[p]}</i>` : ""}${MD[m] ? `<i>${MD[m]}</i>` : ""}</span></span>
+            <span class="dg-pills">${old ? `<i class="ok">в ${esc(cur)} не было</i>` : ""}${ver ? `<i>${esc(ver)}</i>` : ""}${PL[p] ? `<i>${PL[p]}</i>` : ""}${MD[m] ? `<i>${MD[m]}</i>` : ""}</span></span>
           <span class="dg-cnt"><b>×${n(it.n)}</b><span>${n(it.dev)} ${plural(n(it.dev), "устр.", "устр.", "устр.")}</span></span></div>`;
       }).join("")}</div>`;
     }
