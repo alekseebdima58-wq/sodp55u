@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="010726221729">
+<meta name="app-ver" content="bdccaa724710">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1418,6 +1418,166 @@ html[data-theme="light"] .a2 .o-note { background: rgba(255, 255, 255, .9); box-
 @media (prefers-reduced-motion: reduce) { .onb-art * { animation: none !important; } }
 @media (max-height: 640px) { .onb-art { height: 170px; } .onb-p h2 { margin-top: 16px; font-size: calc(23px * var(--fs, 1)); } .onb-p p { font-size: calc(15px * var(--fs, 1)); line-height: calc(21px * var(--fs, 1)); } }
 .onb-next:focus { outline: none; } .onb-next:focus-visible { box-shadow: 0 0 0 3px rgba(var(--acc-rgb), .4), 0 8px 24px rgba(var(--acc-rgb), .35); }
+/* карточка-демо: подпись вида пары и внутренняя обёртка (в обычном оформлении — просто текст справа от полоски) */
+.a1 .o-in { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.a1 .o-in b { display: flex; align-items: center; gap: 8px; }
+.a1 .o-in em { font-style: normal; font-size: calc(11px * var(--fs, 1)); font-weight: 700; padding: 2px 7px; border-radius: 6px; color: var(--muted); background: var(--surface2); }
+.a1 .o-in span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+/* ---------- оформление «Стекло»: цветной фон, полупрозрачные карточки с бликом ---------- */
+/* включается классом html.glass — остальная тема (цвета пар, жесты, размеры) не меняется */
+html.glass[data-theme="dark"] {
+  --bg: #000000; --surface: rgba(255, 255, 255, .07); --surface2: rgba(255, 255, 255, .11);
+  --hair: rgba(255, 255, 255, .13);
+  --g-a: #1E3A8A; --g-b: #3B1E5E; --g-c: #0B3B4A; --g-op: .55;
+  --g-card: linear-gradient(160deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .04));
+  --g-edge: inset 0 1px 0 rgba(255, 255, 255, .30), inset 0 0 0 1px rgba(255, 255, 255, .09);
+  --g-drop: 0 14px 34px rgba(0, 0, 0, .4);
+  --g-bar: rgba(0, 0, 0, .9);
+}
+html.glass[data-theme="light"] {
+  --bg: #FFFFFF; --surface: rgba(255, 255, 255, .6); --surface2: rgba(255, 255, 255, .75);
+  --hair: rgba(255, 255, 255, .7);
+  --g-a: #DCE6FF; --g-b: #EFE3FF; --g-c: #D9F2F7; --g-op: .8;
+  --g-card: linear-gradient(160deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, .55));
+  --g-edge: inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(20, 30, 60, .06);
+  --g-drop: 0 12px 30px rgba(40, 50, 110, .10);
+  --g-bar: rgba(255, 255, 255, .92);
+}
+
+/* фон: чёрный (белый) с еле заметными цветными отсветами по краям; стоит на месте при прокрутке */
+html.glass { background: var(--bg); }
+html.glass body { background: transparent; }
+html.glass body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(60% 40% at 12% 8%, var(--g-a) 0%, transparent 70%),
+    radial-gradient(55% 35% at 100% 38%, var(--g-b) 0%, transparent 70%),
+    radial-gradient(70% 45% at 25% 100%, var(--g-c) 0%, transparent 70%);
+  opacity: var(--g-op);
+}
+
+/* шапка недели: матовое стекло — фон и карточки под ней размываются */
+html.glass .sbar { background: transparent; isolation: isolate; }
+/* размытие — на отдельном слое под содержимым шапки: так оно не конфликтует со стеклянными кнопками внутри */
+html.glass .sbar::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--g-bar);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6); }
+html.glass .sbar.stuck { box-shadow: inset 0 -1px 0 var(--hair); }
+
+/* стеклянные поверхности */
+html.glass :is(.days, .card, .cc, .tcard, .wbtn, .icon-btn, .offline) {
+  background: var(--g-card); border-color: transparent; box-shadow: var(--g-edge), var(--g-drop);
+}
+html.glass .row.past .cc { background: rgba(255, 255, 255, .05); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
+html.glass[data-theme="light"] .row.past .cc { background: #F3F4F7; box-shadow: inset 0 0 0 1px rgba(20, 30, 60, .05); }
+html.glass .offline.stale { background: linear-gradient(160deg, rgba(255, 181, 71, .28), rgba(255, 181, 71, .10)); }
+
+/* выбранный день — белая «капля», как в концепте */
+html.glass .days .pill { background: rgba(255, 255, 255, .94); box-shadow: 0 6px 18px rgba(0, 0, 0, .22); }
+html.glass .days-on-in { color: #1A1F4D; }
+html.glass .days-on .dots i { background: #1A1F4D; }
+html.glass[data-theme="light"] .days .pill { background: #1A1F4D; }
+html.glass[data-theme="light"] .days-on-in { color: #FFFFFF; }
+html.glass[data-theme="light"] .days-on .dots i { background: #FFFFFF; }
+
+/* «Сейчас»: стекло с подсветкой цветом пары */
+html.glass .hero {
+  background: linear-gradient(160deg, rgba(var(--k-rgb), .34), rgba(255, 255, 255, .06) 70%);
+  border-color: transparent; box-shadow: var(--g-edge), 0 22px 44px -18px rgba(var(--k-rgb), .7);
+}
+html.glass[data-theme="light"] .hero { background: linear-gradient(160deg, rgba(var(--k-rgb), .30), rgba(255, 255, 255, .62) 70%); }
+html.glass .row.live .cc, html.glass .row.live .card { background: linear-gradient(160deg, rgba(var(--k-rgb), .26), rgba(255, 255, 255, .06)); }
+
+/* панель вкладок: прозрачнее, чтобы фон просвечивал */
+html.glass .tabs { background: rgba(255, 255, 255, .14); }
+html.glass[data-theme="light"] .tabs { background: rgba(255, 255, 255, .5); }
+html.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
+
+/* карточки пар — цветное стекло под вид занятия: лекция зелёная, практика янтарная, лаба фиолетовая */
+html.glass .row:not(.past) :is(.card, .cc) {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(var(--k-rgb), .30), rgba(var(--k-rgb), 0) 60%),
+    linear-gradient(160deg, rgba(var(--k-rgb), .16), rgba(255, 255, 255, .04));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .30), inset 0 0 0 1px rgba(var(--k-rgb), .32), 0 14px 30px -14px rgba(var(--k-rgb), .55);
+}
+html.glass .row.live :is(.card, .cc) {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(var(--k-rgb), .42), rgba(var(--k-rgb), 0) 65%),
+    linear-gradient(160deg, rgba(var(--k-rgb), .24), rgba(255, 255, 255, .05));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38), inset 0 0 0 1px rgba(var(--k-rgb), .5), 0 16px 34px -12px rgba(var(--k-rgb), .7);
+}
+html.glass[data-theme="light"] .row:not(.past) :is(.card, .cc) {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(var(--k-rgb), .22), rgba(var(--k-rgb), 0) 60%),
+    linear-gradient(160deg, rgba(255, 255, 255, .80), rgba(var(--k-rgb), .10));
+  box-shadow: inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(var(--k-rgb), .28), 0 12px 26px -14px rgba(var(--k-rgb), .45);
+}
+html.glass[data-theme="light"] .row.live :is(.card, .cc) {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(var(--k-rgb), .32), rgba(var(--k-rgb), 0) 65%),
+    linear-gradient(160deg, rgba(255, 255, 255, .78), rgba(var(--k-rgb), .16));
+}
+
+/* ---------- знакомство при первом запуске — в том же стекле ---------- */
+html.glass .onb { background: var(--bg); }
+html.glass[data-theme="dark"] .onb { --o-btn: #FFFFFF; --o-btn-fg: #000000; --o-ink: #FFFFFF; }
+html.glass[data-theme="light"] .onb { --o-btn: #111522; --o-btn-fg: #FFFFFF; --o-ink: #111522; }
+/* у каждой страницы своё цветное свечение за картинкой: янтарь, синий, фиолетовый — уезжает вместе со страницей */
+html.glass .onb-p { position: relative; }
+html.glass .onb-p::before { content: ""; position: absolute; left: 50%; top: 50%; width: 420px; height: 420px; margin: -330px 0 0 -210px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(var(--o-rgb), .38), rgba(var(--o-rgb), 0)); z-index: 0; }
+html.glass[data-theme="light"] .onb-p::before { background: radial-gradient(closest-side, rgba(var(--o-rgb), .22), rgba(var(--o-rgb), 0)); }
+html.glass .onb-p > * { position: relative; z-index: 1; }
+html.glass .onb-art {
+  border-radius: 34px;
+  background: radial-gradient(120% 90% at 20% 0%, rgba(var(--o-rgb), .30), rgba(var(--o-rgb), 0) 62%), linear-gradient(160deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .03));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 0 0 1px rgba(255, 255, 255, .10), 0 30px 60px -24px rgba(var(--o-rgb), .65);
+}
+html.glass[data-theme="light"] .onb-art {
+  background: radial-gradient(120% 90% at 20% 0%, rgba(var(--o-rgb), .22), rgba(var(--o-rgb), 0) 62%), linear-gradient(160deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .7));
+  box-shadow: inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(20, 30, 60, .06), 0 26px 50px -24px rgba(var(--o-rgb), .55);
+}
+html.glass .onb-p h2 { color: var(--o-ink); }
+html.glass .onb-skip { background: rgba(255, 255, 255, .08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18); color: var(--text2); }
+html.glass[data-theme="light"] .onb-skip { background: rgba(20, 30, 60, .05); box-shadow: none; }
+html.glass .onb-link { color: var(--o-ink); background: linear-gradient(160deg, rgba(var(--o-rgb), .30), rgba(var(--o-rgb), .12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 0 0 1px rgba(var(--o-rgb), .45); }
+html.glass .onb-dots i { background: rgba(127, 127, 127, .35); }
+html.glass .onb-dots i.on { background: var(--o-ink); }
+html.glass .onb-next { background: var(--o-btn); color: var(--o-btn-fg); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 10px 30px rgba(127, 127, 127, .25); }
+
+/* 1: строка дней — стекло с белой каплей; карточки пар — цветное стекло по виду */
+html.glass .a1 { --on-accent: var(--o-btn-fg); }
+html.glass .a1 .o-days { background: rgba(255, 255, 255, .08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2); }
+html.glass[data-theme="light"] .a1 .o-days { background: rgba(20, 30, 60, .05); box-shadow: none; }
+html.glass .a1 .o-pill { background: var(--o-btn); box-shadow: 0 4px 12px rgba(0, 0, 0, .25); }
+html.glass .a1 .o-view { top: 62px; height: 140px; }
+html.glass .a1 .o-card { padding: 0 16px; align-items: stretch; }
+html.glass .a1 .o-card::before { display: none; }
+html.glass .a1 .o-card > * { margin-left: 0; }
+html.glass .a1 .o-card.lab { --k-rgb: var(--lab-rgb); --k-fg: var(--lab-fg); } html.glass .a1 .o-card.prac { --k-rgb: var(--prac-rgb); --k-fg: var(--prac-fg); }
+html.glass .a1 .o-card.lec { --k-rgb: var(--lec-rgb); --k-fg: var(--lec-fg); }
+html.glass .a1 .o-in { height: 100%; box-sizing: border-box; padding: 16px 18px; border-radius: 24px; justify-content: center;
+  background: radial-gradient(120% 140% at 0% 0%, rgba(var(--k-rgb), .38), rgba(var(--k-rgb), 0) 62%), linear-gradient(160deg, rgba(var(--k-rgb), .18), rgba(255, 255, 255, .04));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .32), inset 0 0 0 1px rgba(var(--k-rgb), .45); }
+html.glass[data-theme="light"] .a1 .o-in { background: radial-gradient(120% 140% at 0% 0%, rgba(var(--k-rgb), .26), rgba(var(--k-rgb), 0) 62%), linear-gradient(160deg, rgba(255, 255, 255, .9), rgba(var(--k-rgb), .10));
+  box-shadow: inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(var(--k-rgb), .35); }
+html.glass .a1 .o-in em { color: var(--k-fg); background: rgba(var(--k-rgb), .18); }
+
+/* 2: уведомления — как на экране блокировки, со свечением */
+html.glass .a2 .o-note { background: linear-gradient(160deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .06));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), inset 0 0 0 1px rgba(255, 255, 255, .08), 0 12px 26px -10px rgba(var(--o-rgb), .55); }
+html.glass[data-theme="light"] .a2 .o-note { background: rgba(255, 255, 255, .92); box-shadow: inset 0 0 0 1px rgba(20, 30, 60, .05), 0 12px 26px -12px rgba(var(--o-rgb), .5); }
+html.glass .a2 .o-note img { box-shadow: 0 4px 12px rgba(var(--o-rgb), .45); }
+
+/* 3: экран «Домой» — иконки с бликом, наша светится */
+html.glass .a3 .o-app { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35); }
+html.glass .a3 .o-me { box-shadow: 0 0 0 2px rgba(255, 255, 255, .8), 0 8px 26px rgba(var(--o-rgb), .8); }
+html.glass .a3g .o-arrow { background: rgba(var(--o-rgb), .2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 0 0 1px rgba(var(--o-rgb), .45); }
+html.glass .a3g .o-arrow::after { border-color: var(--o-ink); }
+
+/* плашка «Установи на главный экран» — тоже стекло */
+html.glass .ibar { background: rgba(28, 30, 38, .82); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 0 0 1px rgba(255, 255, 255, .08), 0 16px 36px rgba(0, 0, 0, .45); }
+html.glass[data-theme="light"] .ibar { background: rgba(255, 255, 255, .9); box-shadow: inset 0 0 0 1px rgba(20, 30, 60, .06), 0 14px 30px rgba(40, 50, 110, .14); }
 </style>
 </head>
 <body>
@@ -1778,7 +1938,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.6.3";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.6.4";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2042,14 +2202,18 @@ window.__appStart = () => {
     if (inTG && (tg.colorScheme === "light" || tg.colorScheme === "dark")) return tg.colorScheme;
     return window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   }
+  // Оформление «Стекло» — основное; ?glass=0 показывает прежний вид (только для проверки)
+  function glassOn() { return !/[?&]glass=0\b/.test(location.search); }
   function applyTheme() {
     const t = effectiveTheme();
     ROOT.dataset.theme = t;
+    ROOT.classList.toggle("glass", glassOn());
     const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) metaTheme.setAttribute("content", BG[t]);
+    const bg = BG[t];   // у «Стекла» та же основа (чёрная/белая), так что шапка Telegram совпадает в обоих оформлениях
+    if (metaTheme) metaTheme.setAttribute("content", bg);
     if (inTG && tgAtLeast("6.1")) {
-      try { tg.setHeaderColor(tgAtLeast("6.9") ? BG[t] : "bg_color"); } catch (e) { /* старый клиент */ }
-      try { tg.setBackgroundColor(BG[t]); } catch (e) { /* старый клиент */ }
+      try { tg.setHeaderColor(tgAtLeast("6.9") ? bg : "bg_color"); } catch (e) { /* старый клиент */ }
+      try { tg.setBackgroundColor(bg); } catch (e) { /* старый клиент */ }
     }
   }
 
@@ -3689,7 +3853,7 @@ window.__appStart = () => {
   function videoSrc(os) {
     let av1 = "";
     try { av1 = document.createElement("video").canPlayType('video/webm; codecs="av01.0.05M.08"'); } catch (e) { /* старый браузер */ }
-    return os === "android" && av1 ? "media/install-android.webm?v=2" : `media/install-${os}.mp4?v=2`;
+    return os === "android" && av1 ? "media/install-android.webm?v=3" : `media/install-${os}.mp4?v=3`;
   }
   // iPhone: если страница открылась во встроенном окне (из Telegram и т. п.), там нет «На экран „Домой“» — переносим в настоящий Safari
   function safariHintHTML(dev) {
@@ -3705,7 +3869,7 @@ window.__appStart = () => {
         `<button data-iv="${v}" class="${v === os ? "on" : ""}" aria-pressed="${v === os}">${l}</button>`).join("")}</div>`;
     const steps = VSTEPS[os].map(([t, s], i) => `<li data-t="${t}" class="${i ? "" : "on"}"><b>${i + 1}</b><span>${s}</span></li>`).join("");
     return `<div class="ivid" data-ivid>${dev ? browserNoteHTML(dev) : desktopNoteHTML()}${seg}
-      <div class="vframe"><video data-src="${videoSrc(os)}" poster="media/install-${os}.jpg?v=2" muted loop playsinline preload="none"
+      <div class="vframe"><video data-src="${videoSrc(os)}" poster="media/install-${os}.jpg?v=3" muted loop playsinline preload="none"
         width="540" height="960" aria-label="Видео: как установить расписание на главный экран"></video>
         <button class="vplay" data-vplay aria-label="Смотреть видео">${I.play}</button></div>
       <ol class="vsteps" aria-label="Шаги">${steps}</ol>${safariHintHTML(dev)}</div>`;
@@ -5145,33 +5309,33 @@ window.__appStart = () => {
   function onbPagesHTML() {
     const grp = esc((index && index.group) || "СОДП-55у");
     const icon = `icons/icon-192${iconStyle && iconStyle() === "dark" ? "-dark" : ""}.png`;
-    const p1 = `<section class="onb-p" aria-label="Шаг 1 из 3">
+    const p1 = `<section class="onb-p" style="--o-rgb: var(--prac-rgb)" aria-label="Шаг 1 из 3">
       <div class="onb-art a1" aria-hidden="true">
         <div class="o-days">${["Пн", "Вт", "Ср", "Чт", "Пт"].map((d, i) => `<span class="o-d${i === 1 ? " on" : ""}">${d}</span>`).join("")}<i class="o-pill"></i></div>
-        <div class="o-view"><div class="o-track">${[["08:30", "Теория дискретных устройств", "lab"], ["10:10", "Рельсовые цепи", "prac"], ["12:10", "Теория передачи сигналов", "lec"]]
-          .map(([t, s, k]) => `<div class="o-card ${k}"><b>${t}</b><span>${s}</span><small>ауд. 1301</small></div>`).join("")}</div></div>
+        <div class="o-view"><div class="o-track">${[["08:30", "Теория дискретных устройств", "lab", "Лабораторная", "ауд. 1204"], ["10:10", "Теория передачи сигналов", "prac", "Практика", "ауд. 1206"], ["12:10", "Основы схемотехники", "lec", "Лекция", "ауд. 2303"]]
+          .map(([t, s, k, l, r]) => `<div class="o-card ${k}"><div class="o-in"><b>${t}<em>${l}</em></b><span>${s}</span><small>${r}</small></div></div>`).join("")}</div></div>
         <i class="o-finger"></i></div>
-      <h2>Листай дни пальцем</h2>
-      <p>Свайп влево или вправо — соседний день, нажатие на день сверху — сразу к нему. Нажми на пару — откроются аудитория, преподаватель и форма контроля.</p></section>`;
-    const p2 = `<section class="onb-p" aria-label="Шаг 2 из 3">
+      <h2>Переключение дней</h2>
+      <p>Проведите влево или вправо, чтобы перейти к соседнему дню. Цвет карточки обозначает вид занятия: зелёный — лекция, жёлтый — практика, фиолетовый — лабораторная работа.</p></section>`;
+    const p2 = `<section class="onb-p" style="--o-rgb: var(--acc-rgb)" aria-label="Шаг 2 из 3">
       <div class="onb-art a2" aria-hidden="true">
-        <div class="o-note"><img src="${icon}" alt=""><div><b>${grp} · сейчас</b><span>Скоро пара · Рельсовые цепи</span><small>ауд. 1301 · через 15 мин</small></div></div>
-        <div class="o-note o2"><img src="${icon}" alt=""><div><b>${grp} · 08:00</b><span>Сегодня 3 пары · 10:10 – 15:25</span><small>утренняя сводка</small></div></div></div>
-      <h2>Напоминания о парах</h2>
-      <p>За 15 минут до пары, сводка на день утром и сообщение, если расписание поменялось. Включается в Настройках за минуту.</p>
+        <div class="o-note"><img src="${icon}" alt=""><div><b>${grp} · сейчас</b><span>Скоро пара · ауд. 2303</span><small>Схемотехника · через 15 мин</small></div></div>
+        <div class="o-note o2"><img src="${icon}" alt=""><div><b>${grp} · 08:00</b><span>Сегодня 4 пары</span><small>8:30 – 15:25 · утренняя сводка</small></div></div></div>
+      <h2>Напоминания о занятиях</h2>
+      <p>Уведомление за 15 минут до начала пары, утренняя сводка на день и сообщение об изменениях в расписании.</p>
       <button class="onb-link" data-onb="notif">Настроить уведомления</button></section>`;
     const p3 = STANDALONE
-      ? `<section class="onb-p" aria-label="Шаг 3 из 3">
+      ? `<section class="onb-p" style="--o-rgb: var(--lab-rgb)" aria-label="Шаг 3 из 3">
       <div class="onb-art a3g" aria-hidden="true">
-        <div class="o-g"><i class="o-arrow down"></i><span>Потяни вниз —<br>обновить</span></div>
-        <div class="o-g"><i class="o-arrow right"></i><span>Свайп от края —<br>назад</span></div></div>
-      <h2>Жесты, как в iPhone</h2>
-      <p>Потяни экран вниз, чтобы проверить свежее расписание. Свайп от левого края возвращает на прошлый экран.</p></section>`
-      : `<section class="onb-p" aria-label="Шаг 3 из 3">
+        <div class="o-g"><i class="o-arrow down"></i><span>Вниз —<br>обновить</span></div>
+        <div class="o-g"><i class="o-arrow right"></i><span>От края —<br>назад</span></div></div>
+      <h2>Управление жестами</h2>
+      <p>Потяните экран вниз, чтобы обновить расписание. Проведите от левого края, чтобы вернуться назад.</p></section>`
+      : `<section class="onb-p" style="--o-rgb: var(--lab-rgb)" aria-label="Шаг 3 из 3">
       <div class="onb-art a3" aria-hidden="true"><div class="o-home">${Array.from({ length: 11 }, (_, i) => `<i class="o-app c${i % 6}"></i>`).join("")}<img class="o-me" src="${icon}" alt=""></div></div>
-      <h2>Ярлык на экране «Домой»</h2>
-      <p>Открывается как приложение — сразу, без Telegram, работает без интернета и присылает уведомления прямо на телефон.</p>
-      <button class="onb-link" data-onb="install">Как добавить</button></section>`;
+      <h2>Установка на экран «Домой»</h2>
+      <p>Расписание открывается с иконки как отдельное приложение и доступно без подключения к интернету.</p>
+      <button class="onb-link" data-onb="install">Инструкция по установке</button></section>`;
     return p1 + p2 + p3;
   }
   function showOnboarding() {
