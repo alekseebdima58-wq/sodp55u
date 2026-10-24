@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="2477c379e45f">
+<meta name="app-ver" content="010726221729">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1654,6 +1654,17 @@ window.__appStart = () => {
       el.addEventListener("touchcancel", tEnd, { passive: true, capture: true });
     }
     const VEL_MS = 80, STOP_MS = 90;
+    // Время касания. Берём e.timeStamp — момент, когда палец коснулся/сдвинулся: если телефон в эту
+    // секунду чем-то занят, обработчик запустится позже, но скорость броска посчитается верно
+    // (по времени обработчика быстрый бросок при подтормаживании выглядел остановкой и терялся).
+    // Неправдоподобную метку (0, другая шкала времени у синтетических касаний) заменяем временем
+    // обработки; и время не идёт назад.
+    function evTime(e, prev) {
+      const pn = performance.now(), ts = e && e.timeStamp;
+      let t = ts > 0 && Math.abs(pn - ts) < 1000 ? ts : pn;
+      if (prev && t < prev.t) t = prev.t;
+      return t;
+    }
     function velocity(now) {
       if (!last || now - last.t > STOP_MS) return { vx: 0, vy: 0 };
       const h = hist.filter((p) => last.t - p.t <= VEL_MS);
@@ -1676,11 +1687,7 @@ window.__appStart = () => {
     function onStart(e) {
       if (e.touches.length !== 1) { cancelAll(); return; }
       if (live.length) cancelAll();
-      // Use the time at which the handler actually ran.  Chromium's
-      // Input.dispatchTouchEvent and WebKit's synthetic TouchEvent may give
-      // every event the same (or a zero) timeStamp; using it makes a short,
-      // fast edge throw look like a slow drag with zero velocity.
-      const t = e.touches[0], now = performance.now();
+      const t = e.touches[0], now = evTime(e, null);
       sx = t.clientX; sy = t.clientY; hist = [{ t: now, x: sx, y: sy }]; last = hist[0];
       bindTarget(e.target && e.target.addEventListener ? e.target : null);
       const p = { x: sx, y: sy, target: e.target, e };
@@ -1694,7 +1701,7 @@ window.__appStart = () => {
       if (!live.length) return;
       const t = e.touches[0];
       if (!t) return;
-      const now = performance.now();
+      const now = evTime(e, last);
       last = { t: now, x: t.clientX, y: t.clientY };
       hist.push(last);
       while (hist.length > 2 && now - hist[0].t > 120) hist.shift();
@@ -1719,7 +1726,7 @@ window.__appStart = () => {
     function onEnd(e) {
       if (e.touches && e.touches.length) return;
       if (!live.length) return;
-      const now = performance.now();
+      const now = evTime(e, last);
       if (e.type === "touchcancel") { cancelAll(); return; }
       // палец мог сдвинуться ещё немного между последним движением и отпусканием — учитываем
       const ct = e.changedTouches && e.changedTouches[0];
@@ -1771,7 +1778,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.6.0";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.6.3";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4390,7 +4397,7 @@ window.__appStart = () => {
     if (!mem.g || mem.g._offline) return;
     mem.g._offline = true;
     loadedAt = 0;
-    if (view === "schedule" || view === "teacher") render();
+    if (view === "schedule" || view === "teacher") { const y = scrollY; render(); scrollTo(0, y); }
   });
   window.addEventListener("online", () => { if (mem.g && mem.g._offline) refreshNow(); });
   setInterval(() => { if (mem.g && mem.g._offline && !document.hidden) refreshNow(); }, 60 * 1000);
@@ -4583,11 +4590,11 @@ window.__appStart = () => {
     // Keep a transform base as the authoritative page position.
     pgBaseX = -left;
     pg.scrollLeft = 0;
-    const base = snap(pgBaseX);
-    const t = base ? `translate3d(${base}px,0,0)` : "";
+    // текущий сдвиг пальца/анимации (pgX) сохраняем — иначе, если раскладка поменяется посреди
+    // движения, день прыгнет на место
+    const total = snap(pgBaseX + pgX);
+    const t = total ? `translate3d(${total}px,0,0)` : "";
     pagerPages(pg).forEach((el) => { el.style.transform = t; });
-    // A second assignment after layout settles fixes Safari's delayed flex
-    // measurement without affecting Chromium.
   }
   function curPos() {
     if (view !== "schedule" && view !== "teacher") return null;
