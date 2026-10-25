@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="cfb7a6c71e69">
+<meta name="app-ver" content="b61029abc1db">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1604,6 +1604,42 @@ html.glass body::before {
   -webkit-mask-image: linear-gradient(180deg, transparent 0, transparent calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 8px), #000 calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 160px));
   mask-image: linear-gradient(180deg, transparent 0, transparent calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 8px), #000 calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 160px));
 }
+
+/* шапка недели без резкой нижней границы: затемнение мягко сходит на нет к низу (и чуть ниже шапки),
+   а само стекло светлее — на телефоне под ним размытие, текст ленты всё равно не читается */
+html.glass[data-theme="dark"] { --g-bar: rgba(0, 0, 0, .72); }
+html.glass[data-theme="light"] { --g-bar: rgba(255, 255, 255, .78); }
+html.glass .sbar::before { bottom: -14px;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 30px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 30px), transparent); }
+html.glass .sbar.stuck { box-shadow: none; }
+
+/* ---------- фон-тень для слоёв, которые должны его повторять (иначе на них он пропадает рывком) ---------- */
+/* те же три пятна, что у body::before, — уже с прозрачностью (--g-op) и с тем же плавным проявлением под часами */
+html.glass {
+  --g-veil: calc(var(--safe-top, 0px) + var(--top-gap, 0px));
+  --g-img:
+    linear-gradient(180deg, var(--bg) calc(var(--g-veil) + 8px), transparent calc(var(--g-veil) + 160px)),
+    radial-gradient(60% 40% at 12% 8%, color-mix(in srgb, var(--g-a) calc(var(--g-op) * 100%), transparent) 0%, transparent 70%),
+    radial-gradient(55% 35% at 100% 38%, color-mix(in srgb, var(--g-b) calc(var(--g-op) * 100%), transparent) 0%, transparent 70%),
+    radial-gradient(70% 45% at 25% 100%, color-mix(in srgb, var(--g-c) calc(var(--g-op) * 100%), transparent) 0%, transparent 70%);
+}
+/* жест «назад»: прошлый экран под пальцем и уезжающий экран — на том же фоне, без «вспышки» в чёрное */
+html.glass .under { background: var(--g-img), var(--bg); }
+html.glass.swiping #app {
+  background: var(--g-img), var(--bg);
+  background-repeat: no-repeat; background-size: 100% var(--g-vh, 100vh); background-position: 0 var(--g-sy, 0px);
+}
+/* заставка при запуске — сразу на фоне приложения, без смены чёрного на цветной */
+html.glass #splash { background: var(--g-img), var(--bg); }
+
+/* окно «Установка на главный экран» — непрозрачное: под ним экран расписания, текст не должен просвечивать */
+html.glass[data-theme="dark"] .isheet { background: linear-gradient(160deg, #1B1D23, #121317); border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 0 0 1px rgba(255, 255, 255, .06), 0 -10px 40px rgba(0, 0, 0, .5); }
+html.glass[data-theme="light"] .isheet { background: #F7F8FA; border-color: transparent; box-shadow: inset 0 1px 0 #FFFFFF, 0 -10px 40px rgba(20, 30, 60, .18); }
+
+/* плашка с названием при прокрутке — тем же стеклом, что шапка недели, без тонкой черты снизу */
+html.glass .navbar { background: var(--g-bar); box-shadow: none; }
 </style>
 </head>
 <body>
@@ -1964,7 +2000,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.6.8";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.7.0";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2230,6 +2266,13 @@ window.__appStart = () => {
   }
   // Оформление «Стекло» — основное; ?glass=0 показывает прежний вид (только для проверки)
   function glassOn() { return !/[?&]glass=0\b/.test(location.search); }
+  // «Стекло» на уезжающем экране (жест «назад»): фон-тень рисуется на самой странице, поэтому ей нужно знать,
+  // какой её участок сейчас на экране и какой высоты экран
+  function glassSwipeVars() {
+    const a = document.getElementById("app");
+    ROOT.style.setProperty("--g-sy", `${a ? Math.round(-a.getBoundingClientRect().top) : Math.round(scrollY)}px`);
+    ROOT.style.setProperty("--g-vh", `${innerHeight}px`);
+  }
   function applyTheme() {
     const t = effectiveTheme();
     ROOT.dataset.theme = t;
@@ -2314,6 +2357,7 @@ window.__appStart = () => {
     return "cubic-bezier(.35, .55, .2, 1)";
   })();
   function navLayers(entry) {
+    glassSwipeVars();
     ROOT.classList.add("swiping", "nav-anim");
     const under = document.createElement("div");
     under.className = "under";
@@ -4688,6 +4732,25 @@ window.__appStart = () => {
     const ease = "cubic-bezier(.25, .9, .3, 1)", dur = 340, opt = { duration: dur, easing: ease };
     watchFrames("раскрытие карточки", dur);
     const radius = getComputedStyle(body).borderTopLeftRadius;
+    // Свечение карточки (внешняя тень в «Стекле») маска срезала бы целиком — оно пропадало на время движения
+    // и вспыхивало в конце. Поэтому на время анимации свечение рисует отдельный слой под карточкой:
+    // он плавно меняет высоту вместе с ней, а у самой карточки остаются только внутренние блики.
+    const glowFx = (() => {
+      const parts = (getComputedStyle(body).boxShadow || "").split(/,(?![^(]*\))/).map((x) => x.trim()).filter((x) => x && x !== "none");
+      const outer = parts.filter((x) => !/\binset\b/.test(x));
+      if (!outer.length) return null;
+      const inner = parts.filter((x) => /\binset\b/.test(x)).join(", ") || "none";
+      const fr = fresh.getBoundingClientRect(), br = body.getBoundingClientRect();
+      const g = document.createElement("div");
+      g.setAttribute("aria-hidden", "true");
+      Object.assign(g.style, { position: "absolute", left: `${br.left - fr.left}px`, top: `${br.top - fr.top}px`, width: `${br.width}px`,
+        height: `${h1}px`, borderRadius: radius, boxShadow: outer.join(", "), pointerEvents: "none", zIndex: "0" });
+      fresh.style.isolation = "isolate";
+      fresh.insertBefore(g, fresh.firstChild);
+      g.animate([{ height: `${h0}px`, borderRadius: r0 }, { height: `${h1}px`, borderRadius: radius }], opt);
+      return { g, inner };
+    })();
+    const glowDone = () => { if (glowFx) { glowFx.g.remove(); fresh.style.isolation = ""; } };
 
     // 1) пары ниже съезжают со старого места на новое
     for (const [el, top0] of after) {
@@ -4727,20 +4790,22 @@ window.__appStart = () => {
     if (gt && !morph) gt.style.visibility = "hidden";
     // Фон карточки возвращаем без плавного перехода (иначе после сворачивания он ещё 0,2 с «проявляется»)
     const cleanup = () => {
-      ghost.remove(); fresh.style.position = "";
+      ghost.remove(); fresh.style.position = ""; glowDone();
       body.style.cssText = "transition: none";
       requestAnimationFrame(() => requestAnimationFrame(() => { body.style.cssText = ""; }));
     };
     if (d >= 0) {
       Object.assign(ghost.style, { background: "transparent", borderColor: "transparent", boxShadow: "none", zIndex: "2" });
       fresh.appendChild(ghost);
+      if (glowFx) Object.assign(body.style, { boxShadow: glowFx.inner, position: "relative", zIndex: "1" });
       body.animate([{ clipPath: `inset(0px 0px ${d}px 0px round ${radius})` }, { clipPath: `inset(0px 0px 0px 0px round ${radius})` }], opt);
       // старая карточка убирается, как только её текст погас (раньше конца движения)
       if (ghost.getAnimations) requestAnimationFrame(() => Promise.all(ghost.getAnimations({ subtree: true }).map((x) => x.finished)).then(cleanup, cleanup));
       else setTimeout(cleanup, dur + 40);   // старый iPhone без getAnimations — убираем по времени
     } else {
       ghost.style.zIndex = "0";
-      fresh.insertBefore(ghost, fresh.firstChild);
+      if (glowFx) ghost.style.boxShadow = glowFx.inner;
+      fresh.insertBefore(ghost, glowFx ? glowFx.g.nextSibling : fresh.firstChild);
       // transition: none — иначе фон карточки гаснет плавно и на миг закрывает старый текст тёмной плашкой
       Object.assign(body.style, { position: "relative", zIndex: "1", background: "transparent", borderColor: "transparent", boxShadow: "none", transition: "none" });
       ghost.animate([{ clipPath: `inset(0px 0px 0px 0px round ${r0})` }, { clipPath: `inset(0px 0px ${-d}px 0px round ${radius})` }], { ...opt, fill: "forwards" })
@@ -5728,6 +5793,7 @@ window.__appStart = () => {
     const W = () => app.getBoundingClientRect().width || innerWidth;
     const unlockPager = () => { if (lockedPager) { lockedPager.style.overflowX = ""; lockedPager = null; } };
     function begin() {
+      glassSwipeVars();
       ROOT.classList.add("swiping");
       const e = stack[stack.length - 1];
       under = document.createElement("div");
