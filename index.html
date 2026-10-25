@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="916ef5d92ac3">
+<meta name="app-ver" content="a1f70f37246a">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1502,29 +1502,31 @@ html.glass .tabs { background: rgba(255, 255, 255, .14); }
 html.glass[data-theme="light"] .tabs { background: rgba(255, 255, 255, .5); }
 html.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
 
-/* карточки пар — цветное стекло под вид занятия: лекция зелёная, практика янтарная, лаба фиолетовая */
+/* карточки пар — цветное стекло под вид занятия: лекция зелёная, практика янтарная, лаба фиолетовая.
+   Размеры отсвета — в точках, а не в процентах: у свёрнутой и раскрытой карточки он одинаковый,
+   поэтому в начале и в конце раскрытия цвет карточки не «перескакивает» */
 html.glass .row:not(.past) :is(.card, .cc) {
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(var(--k-rgb), .30), rgba(var(--k-rgb), 0) 60%),
-    linear-gradient(160deg, rgba(var(--k-rgb), .16), rgba(255, 255, 255, .04));
+    radial-gradient(360px 110px at 0 0, rgba(var(--k-rgb), .30), rgba(var(--k-rgb), 0) 60%),
+    linear-gradient(160deg, rgba(var(--k-rgb), .16), rgba(255, 255, 255, .04) 130px);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .30), inset 0 0 0 1px rgba(var(--k-rgb), .32), 0 14px 30px -14px rgba(var(--k-rgb), .55);
 }
 html.glass .row.live :is(.card, .cc) {
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(var(--k-rgb), .42), rgba(var(--k-rgb), 0) 65%),
-    linear-gradient(160deg, rgba(var(--k-rgb), .24), rgba(255, 255, 255, .05));
+    radial-gradient(360px 110px at 0 0, rgba(var(--k-rgb), .42), rgba(var(--k-rgb), 0) 65%),
+    linear-gradient(160deg, rgba(var(--k-rgb), .24), rgba(255, 255, 255, .05) 130px);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38), inset 0 0 0 1px rgba(var(--k-rgb), .5), 0 16px 34px -12px rgba(var(--k-rgb), .7);
 }
 html.glass[data-theme="light"] .row:not(.past) :is(.card, .cc) {
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(var(--k-rgb), .22), rgba(var(--k-rgb), 0) 60%),
-    linear-gradient(160deg, rgba(255, 255, 255, .80), rgba(var(--k-rgb), .10));
+    radial-gradient(360px 110px at 0 0, rgba(var(--k-rgb), .22), rgba(var(--k-rgb), 0) 60%),
+    linear-gradient(160deg, rgba(255, 255, 255, .80), rgba(var(--k-rgb), .10) 130px);
   box-shadow: inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(var(--k-rgb), .28), 0 12px 26px -14px rgba(var(--k-rgb), .45);
 }
 html.glass[data-theme="light"] .row.live :is(.card, .cc) {
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(var(--k-rgb), .32), rgba(var(--k-rgb), 0) 65%),
-    linear-gradient(160deg, rgba(255, 255, 255, .78), rgba(var(--k-rgb), .16));
+    radial-gradient(360px 110px at 0 0, rgba(var(--k-rgb), .32), rgba(var(--k-rgb), 0) 65%),
+    linear-gradient(160deg, rgba(255, 255, 255, .78), rgba(var(--k-rgb), .16) 130px);
 }
 
 /* ---------- знакомство при первом запуске — в том же стекле ---------- */
@@ -2000,7 +2002,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.7.1";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.7.2";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
