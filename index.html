@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="3326476e58e8">
+<meta name="app-ver" content="cfb7a6c71e69">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1597,6 +1597,13 @@ html.glass .topveil { height: calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 
 html.glass .days .pill::after { left: 1px; right: 1px; top: 1px; height: 48%; border-radius: 17px 17px 40% 40% / 17px 17px 12px 12px;
   background: linear-gradient(180deg, rgba(255, 255, 255, .20), rgba(255, 255, 255, 0)); }
 html.glass[data-theme="light"] .days .pill::after { background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0)); }
+
+/* цветная тень фона плавно проявляется ниже шторки под часами: на её нижнем краю не должно быть ступеньки
+   «чёрное → цветное» (ни полоски, ни чёрной плашки сверху) */
+html.glass body::before {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, transparent calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 8px), #000 calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 160px));
+  mask-image: linear-gradient(180deg, transparent 0, transparent calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 8px), #000 calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 160px));
+}
 </style>
 </head>
 <body>
@@ -1957,7 +1964,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.6.7";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.6.8";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
