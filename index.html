@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="a1f70f37246a">
+<meta name="app-ver" content="0f948228e217">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -2002,7 +2002,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.7.2";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.7.3";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4731,7 +4731,9 @@ window.__appStart = () => {
     // страница под карточкой не перерисовывается каждый кадр, поэтому без рывков
     // Без пружины: карточка и пары ниже приезжают на место и сразу останавливаются. Пружина с перелётом
     // давала «докат» — содержимое проскакивало на несколько точек и возвращалось, это выглядело как дёрганье.
-    const ease = "cubic-bezier(.25, .9, .3, 1)", dur = 340, opt = { duration: dur, easing: ease };
+    // Кривая без длинного «хвоста»: прежняя (.25,.9,.3,1 за 340 мс) последние ~1,5 точки доползала ещё ~120 мс —
+    // на экране 120 Гц это видно как «карточка свернулась, а пары ниже ещё куда-то едут». Эта — ~70 мс.
+    const ease = "cubic-bezier(.33, 1, .68, 1)", dur = 280, opt = { duration: dur, easing: ease };
     watchFrames("раскрытие карточки", dur);
     const radius = getComputedStyle(body).borderTopLeftRadius;
     // Свечение карточки (внешняя тень в «Стекле») маска срезала бы целиком — оно пропадало на время движения
