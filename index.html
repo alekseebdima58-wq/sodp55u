@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="0f948228e217">
+<meta name="app-ver" content="fa817e19d98a">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -2002,7 +2002,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.7.3";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.7.4";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4736,25 +4736,34 @@ window.__appStart = () => {
     const ease = "cubic-bezier(.33, 1, .68, 1)", dur = 280, opt = { duration: dur, easing: ease };
     watchFrames("раскрытие карточки", dur);
     const radius = getComputedStyle(body).borderTopLeftRadius;
-    // Свечение карточки (внешняя тень в «Стекле») маска срезала бы целиком — оно пропадало на время движения
-    // и вспыхивало в конце. Поэтому на время анимации свечение рисует отдельный слой под карточкой:
-    // он плавно меняет высоту вместе с ней, а у самой карточки остаются только внутренние блики.
+    // Свечение и контур карточки в «Стекле» — тени (внешняя и внутренняя «кромка» 1px). Маска раскрытия срезала бы
+    // и то и другое: свечение пропадало, а у края, где режет маска, карточка теряла контур. Поэтому на время анимации
+    // их рисуют два отдельных слоя: свечение — под карточкой, кромка — поверх; оба плавно меняют высоту вместе с ней.
+    // У самой карточки остаются только блики, которым маска не мешает.
     const glowFx = (() => {
       const parts = (getComputedStyle(body).boxShadow || "").split(/,(?![^(]*\))/).map((x) => x.trim()).filter((x) => x && x !== "none");
+      const isRing = (x) => /\binset\b/.test(x) && /(^|\s)0px 0px 0px [\d.]+px/.test(x);
       const outer = parts.filter((x) => !/\binset\b/.test(x));
-      if (!outer.length) return null;
-      const inner = parts.filter((x) => /\binset\b/.test(x)).join(", ") || "none";
+      const ring = parts.filter(isRing);
+      if (!outer.length && !ring.length) return null;
+      const inner = parts.filter((x) => /\binset\b/.test(x) && !isRing(x)).join(", ") || "none";
       const fr = fresh.getBoundingClientRect(), br = body.getBoundingClientRect();
-      const g = document.createElement("div");
-      g.setAttribute("aria-hidden", "true");
-      Object.assign(g.style, { position: "absolute", left: `${br.left - fr.left}px`, top: `${br.top - fr.top}px`, width: `${br.width}px`,
-        height: `${h1}px`, borderRadius: radius, boxShadow: outer.join(", "), pointerEvents: "none", zIndex: "0" });
+      const layer = (shadow, z) => {
+        const g = document.createElement("div");
+        g.setAttribute("aria-hidden", "true");
+        Object.assign(g.style, { position: "absolute", left: `${br.left - fr.left}px`, top: `${br.top - fr.top}px`, width: `${br.width}px`,
+          height: `${h1}px`, borderRadius: radius, boxShadow: shadow, pointerEvents: "none", zIndex: z });
+        g.animate([{ height: `${h0}px`, borderRadius: r0 }, { height: `${h1}px`, borderRadius: radius }], opt);
+        return g;
+      };
       fresh.style.isolation = "isolate";
+      const g = layer(outer.length ? outer.join(", ") : "none", "0");
       fresh.insertBefore(g, fresh.firstChild);
-      g.animate([{ height: `${h0}px`, borderRadius: r0 }, { height: `${h1}px`, borderRadius: radius }], opt);
-      return { g, inner };
+      const edge = ring.length ? layer(ring.join(", "), "3") : null;
+      if (edge) fresh.appendChild(edge);
+      return { g, edge, inner };
     })();
-    const glowDone = () => { if (glowFx) { glowFx.g.remove(); fresh.style.isolation = ""; } };
+    const glowDone = () => { if (glowFx) { glowFx.g.remove(); if (glowFx.edge) glowFx.edge.remove(); fresh.style.isolation = ""; } };
 
     // 1) пары ниже съезжают со старого места на новое
     for (const [el, top0] of after) {
