@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="3293a8a123af">
+<meta name="app-ver" content="3d120b5a967e">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -2002,7 +2002,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.7.5";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.7.6";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4819,31 +4819,54 @@ window.__appStart = () => {
     const morph = !!(t1 && n0 && n0 !== n1 && gt);
     if (gt && !morph) gt.style.visibility = "hidden";
     // Фон карточки возвращаем без плавного перехода (иначе после сворачивания он ещё 0,2 с «проявляется»)
+    // «Окно» карточки: показывает её только до текущего нижнего края. Сделано двумя встречными сдвигами
+    // (окно с overflow:hidden едет вверх, содержимое внутри — на столько же вниз), а не маской clip-path:
+    // маску iPhone пересчитывает на основном потоке, а сдвиги — на видеокарте, вместе с парами ниже и кромкой.
+    // С маской содержимое отставало от кромки и «вылезало» за неё, при сворачивании это выглядело как дёрганье.
+    const reveal = (el, from, to, full, wrapStyle) => {
+      const w = document.createElement("div");
+      if (el !== body) w.setAttribute("aria-hidden", "true");
+      w.dataset.fx = "win";
+      Object.assign(w.style, { overflow: "hidden", borderRadius: `0 0 ${radius} ${radius}`, willChange: "transform", minWidth: "0" }, wrapStyle);
+      if (el === body) {   // поля карточки переносим на окно: иначе окно выше карточки на них и край «вылезает» за кромку
+        const cs = getComputedStyle(el);
+        Object.assign(w.style, { marginTop: cs.marginTop, marginBottom: cs.marginBottom, marginLeft: cs.marginLeft, marginRight: cs.marginRight });
+        el.style.margin = "0";
+      }
+      el.replaceWith(w); w.appendChild(el);
+      const kf = (h) => ({ transform: `translate3d(0, ${h - full}px, 0)` }), ki = (h) => ({ transform: `translate3d(0, ${full - h}px, 0)` });
+      const o = { ...opt, fill: "both" };
+      const a1 = w.animate([kf(from), kf(to)], o);
+      el.animate([ki(from), ki(to)], o);
+      return { w, done: a1.finished };
+    };
+    let win = null;
+    const unwrap = () => { if (win && win.w.isConnected) { const el = win.w.firstChild; el.getAnimations().forEach((x) => { if (x.effect && x.effect.getKeyframes().some((k) => k.transform && /translate3d/.test(k.transform))) x.cancel(); }); win.w.replaceWith(el); } win = null; };
     const cleanup = () => {
-      ghost.remove(); fresh.style.position = ""; glowDone();
+      unwrap(); ghost.remove(); fresh.style.position = ""; glowDone();
       body.style.cssText = "transition: none";
       requestAnimationFrame(() => requestAnimationFrame(() => { body.style.cssText = ""; }));
     };
     if (d >= 0) {
       Object.assign(ghost.style, { background: "transparent", borderColor: "transparent", boxShadow: "none", zIndex: "2" });
       fresh.appendChild(ghost);
-      if (glowFx) Object.assign(body.style, { boxShadow: glowFx.inner, position: "relative", zIndex: "1" });
-      const clip = body.animate([{ clipPath: `inset(0px 0px ${d}px 0px round ${radius})` }, { clipPath: `inset(0px 0px 0px 0px round ${radius})` }], opt);
+      if (glowFx) Object.assign(body.style, { boxShadow: glowFx.inner });
+      win = reveal(body, h0, h1, h1, { position: "relative", zIndex: "1" });
       // старая карточка убирается, как только её текст погас (раньше конца движения);
-      // а свечение и стиль самой карточки возвращаем только когда маска доехала до конца — иначе маска
-      // срезала вернувшуюся тень, и свечение на полпути гасло, а в конце вспыхивало
-      const dropGhost = () => ghost.remove();
+      // а свечение и стиль самой карточки возвращаем только когда окно доехало до конца
+      const dropGhost = () => ghost.remove();   // (при раскрытии окно — у новой карточки, призрак без окна)
       if (ghost.getAnimations) requestAnimationFrame(() => Promise.all(ghost.getAnimations({ subtree: true }).map((x) => x.finished)).then(dropGhost, dropGhost));
       else setTimeout(dropGhost, dur + 40);   // старый iPhone без getAnimations — убираем по времени
-      clip.finished.then(cleanup, cleanup);
+      win.done.then(cleanup, cleanup);
     } else {
-      ghost.style.zIndex = "0";
       if (glowFx) ghost.style.boxShadow = glowFx.inner;
+      const gs = { top: ghost.style.top, left: ghost.style.left, width: ghost.style.width };
+      Object.assign(ghost.style, { position: "relative", top: "0", left: "0", zIndex: "" });
       fresh.insertBefore(ghost, glowFx ? glowFx.g.nextSibling : fresh.firstChild);
       // transition: none — иначе фон карточки гаснет плавно и на миг закрывает старый текст тёмной плашкой
       Object.assign(body.style, { position: "relative", zIndex: "1", background: "transparent", borderColor: "transparent", boxShadow: "none", transition: "none" });
-      ghost.animate([{ clipPath: `inset(0px 0px 0px 0px round ${r0})` }, { clipPath: `inset(0px 0px ${-d}px 0px round ${radius})` }], { ...opt, fill: "forwards" })
-        .finished.then(cleanup).catch(cleanup);
+      win = reveal(ghost, h0, h1, h0, { position: "absolute", top: gs.top, left: gs.left, width: gs.width, height: `${h0}px`, zIndex: "0" });
+      win.done.then(cleanup, cleanup);
     }
     // старые строки (аудитория, преподаватель, тип) плавно гаснут на своих местах
     const fadeOut = { duration: 120, easing: "ease-out", fill: "forwards" };
