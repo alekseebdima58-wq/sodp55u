@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="9dc7ce17d141">
+<meta name="app-ver" content="21918a7cdf11">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1642,6 +1642,10 @@ html.glass[data-theme="light"] .isheet { background: #F7F8FA; border-color: tran
 
 /* плашка с названием при прокрутке — тем же стеклом, что шапка недели, без тонкой черты снизу */
 html.glass .navbar { background: var(--g-bar); box-shadow: none; }
+
+/* в «Стекле» контур карточки — только тонкая кромка-тень; старая цветная рамка (у ближайшей и идущей пары)
+   лежала рядом с ней второй линией: контур выглядел двойным, а при раскрытии/сворачивании — «квадратным» */
+html.glass .row :is(.card, .cc) { border-color: transparent; }
 </style>
 </head>
 <body>
@@ -2002,7 +2006,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.7.7";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.7.9";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4735,7 +4739,10 @@ window.__appStart = () => {
     // на экране 120 Гц это видно как «карточка свернулась, а пары ниже ещё куда-то едут». Эта — ~70 мс.
     // Торможение без «хвоста» (easeOutQuad): последние 5 точек проходятся за ~50 мс, а не за ~90.
     // На записи с iPhone 120 Гц хвост был виден: карточка уже свернулась, а край ещё «доползал» вверх.
-    const ease = "cubic-bezier(.5, 1, .89, 1)", dur = 260, opt = { duration: dur, easing: ease };
+    // Плавный разгон и плавное торможение. На записи с iPhone первые ~50 мс после нажатия кадров нет (строится
+    // новая карточка), и при «резком» старте движение начиналось прыжком на ~40 точек, а потом медленно доезжало.
+    // С мягким стартом за эти 50 мс проходится всего ~8 точек — прыжка не видно, и конец не кажется «доползанием».
+    const ease = "cubic-bezier(.45, 0, .25, 1)", dur = 280, opt = { duration: dur, easing: ease };
     watchFrames("раскрытие карточки", dur);
     const radius = getComputedStyle(body).borderTopLeftRadius;
     // Свечение и контур карточки в «Стекле» — тени (внешняя и внутренняя «кромка» 1px). Маска раскрытия срезала бы
@@ -4752,32 +4759,45 @@ window.__appStart = () => {
       const fr = fresh.getBoundingClientRect(), br = body.getBoundingClientRect();
       // Всё движется только сдвигом (transform) — так же, как пары ниже: на iPhone сдвиги считает видеокарта,
       // а анимация высоты шла бы отдельно, на основном потоке, и контур «отставал/уезжал» от карточки.
-      const L = br.left - fr.left, T = br.top - fr.top, Wd = br.width;
-      const hMin = Math.min(h0, h1), hMax = Math.max(h0, h1), R = parseFloat(radius) || 18;
-      const move = (el) => el.animate([{ transform: `translate3d(0, ${h0 - hMax}px, 0)` }, { transform: `translate3d(0, ${h1 - hMax}px, 0)` }], opt);
+      // позиции — ровно по пикселям экрана: иначе тонкая линия на слое видеокарты размывается (тусклее настоящей)
+      const dpr = window.devicePixelRatio || 1, px = (v) => Math.round(v * dpr) / dpr;
+      const L = px(br.left - fr.left), T = px(br.top - fr.top), Wd = px(br.width);
+      const H0 = px(h0), H1 = px(h1), hMin = Math.min(H0, H1), hMax = Math.max(H0, H1), R = parseFloat(radius) || 18;
+      // форма углов как у карточки: где браузер умеет «сквиркл» (corner-shape), обычная дуга того же радиуса
+      // выходит заметно круглее — кромка и свечение шли бы по другой линии, чем край карточки
+      const shape = getComputedStyle(body).getPropertyValue("corner-shape");
       const box = (st) => { const e = document.createElement("div"); e.setAttribute("aria-hidden", "true");
-        Object.assign(e.style, { position: "absolute", pointerEvents: "none", boxSizing: "border-box" }, st); return e; };
+        Object.assign(e.style, { position: "absolute", pointerEvents: "none", boxSizing: "border-box" }, st);
+        if (shape && shape !== "round") e.style.setProperty("corner-shape", shape);
+        return e; };
+      // сдвиг слоя так, чтобы его низ совпадал с текущим низом карточки (слой высотой hh, нижний край — при hMax)
+      const move = (el) => el.animate([{ transform: `translate3d(0, ${H0 - hMax}px, 0)` }, { transform: `translate3d(0, ${H1 - hMax}px, 0)` }], opt);
       fresh.style.isolation = "isolate";
-      // свечение: тень под нижним краем; рамка-«окно» не даёт ему вылезти выше карточки
-      const g = box({ left: `${L - 80}px`, top: `${T}px`, width: `${Wd + 160}px`, height: `${hMax + 80}px`, overflow: "hidden", zIndex: "0" });
+      // свечение: без окна-обрезки (на iPhone такое окно рисовалось тёмным квадратом рядом с карточкой).
+      // Слой высотой с меньшую карточку и низом по краю карточки — выше её верха он не поднимается никогда.
+      const g = box({ left: `${L}px`, top: `${T + hMax - hMin}px`, width: `${Wd}px`, height: `${hMin}px`, borderRadius: radius,
+        boxShadow: outer.length ? outer.join(", ") : "none", zIndex: "0" });
       g.dataset.fx = "glow";
-      if (outer.length) {
-        const sh = box({ left: "80px", top: "0", width: `${Wd}px`, height: `${hMax}px`, borderRadius: radius, boxShadow: outer.join(", "), willChange: "transform" });
-        g.appendChild(sh); move(sh);
-      }
+      if (outer.length) move(g);
       fresh.insertBefore(g, fresh.firstChild);
-      // кромка: верх (неподвижный) + низ со скруглёнными углами, который едет вместе с краем карточки
+      // кромка — той же тенью, что у карточки (не рамкой), чтобы выглядела точь-в-точь: неподвижный верх + едущий низ
       let edge = null;
       if (ring.length) {
-        const m = /^(.*?)\s+0px 0px 0px ([\d.]+)px/.exec(ring[0].replace(/\s*inset\s*/, " ").trim());
-        const col = m ? m[1] : "rgba(255,255,255,.12)", bw = m ? `${m[2]}px` : "1px";
-        const line = `${bw} solid ${col}`, topH = Math.max(R, hMin - R);
-        edge = box({ left: `${L}px`, top: `${T}px`, width: `${Wd}px`, height: `${hMax}px`, zIndex: "3" });
+        const sh = ring.join(", "), topH = Math.max(R, hMin - R);
+        // внутренняя тень рисуется ВНУТРИ рамки (у карточки рамка 1px, хоть и прозрачная) — кромку ставим так же,
+        // иначе она на 1 точку снаружи настоящей: контур двоился, а в конце «перепрыгивал» на место
+        const bw = parseFloat(getComputedStyle(body).borderTopWidth) || 0;
+        const rIn = `${Math.max(0, R - bw)}px`;
+        edge = box({ left: `${L + bw}px`, top: `${T + bw}px`, width: `${Wd - 2 * bw}px`, height: `${hMax - 2 * bw}px`, zIndex: "3" });
         edge.dataset.fx = "edge";
-        edge.appendChild(box({ left: "0", top: "0", width: "100%", height: `${topH}px`, border: line, borderBottom: "0", borderRadius: `${radius} ${radius} 0 0` }));
-        const win = box({ left: "0", top: `${topH}px`, width: "100%", height: `${hMax - topH}px`, overflow: "hidden" });
-        const cap = box({ left: "0", top: "0", width: "100%", height: `${hMax - topH}px`, border: line, borderTop: "0", borderRadius: `0 0 ${radius} ${radius}`, willChange: "transform" });
-        win.appendChild(cap); edge.appendChild(win); move(cap);
+        const iMin = hMin - 2 * bw, iMax = hMax - 2 * bw;   // высоты внутри рамки
+        const topWin = box({ left: "0", top: "0", width: "100%", height: `${topH}px`, overflow: "hidden" });
+        topWin.appendChild(box({ left: "0", top: "0", width: "100%", height: `${iMin}px`, borderRadius: rIn, boxShadow: sh }));
+        const win = box({ left: "0", top: `${topH}px`, width: "100%", height: `${iMax - topH}px`, overflow: "hidden" });
+        // верх «шапки» вместе с её скруглёнными углами всегда выше окна — внутри карточки не видно ни линии, ни дуг
+        const capH = iMax - topH + R + 4;
+        const cap = box({ left: "0", top: `${iMax - topH - capH}px`, width: "100%", height: `${capH}px`, borderRadius: rIn, boxShadow: sh });
+        win.appendChild(cap); edge.append(topWin, win); move(cap);
         fresh.appendChild(edge);
       }
       return { g, edge, inner };
@@ -4862,6 +4882,9 @@ window.__appStart = () => {
       win.done.then(cleanup, cleanup);
     } else {
       if (glowFx) ghost.style.boxShadow = glowFx.inner;
+      // у раскрытой и свёрнутой карточки разное скругление (22 и 18): у «призрака» сразу берём конечное —
+      // иначе его блик по кромке шёл бы по другой дуге, чем кромка, и в углах контур двоился
+      ghost.style.borderRadius = radius;
       const gs = { top: ghost.style.top, left: ghost.style.left, width: ghost.style.width };
       Object.assign(ghost.style, { position: "relative", top: "0", left: "0", zIndex: "" });
       fresh.insertBefore(ghost, glowFx ? glowFx.g.nextSibling : fresh.firstChild);
