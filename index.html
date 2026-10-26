@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="fa817e19d98a">
+<meta name="app-ver" content="3293a8a123af">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -2002,7 +2002,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.7.4";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.7.5";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4748,19 +4748,36 @@ window.__appStart = () => {
       if (!outer.length && !ring.length) return null;
       const inner = parts.filter((x) => /\binset\b/.test(x) && !isRing(x)).join(", ") || "none";
       const fr = fresh.getBoundingClientRect(), br = body.getBoundingClientRect();
-      const layer = (shadow, z) => {
-        const g = document.createElement("div");
-        g.setAttribute("aria-hidden", "true");
-        Object.assign(g.style, { position: "absolute", left: `${br.left - fr.left}px`, top: `${br.top - fr.top}px`, width: `${br.width}px`,
-          height: `${h1}px`, borderRadius: radius, boxShadow: shadow, pointerEvents: "none", zIndex: z });
-        g.animate([{ height: `${h0}px`, borderRadius: r0 }, { height: `${h1}px`, borderRadius: radius }], opt);
-        return g;
-      };
+      // Всё движется только сдвигом (transform) — так же, как пары ниже: на iPhone сдвиги считает видеокарта,
+      // а анимация высоты шла бы отдельно, на основном потоке, и контур «отставал/уезжал» от карточки.
+      const L = br.left - fr.left, T = br.top - fr.top, Wd = br.width;
+      const hMin = Math.min(h0, h1), hMax = Math.max(h0, h1), R = parseFloat(radius) || 18;
+      const move = (el) => el.animate([{ transform: `translate3d(0, ${h0 - hMax}px, 0)` }, { transform: `translate3d(0, ${h1 - hMax}px, 0)` }], opt);
+      const box = (st) => { const e = document.createElement("div"); e.setAttribute("aria-hidden", "true");
+        Object.assign(e.style, { position: "absolute", pointerEvents: "none", boxSizing: "border-box" }, st); return e; };
       fresh.style.isolation = "isolate";
-      const g = layer(outer.length ? outer.join(", ") : "none", "0");
+      // свечение: тень под нижним краем; рамка-«окно» не даёт ему вылезти выше карточки
+      const g = box({ left: `${L - 80}px`, top: `${T}px`, width: `${Wd + 160}px`, height: `${hMax + 80}px`, overflow: "hidden", zIndex: "0" });
+      g.dataset.fx = "glow";
+      if (outer.length) {
+        const sh = box({ left: "80px", top: "0", width: `${Wd}px`, height: `${hMax}px`, borderRadius: radius, boxShadow: outer.join(", "), willChange: "transform" });
+        g.appendChild(sh); move(sh);
+      }
       fresh.insertBefore(g, fresh.firstChild);
-      const edge = ring.length ? layer(ring.join(", "), "3") : null;
-      if (edge) fresh.appendChild(edge);
+      // кромка: верх (неподвижный) + низ со скруглёнными углами, который едет вместе с краем карточки
+      let edge = null;
+      if (ring.length) {
+        const m = /^(.*?)\s+0px 0px 0px ([\d.]+)px/.exec(ring[0].replace(/\s*inset\s*/, " ").trim());
+        const col = m ? m[1] : "rgba(255,255,255,.12)", bw = m ? `${m[2]}px` : "1px";
+        const line = `${bw} solid ${col}`, topH = Math.max(R, hMin - R);
+        edge = box({ left: `${L}px`, top: `${T}px`, width: `${Wd}px`, height: `${hMax}px`, zIndex: "3" });
+        edge.dataset.fx = "edge";
+        edge.appendChild(box({ left: "0", top: "0", width: "100%", height: `${topH}px`, border: line, borderBottom: "0", borderRadius: `${radius} ${radius} 0 0` }));
+        const win = box({ left: "0", top: `${topH}px`, width: "100%", height: `${hMax - topH}px`, overflow: "hidden" });
+        const cap = box({ left: "0", top: "0", width: "100%", height: `${hMax - topH}px`, border: line, borderTop: "0", borderRadius: `0 0 ${radius} ${radius}`, willChange: "transform" });
+        win.appendChild(cap); edge.appendChild(win); move(cap);
+        fresh.appendChild(edge);
+      }
       return { g, edge, inner };
     })();
     const glowDone = () => { if (glowFx) { glowFx.g.remove(); if (glowFx.edge) glowFx.edge.remove(); fresh.style.isolation = ""; } };
