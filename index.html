@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="34005ebb6c49">
+<meta name="app-ver" content="b0b7948cf766">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -457,6 +457,8 @@ html.swiping, html.swiping body { overflow-x: clip; }   /* уехавший вб
 .nfoot { margin-top: 16px; }
 .btn.wide { width: 100%; margin-top: 12px; background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
+/* слои перехода — сразу на видеокарте, ещё до начала движения */
+.under, .under-dim { will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 /* ---------- настройки ---------- */
 .pad { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 .lbl15 { font-size: calc(15px * var(--fs, 1)); font-weight: 500; }
@@ -2026,7 +2028,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.8.4";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.8.5";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2412,11 +2414,17 @@ window.__appStart = () => {
     };
     return { set, clear, els: [app, under, dim] };
   }
+  // Движение запускаем только после двух кадров: в первом браузер рисует снимок прошлого экрана и заводит слои
+  // для видеокарты — на iPhone это 40–70 мс. Если часы анимации уже идут, экран в этом кадре «прыгает» на ~70 точек,
+  // а потом будто притормаживает (на записи: 0 → 70 → 75 → 102…). Так движение начинается ровно с места.
+  const twoFrames = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
   function navRun(L, from, to, dur, done) {
-    watchFrames("переход между экранами", dur);
     L.set(from);
-    const anims = gpuMove(L.els, () => L.set(to), dur, NAV_EASE);
-    animsDone(anims, dur).then(done, done);
+    twoFrames().then(() => {
+      watchFrames("переход между экранами", dur);
+      const anims = gpuMove(L.els, () => L.set(to), dur, NAV_EASE);
+      animsDone(anims, dur).then(done, done);
+    });
   }
 
   function go(v, t, push) {
@@ -2443,7 +2451,6 @@ window.__appStart = () => {
     const r = render();
     window.scrollTo(0, 0);
     Promise.race([Promise.resolve(r).catch(() => {}), new Promise((res) => setTimeout(res, 450))])
-      .then(() => new Promise((res) => requestAnimationFrame(res)))
       .then(() => navRun(L, 1, 0, 380, () => { L.clear(); navBusy = false; }));
   }
   // «Назад» кнопкой (в приложении или в Telegram): тот же сдвиг, что и у жеста
