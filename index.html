@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="ef48a6d26ca4">
+<meta name="app-ver" content="59595580c20c">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -327,6 +327,9 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
 }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
+/* постоянная замена кабинета: тихая строка под кабинетом — какой указан на сайте */
+.meta .rm0 { display: block; margin: -2px 0 0 22px; font-size: calc(12px * var(--fs, 1)); line-height: calc(16px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+.meta .rm0 s { text-decoration-color: rgba(127, 127, 127, .7); }
 /* ---------- преподаватели ---------- */
 .search {
   display: flex; align-items: center; gap: 10px;  margin-top: 16px; padding: 0 14px;
@@ -1646,6 +1649,23 @@ html.glass .navbar { background: var(--g-bar); box-shadow: none; }
 /* в «Стекле» контур карточки — только тонкая кромка-тень; старая цветная рамка (у ближайшей и идущей пары)
    лежала рядом с ней второй линией: контур выглядел двойным, а при раскрытии/сворачивании — «квадратным» */
 html.glass .row :is(.card, .cc) { border-color: transparent; }
+
+/* ---------- замена кабинета (владелец) ---------- */
+.rmedit { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 8px 12px; border: 0; border-radius: 12px;
+  background: var(--surface2); color: var(--text2); font: inherit; font-size: calc(13px * var(--fs, 1)); font-weight: 650; }
+.rmedit:active { transform: scale(.96); }
+.rsheet { text-align: left; }
+.rsheet h3 { margin: 4px 0 4px; text-align: left; }
+.rsheet .ix { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--surface2); color: var(--muted); display: grid; place-items: center; }
+.rs-sub { margin: 0 0 14px; font-size: calc(14px * var(--fs, 1)); line-height: calc(20px * var(--fs, 1)); color: var(--muted); }
+.rs-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 8px; }
+.rs-in { display: flex; flex-direction: column; gap: 4px; font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+.rs-in input { height: 46px; padding: 0 12px; border: 1px solid var(--hair); border-radius: 12px; background: var(--bg); color: var(--text);
+  font: inherit; font-size: calc(17px * var(--fs, 1)); font-weight: 650; outline: none; }
+.rs-in input:focus { border-color: var(--accent); }
+.rs-ck { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: calc(15px * var(--fs, 1)); color: var(--text); }
+.rs-ck input { width: 20px; height: 20px; accent-color: var(--accent); }
+.rs-note { margin: 14px 0 10px; font-size: calc(12.5px * var(--fs, 1)); line-height: calc(17px * var(--fs, 1)); color: var(--muted); }
 </style>
 </head>
 <body>
@@ -2006,7 +2026,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.8.0";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.8.3";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2526,7 +2546,7 @@ window.__appStart = () => {
       items.push({
         type: "lesson", i, key, st, k, compact, p, statusText,
         start: l.start || "", end: l.end || "", time: l.time || "",
-        subject: l.subject || "Занятие", room: roomText(l.room), extra: (l.extra || "").trim(), teacher,
+        subject: l.subject || "Занятие", room: roomText(l.room), room0: l.room0 ? roomText(l.room0) : "", extra: (l.extra || "").trim(), teacher,
         first: i === 0, last: i === n - 1, afterPast: i > 0 && status[i - 1] === "past" && isToday,
         showNow: st === "live", nowLabel: now.label,
         ctl: controlOf(l.subject, date, isTeacher, l.extra),
@@ -2654,7 +2674,9 @@ window.__appStart = () => {
       body = `<button class="cc" data-act="open" data-key="${esc(it.key)}" aria-expanded="false">
         <h3>${esc(it.subject)}</h3><span class="ln">${lead}<span class="x">${parts.filter(Boolean).join(" · ")}</span></span></button>`;
     } else {
-      let meta = it.room ? `<span>${I.pin}<span class="x">${esc(it.room)}</span></span>` : "";
+      // кабинет заменён владельцем (на сайте указан другой) — показываем, какой был в расписании
+      const r0 = it.room0 ? `<span class="rm0">кабинет изменён · на сайте <s>${esc(it.room0.split(" · ")[0].replace(/^ауд\.\s*/, ""))}</s></span>` : "";
+      let meta = it.room ? `<span>${I.pin}<span class="x">${esc(it.room)}</span></span>${r0}` : "";
       let who = "";
       if (isTeacher) {
         if (it.extra) who = `<span>${I.users}<span class="x">${esc(it.extra)}</span></span>`;
@@ -2669,7 +2691,7 @@ window.__appStart = () => {
       const isOpened = opened.has(it.key);
       body = `<div class="card${isOpened ? " opened" : ""}"${isOpened ? ` data-act="open" data-key="${esc(it.key)}"` : ""}>
         <div class="hd"><span class="status" data-status>${esc(it.statusText)}</span><span class="kind">${esc(it.k.label)}</span></div>
-        <h3>${esc(it.subject)}</h3>${meta ? `<div class="meta">${meta}</div>` : ""}</div>`;
+        <h3>${esc(it.subject)}</h3>${meta ? `<div class="meta">${meta}</div>` : ""}${isOpened ? roomBtnHTML(it, isTeacher) : ""}</div>`;
     }
     return `<li class="${cls}" style="--i:${n}" data-row="${it.i}">
       <div class="time"><span class="st">${esc(it.start || it.time || "—")}</span><span class="en">${esc(it.end)}</span></div>
@@ -4485,6 +4507,8 @@ window.__appStart = () => {
     } else if (act === "teacher") {
       haptic("light");
       go("teacher", el.dataset.t, true);
+    } else if (act === "room") {
+      openRoomSheet(el.dataset.key);
     } else if (act === "open") {
       toggleCard(el.dataset.key);
     } else if (act === "back") {
@@ -5583,6 +5607,95 @@ window.__appStart = () => {
     if (LAUNCHES > 1 || NOW_OVERRIDE) { store.set("onb", "1"); return; }   // уже пользуется — не мешаем
     if (view !== "schedule") return;
     setTimeout(showOnboarding, 600);
+  }
+  // ---------------- замена кабинета (только у владельца) ----------------
+  // Кнопка «Кабинет» в раскрытой карточке пары. Окно сохраняет правило на сервере бота: сообщение подписано
+  // личным ключом владельца, бот принимает его только с этим ключом. У всей группы кабинет сменится
+  // после ближайшей публикации (обычно в течение минуты). То же самое — командой /room в боте.
+  const ROOM_T = { "Лекция": "лек", "Практика": "прак", "Лабораторная": "лаб" };
+  const ROOM_PL = { "лек": "лекции", "прак": "практики", "лаб": "лабораторные" };
+  const DSHORT = ["пн", "вт", "ср", "чт", "пт", "сб"];
+  const roomOwner = () => !!(adminStats && nkey && index && index.relay && window.crypto && crypto.subtle);
+  function roomBtnHTML(it, isTeacher) {
+    if (isTeacher || !roomOwner()) return "";
+    return `<button class="rmedit" data-act="room" data-key="${esc(it.key)}">${I.pin}<span>Изменить кабинет</span></button>`;
+  }
+  function roomRuleHits(r, l, wd) {
+    if (!String(l.subject || "").toLowerCase().includes(String(r.s || "").toLowerCase())) return false;
+    if (r.t && !String(l.type || "").toLowerCase().startsWith(r.t)) return false;
+    if (r.d != null && r.d !== wd) return false;
+    if (r.at && l.start !== r.at) return false;
+    return true;
+  }
+  // «2302 (Корпус 1-2)» → ["2302", "Корпус 1-2"]
+  const splitRoom = (raw) => { const m = /^(.*?)\s*\((.*)\)\s*$/.exec(String(raw || "").trim()); return m ? [m[1], m[2]] : [String(raw || "").trim(), ""]; };
+  let roomCtx = null;
+  function openRoomSheet(key) {
+    const data = mem.g, p = pos.g;
+    if (!data || !p || !roomOwner()) return;
+    const m = dayModel(data, p.w, p.d, false);
+    const it = m.items.find((x) => x.type === "lesson" && x.key === key);
+    const day = data.weeks[p.w] && data.weeks[p.w].days.find((x) => x.idx === p.d);
+    const l = it && day && day.lessons[it.i];
+    if (!l) return;
+    const t = ROOM_T[it.k.label] || "";
+    const rule = (adminStats.rooms || []).find((r) => roomRuleHits(r, l, p.d)) || null;
+    const [num, corp] = splitRoom(l.room);
+    roomCtx = { l, wd: p.d, t, rule };
+    const wrap = document.createElement("div");
+    wrap.className = "iwrap";
+    wrap.innerHTML = `<div class="isheet rsheet" role="dialog" aria-label="Кабинет для пары">
+      <button class="ix" data-rs="close" aria-label="Закрыть">${I.x}</button>
+      <h3>Кабинет для пары</h3>
+      <p class="rs-sub">${esc(l.subject)}<br>${esc(it.k.label)} · ${esc(DAYS[p.d] || "")}${l.start ? `, ${esc(l.start)}` : ""}</p>
+      <div class="rs-row"><label class="rs-in"><span>Аудитория</span><input id="rsNum" value="${esc(num)}" maxlength="20" autocomplete="off" inputmode="text"></label>
+        <label class="rs-in"><span>Корпус</span><input id="rsCorp" value="${esc(corp)}" maxlength="30" autocomplete="off"></label></div>
+      ${t ? `<label class="rs-ck"><input type="checkbox" id="rsKind" ${rule && !rule.t ? "" : "checked"}><span>Только ${ROOM_PL[t]} этого предмета</span></label>` : ""}
+      ${l.start ? `<label class="rs-ck"><input type="checkbox" id="rsWhen" ${rule && rule.at ? "checked" : ""}><span>Только по ${DSHORT[p.d] || ""} в ${esc(l.start)}</span></label>` : ""}
+      <p class="rs-note">Сменится у всей группы — в приложении, в боте и в напоминаниях, примерно через минуту. На сайте кабинет останется прежним.</p>
+      <button class="ibig" data-rs="save">Сохранить для группы</button>
+      ${rule ? `<button class="ibig ghost" data-rs="del">Вернуть кабинет с сайта${l.room0 ? ` (${esc(splitRoom(l.room0)[0])})` : ""}</button>` : ""}
+    </div>`;
+    wrap.addEventListener("click", async (ev) => {
+      if (ev.target === wrap) { dismiss(wrap, wrap.querySelector(".isheet"), true); return; }
+      const b = ev.target.closest("[data-rs]");
+      if (!b) return;
+      if (b.dataset.rs === "close") { dismiss(wrap, wrap.querySelector(".isheet"), true); return; }
+      const num = wrap.querySelector("#rsNum").value.trim(), corp = wrap.querySelector("#rsCorp").value.trim();
+      const kind = wrap.querySelector("#rsKind"), when = wrap.querySelector("#rsWhen");
+      let r;
+      if (b.dataset.rs === "del") r = { ...roomCtx.rule, room: "" };
+      else {
+        if (!num) { wrap.querySelector("#rsNum").focus(); return; }
+        r = { s: roomCtx.l.subject, room: corp ? `${num} (${corp})` : num };
+        if (kind && kind.checked && roomCtx.t) r.t = roomCtx.t;
+        if (when && when.checked) { r.d = roomCtx.wd; r.at = roomCtx.l.start; }
+      }
+      b.disabled = true;
+      const ok = await sendRoomRule(b.dataset.rs === "del" ? "del" : "set", r);
+      haptic(ok ? "light" : "heavy");
+      if (ok) {
+        dismiss(wrap, wrap.querySelector(".isheet"), true);
+        toast(b.dataset.rs === "del" ? "Вернётся кабинет с сайта — обновится примерно через минуту" : "Сохранено — у всей группы обновится примерно через минуту");
+        // подтягиваем свежие данные, когда бот успеет опубликовать
+        setTimeout(() => { try { loadAdminStats(true); refreshNow(); } catch (e) { /* не страшно */ } }, 75000);
+      } else {
+        b.disabled = false;
+        toast("Не удалось отправить — проверьте интернет");
+      }
+    });
+    document.body.appendChild(wrap);
+    haptic("light");
+  }
+  async function sendRoomRule(a, r) {
+    try {
+      const kb = Uint8Array.from(nkey.match(/../g).map((h) => parseInt(h, 16)));
+      const t = Date.now(), n = Math.random().toString(36).slice(2, 12), payload = JSON.stringify({ a, r });
+      const h = await hmacRaw(kb, utf8(`room|${t}|${n}|${payload}`));
+      const body = JSON.stringify({ q: "room", t, n, p: payload, h });
+      try { const res = await fetch(index.relay, { method: "POST", body }); return res.ok; }
+      catch (e) { await fetch(index.relay, { method: "POST", body, mode: "no-cors" }); return true; }
+    } catch (e) { return false; }
   }
   // ---------------- полноэкранный режим ----------------
   // Только на телефонах (на компьютере «во весь экран» — это весь монитор). По умолчанию включён.
