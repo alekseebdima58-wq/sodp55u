@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="59595580c20c">
+<meta name="app-ver" content="34005ebb6c49">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -2026,7 +2026,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.8.3";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.8.4";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2342,7 +2342,10 @@ window.__appStart = () => {
       c.classList.add("snap");
       c.removeAttribute("style");
       c.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
-      c.querySelectorAll("[data-pager] .page.prev, [data-pager] .page.next, video").forEach((e) => e.remove());
+      // соседние дни не удаляем, а только прячем: дни стоят в ряд и сдвинуты на ширину экрана, и без соседа
+      // текущий день съезжал за левый край — под пальцем и при «назад» лента пар пропадала, а потом появлялась рывком
+      c.querySelectorAll("[data-pager] .page.prev, [data-pager] .page.next").forEach((e) => { e.style.visibility = "hidden"; e.innerHTML = ""; });
+      c.querySelectorAll("video").forEach((e) => e.remove());
       return c;
     } catch (e) { return null; }
   }
