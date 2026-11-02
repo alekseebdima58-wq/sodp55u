@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="ef15299efedf">
+<meta name="app-ver" content="c060f92694a3">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -238,7 +238,8 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
 .seg { position: relative; flex: 1; width: 4px; border-radius: 2px; background: rgba(var(--k-rgb), var(--track-a)); }
 .row.past .seg { width: 2px; background: var(--done); }
 .row.past.last .seg { background: transparent; }
-.fill { position: absolute; left: 0; top: 0; width: 100%; height: var(--p); border-radius: 2px; background: var(--k-bar); transition: height .6s ease; }
+.fill { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 2px; background: var(--k-bar);
+  transform-origin: 50% 0; transform: scaleY(var(--pn, 0)); transition: transform .6s ease; }   /* v1.8.8: масштаб вместо высоты */
 .mark {
   position: absolute; left: 50%; top: var(--p); width: 10px; height: 10px; margin: -5px 0 0 -5px;
   border-radius: 50%; background: var(--k-bar); border: 2px solid var(--bg); transition: top .6s ease;
@@ -302,6 +303,13 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
   border-radius: 50%; background: var(--text); border: 2px solid var(--bg); transition: top .6s ease;
 }
 .bnow { position: absolute; right: 0; top: var(--p); margin-top: -8px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; line-height: calc(16px * var(--fs, 1)); transition: top .6s ease; }
+/* v1.8.8: отметки «сейчас» едут сдвигом (translate), а не через top — без перерасчёта раскладки.
+   100cqh — высота линии (она — контейнер). Где контейнеров нет (старые телефоны) — как раньше, через top. */
+@supports (container-type: size) {
+  .row.live .seg, .brk.active .rail2, .brk.active .time { container-type: size; }
+  .row.live .mark, .bmark, .bnow { top: 0; translate: 0 calc(var(--pn, 0) * 100cqh); transition-property: translate; }
+  .row.live .nowlbl { top: 0; translate: 0 max(calc(var(--pn, 0) * 100cqh), 14px); transition-property: translate; }
+}
 .blbl { display: flex; align-items: center; gap: 6px;  color: var(--muted); }
 .brk.active .blbl { color: var(--text); font-weight: 600; }
 
@@ -713,13 +721,15 @@ html[data-theme="light"] .tabs {
   transition: background-color .25s ease, box-shadow .25s ease;
 }
 /* фон шапки — сплошной: при прокрутке текст ленты не должен просвечивать под «СОДП-55у» и днями */
-.sbar { background: var(--bg); }
-.sbar.stuck { box-shadow: 0 1px 0 var(--hair); }
+/* v1.8.8: фон — отдельным слоем (::before), как у «Стекла»: при сжатии шапки он доезжает масштабом */
+html:not(.glass) .sbar::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--bg);
+  transition: box-shadow .25s ease; }
+html:not(.glass) .sbar.stuck::before { box-shadow: 0 1px 0 var(--hair); }
 
-.sbar .eyebrow { max-height: 18px; transition: max-height .25s ease, opacity .2s ease; }
-.sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day { transition: font-size .25s ease, width .25s ease, height .25s ease; }
+/* v1.8.8: размеры шапки меняются один раз, без плавного перехода (font-size/width/height/margin пересчитывали
+   раскладку всей страницы каждый кадр). Само движение доигрывают сдвиг и масштаб — flipBar в 20-springs-sticky.js */
+.sbar .eyebrow { max-height: 18px; }
 .sbar.small .whead .eyebrow { max-height: 0; opacity: 0; }
-.sbar .whead .top-actions { transition: margin .25s ease; }
 .sbar.small .days { margin-top: 8px; }
 .sbar.small .day { min-height: 48px; }
 .sbar .week { margin-top: 0; }
@@ -792,7 +802,7 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
   bottom: calc(max(10px, env(safe-area-inset-bottom), var(--safe-bottom, 0px)) + 78px);
   display: flex; align-items: center; gap: 10px; padding: 10px 8px 10px 12px; border-radius: 22px;
 
-  -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%); backdrop-filter: blur(14px) saturate(180%);
 
   animation: rise .55s var(--ease-spring) both;
 }
@@ -915,7 +925,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 .days:has(.pill.ready) .day.on { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
 .day { transition: color .18s ease, opacity .18s ease; }
 @supports (corner-shape: squircle) { .days .pill { corner-shape: squircle; border-radius: 26px; } }
-.sbar .days .day { transition: min-height .45s var(--ease-spring), color .18s ease, opacity .18s ease; }
+.sbar .days .day { transition: color .18s ease, opacity .18s ease; }
 /* слой «выбранных» цифр: копия строки дней поверх, видна только внутри таблетки (clip-path двигаем вместе с ней) */
 .days:has(.days-on) .day.on { color: var(--text) !important; }
 .days:has(.days-on) .day.on .dots i { background: var(--k-bar) !important; }
@@ -992,7 +1002,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 .tabs {
   left: 20px; right: 20px; max-width: 440px; padding: 5px; border-radius: 34px;
   background: linear-gradient(180deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .02) 58%), rgba(20, 22, 28, .42);
-  -webkit-backdrop-filter: blur(26px) saturate(200%) brightness(1.06); backdrop-filter: blur(26px) saturate(200%) brightness(1.06);
+  -webkit-backdrop-filter: blur(14px) saturate(200%); backdrop-filter: blur(14px) saturate(200%);
   border: 0;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .26), inset 0 -1px 0 rgba(255, 255, 255, .05), 0 18px 40px rgba(0, 0, 0, .5);
 }
@@ -1018,7 +1028,7 @@ html[data-theme="light"] .tab.on { background: rgba(255, 255, 255, .85); box-sha
 .whead .wbtn, .whead .icon-btn.bell, .btn.icon-btn[data-act="back"] {
   position: relative; background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .03)), rgba(255, 255, 255, .04);
   border: 0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 4px 14px rgba(0, 0, 0, .35);
-  -webkit-backdrop-filter: blur(16px) saturate(180%); backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%); backdrop-filter: blur(12px) saturate(180%);
 }
 html[data-theme="light"] .whead .wbtn, html[data-theme="light"] .whead .icon-btn.bell, html[data-theme="light"] .btn.icon-btn[data-act="back"] {
   background: linear-gradient(180deg, #FFFFFF, rgba(255, 255, 255, .7)); box-shadow: inset 0 1px 0 #FFFFFF, 0 0 0 1px rgba(20, 30, 60, .06), 0 4px 12px rgba(20, 30, 60, .1);
@@ -1264,7 +1274,7 @@ html[data-theme="light"] .tabs .lens { background: rgba(255, 255, 255, .85); box
   position: fixed; left: 0; right: 0; top: 0; z-index: 11; height: calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 46px);
   padding-top: calc(var(--safe-top, 0px) + var(--top-gap, 0px)); display: flex; align-items: center; justify-content: center;
   background: rgba(8, 9, 11, .78);
-  -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%); backdrop-filter: blur(14px) saturate(180%);
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .07);
   opacity: 0; visibility: hidden; transition: opacity .22s ease, visibility 0s .22s;
 }
@@ -1300,7 +1310,7 @@ html.nb-on #app > .top h1, html.nb-on #app > .top .eyebrow { opacity: 0; }
   position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 17px; pointer-events: none;
   background: var(--surface2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 0 0 1px var(--border);
 }
-.seg3 .thumb.go { transition: transform .45s var(--ease-spring, ease), width .45s var(--ease-spring, ease); }
+.seg3 .thumb.go { transition: transform .45s var(--ease-spring, ease); }
 html[data-theme="light"] .seg3 .thumb { background: #FFFFFF; box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
 .seg3 .thumb.mv { animation: lensMv .45s cubic-bezier(.3, .7, .4, 1); }
 
@@ -1401,7 +1411,7 @@ html[data-theme="light"] .a1 .o-finger { background: rgba(0, 0, 0, .14); box-sha
 .a2 { display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 0 14px; box-sizing: border-box; }
 .a2 .o-note { display: flex; gap: 10px; align-items: center; padding: 11px 12px; border-radius: 22px; text-align: left;
   background: rgba(255, 255, 255, .08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 8px 20px rgba(0, 0, 0, .25);
-  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); animation: oDrop 4.4s var(--ease-spring, ease) infinite; }
+  animation: oDrop 4.4s var(--ease-spring, ease) infinite; }
 html[data-theme="light"] .a2 .o-note { background: rgba(255, 255, 255, .9); box-shadow: 0 6px 18px rgba(20, 30, 60, .12); }
 .a2 .o-note.o2 { animation-delay: .35s; }
 .a2 .o-note img { width: 38px; height: 38px; border-radius: 9px; flex: none; }
@@ -1447,7 +1457,7 @@ html.glass[data-theme="dark"] {
   --g-a: #1E3A8A; --g-b: #3B1E5E; --g-c: #0B3B4A; --g-op: .55;
   --g-card: linear-gradient(160deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .04));
   --g-edge: inset 0 1px 0 rgba(255, 255, 255, .30), inset 0 0 0 1px rgba(255, 255, 255, .09);
-  --g-drop: 0 14px 34px rgba(0, 0, 0, .4);
+  --g-drop: 0 10px 24px rgba(0, 0, 0, .4);
   --g-bar: rgba(0, 0, 0, .9);
 }
 html.glass[data-theme="light"] {
@@ -1456,7 +1466,7 @@ html.glass[data-theme="light"] {
   --g-a: #DCE6FF; --g-b: #EFE3FF; --g-c: #D9F2F7; --g-op: .8;
   --g-card: linear-gradient(160deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, .55));
   --g-edge: inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(20, 30, 60, .06);
-  --g-drop: 0 12px 30px rgba(40, 50, 110, .10);
+  --g-drop: 0 8px 22px rgba(40, 50, 110, .10);
   --g-bar: rgba(255, 255, 255, .92);
 }
 
@@ -1476,7 +1486,7 @@ html.glass body::before {
 html.glass .sbar { background: transparent; isolation: isolate; }
 /* размытие — на отдельном слое под содержимым шапки: так оно не конфликтует со стеклянными кнопками внутри */
 html.glass .sbar::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--g-bar);
-  -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6); }
+  -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6); }
 html.glass .sbar.stuck { box-shadow: inset 0 -1px 0 var(--hair); }
 
 /* стеклянные поверхности */
@@ -1683,7 +1693,7 @@ html.glass .row :is(.card, .cc) { border-color: transparent; }
    вдвое меньше, а у таблетки (она сама едет вместе с пальцем) размытия нет совсем.
    iPhone не затронут. Проверка: рывки Android в v1.8.6 против v1.8.5 в «Статистике». */
 html.android .tabs {
-  -webkit-backdrop-filter: blur(12px) saturate(200%) brightness(1.06); backdrop-filter: blur(12px) saturate(200%) brightness(1.06); }
+  -webkit-backdrop-filter: blur(12px) saturate(200%); backdrop-filter: blur(12px) saturate(200%); }
 html.android .whead .wbtn, html.android .whead .icon-btn.bell, html.android .btn.icon-btn[data-act="back"] {
   -webkit-backdrop-filter: blur(8px) saturate(180%); backdrop-filter: blur(8px) saturate(180%); }
 html.android .navbar { -webkit-backdrop-filter: blur(12px) saturate(180%); backdrop-filter: blur(12px) saturate(180%); }
@@ -2055,7 +2065,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.8.7";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.8.8";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2694,7 +2704,7 @@ window.__appStart = () => {
 
   function lessonHTML(it, n, isTeacher) {
     const cls = ["row", it.st, it.col, it.first ? "first" : "", it.last ? "last" : "", it.afterPast ? "after-past" : ""].join(" ");
-    let rail = `<span class="seg-top"></span><span class="dot"></span><span class="seg" style="--p:${it.p}%">`;
+    let rail = `<span class="seg-top"></span><span class="dot"></span><span class="seg" style="--p:${it.p}%;--pn:${it.p / 100}">`;
     if (it.st === "live") {
       rail += `<span class="fill"></span><span class="mark"></span>`
         + `<span class="nowlbl" data-nowlbl${it.showNow ? "" : " hidden"}>${esc(it.nowLabel)}</span>`;
@@ -2740,7 +2750,7 @@ window.__appStart = () => {
   }
 
   function breakHTML(it) {
-    return `<li class="brk${it.active ? " active" : ""}" style="--p:${it.p}%" data-brk="${it.i}" aria-hidden="${it.active ? "false" : "true"}">
+    return `<li class="brk${it.active ? " active" : ""}" style="--p:${it.p}%;--pn:${it.p / 100}" data-brk="${it.i}" aria-hidden="${it.active ? "false" : "true"}">
       <div class="time">${it.active ? `<span class="bnow" data-bnow>${esc(it.nowLabel)}</span>` : ""}</div>
       <div class="rail2"><span class="dash"></span>${it.active ? `<span class="bmark"></span>` : ""}</div>
       <div class="blbl">${I.cup}<span data-btext>Перерыв · ${esc(it.text)}</span></div></li>`;
@@ -4430,7 +4440,7 @@ window.__appStart = () => {
         const row = app.querySelector(`[data-cur] [data-row="${it.i}"]`);
         if (!row) continue;
         const seg = row.querySelector(".seg");
-        if (seg) seg.style.setProperty("--p", it.p + "%");
+        if (seg) { seg.style.setProperty("--p", it.p + "%"); seg.style.setProperty("--pn", String(it.p / 100)); }
         const st = row.querySelector("[data-status]");
         if (st) st.textContent = it.statusText;
         const lbl = row.querySelector("[data-nowlbl]");
@@ -4442,7 +4452,7 @@ window.__appStart = () => {
       } else if (it.type === "break" && it.active) {
         const b = app.querySelector(`[data-cur] [data-brk="${it.i}"]`);
         if (!b) continue;
-        b.style.setProperty("--p", it.p + "%");
+        b.style.setProperty("--p", it.p + "%"); b.style.setProperty("--pn", String(it.p / 100));
         const t = b.querySelector("[data-btext]");
         if (t) t.textContent = `Перерыв · ${it.text}`;
         const nl = b.querySelector("[data-bnow]");
@@ -4511,7 +4521,12 @@ window.__appStart = () => {
   // ---------------- липкая шапка ----------------
   // Как «большой заголовок» в iOS: при прокрутке полоса с днями прилипает к верху на стекле,
   // а заголовок недели сжимается. Порог с запасом (56 / 8 px), чтобы не дрожало на границе.
-  let barSmall = false;
+  let barSmall = false, barEl = null, barAnims = [];
+  // v1.8.8: размеры шапки меняются сразу (раскладка пересчитывается один раз), а глазу движение доигрывается
+  // сдвигом и масштабом (translate/scale) — их телефон считает на видеокарте. Раньше плавно менялись
+  // font-size/width/height/margin, и 0,45 с вся страница пересчитывалась на каждом кадре прокрутки.
+  const CAN_FLIP = typeof Element.prototype.animate === "function" && !!(window.CSS && CSS.supports
+    && CSS.supports("translate", "1px 1px") && CSS.supports("scale", "1 1"));
   function syncBar() {
     const bar = app.querySelector(".sbar");
     if (!bar) return;
@@ -4519,7 +4534,68 @@ window.__appStart = () => {
     if (!barSmall && y > 56) barSmall = true;
     else if (barSmall && y < 8) barSmall = false;
     bar.classList.toggle("stuck", y > 2);
-    bar.classList.toggle("small", barSmall);
+    const fresh = bar !== barEl;   // шапка только что нарисована — ставим нужный размер без анимации
+    barEl = bar;
+    if (bar.classList.contains("small") === barSmall) return;
+    const small = barSmall;
+    if (fresh) { bar.classList.toggle("small", small); return; }
+    flipBar(bar, small);
+  }
+  function flipBar(bar, small) {
+    const days = bar.querySelector(".days"), eb = bar.querySelector(".whead .eyebrow");
+    const els = [...bar.querySelectorAll(".whead h1.wr, .whead .top-actions > *"), days].filter(Boolean);
+    for (let s = bar.nextElementSibling; s; s = s.nextElementSibling) els.push(s);   // всё ниже шапки съезжает вместе с ней
+    // «было» — с учётом ещё не доигранного движения (если шапку дёрнули обратно на полпути)
+    const first = els.map((el) => el.getBoundingClientRect());
+    const b0 = bar.getBoundingClientRect(), e0 = eb && eb.getBoundingClientRect();
+    barAnims.forEach((a) => a.cancel());
+    barAnims = [];
+    bar.classList.toggle("small", small);
+    pagerGeo = null;
+    if (REDUCED || !CAN_FLIP) return;
+    // «стало» — все замеры одним проходом, потом только анимации (они раскладку не трогают)
+    const last = els.map((el) => el.getBoundingClientRect());
+    const b1 = bar.getBoundingClientRect();
+    const ext = -(parseFloat(getComputedStyle(bar, "::before").bottom) || 0);   // у «Стекла» фон ниже шапки на 14 px
+    const pg = pagerEl();
+    if (pg) pagerGeo = { pg, top: pg.getBoundingClientRect().top + window.scrollY, pad: parseFloat(getComputedStyle(app).paddingBottom) || 0 };
+    const opt = { duration: 450, easing: springEase() };
+    const run = (el, kf, o) => { try { const a = el.animate(kf, { ...opt, ...o }); barAnims.push(a); return a; } catch (e) { return null; } };
+    els.forEach((el, i) => {
+      const f = first[i], l = last[i];
+      const dx = f.left - l.left, dy = f.top - l.top;
+      const inBar = bar.contains(el), k = inBar && l.height ? f.height / l.height : 1;
+      const sx = inBar && el !== days ? k : 1;   // заголовок и кнопки — без искажения, полоса дней — только по высоте
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(k - 1) < 0.002) return;
+      run(el, [{ translate: `${dx}px ${dy}px`, scale: `${sx} ${k}`, transformOrigin: "0 0" },
+        { translate: "0px 0px", scale: "1 1", transformOrigin: "0 0" }]);
+      // цифры дней не сплющиваются: обратный масштаб (по шагам — чтобы произведение всё время было ≈ 1)
+      if (el === days && Math.abs(k - 1) >= 0.002) {
+        const inv = [];
+        for (let j = 0; j <= 10; j++) inv.push({ scale: `1 ${1 / (k + (1 - k) * j / 10)}`, offset: j / 10 });
+        days.querySelectorAll(":scope > .day, .days-on-in").forEach((c) => run(c, inv));
+      }
+    });
+    // фон шапки (слой ::before) — масштабом от верха
+    if (Math.abs(b0.height - b1.height) > 0.5) {
+      const k = (b0.height + ext) / (b1.height + ext || 1);
+      run(bar, [{ scale: `1 ${k}`, transformOrigin: "50% 0" }, { scale: "1 1", transformOrigin: "50% 0" }], { pseudoElement: "::before" });
+    }
+    // подпись над неделей: при сжатии её копия гаснет на старом месте, при разжатии подпись проявляется
+    if (eb && e0) {
+      if (small && e0.height) {
+        const g = eb.cloneNode(true);
+        g.setAttribute("aria-hidden", "true");
+        Object.assign(g.style, { position: "absolute", left: `${e0.left - b1.left}px`, top: `${e0.top - b1.top}px`, width: `${e0.width}px`,
+          maxHeight: "none", opacity: "1", margin: "0", pointerEvents: "none" });
+        eb.parentNode.appendChild(g);
+        const a = run(g, [{ opacity: 1, translate: "0px 0px" }, { opacity: 0, translate: "0px -6px" }], { duration: 200, easing: "ease-out", fill: "forwards" });
+        const rm = () => g.remove();
+        if (a) a.finished.then(rm, rm); else rm();
+      } else if (!small) {
+        run(eb, [{ opacity: 0, translate: "0px -6px" }, { opacity: 1, translate: "0px 0px" }], { duration: 260, delay: 60, easing: "ease-out", fill: "backwards" });
+      }
+    }
   }
   window.addEventListener("scroll", syncBar, { passive: true });
 
@@ -4794,7 +4870,21 @@ window.__appStart = () => {
     const body = fresh.querySelector(".card, .cc");
     const h1 = body.getBoundingClientRect().height;
     const d = h1 - h0;   // > 0 — раскрываем, < 0 — сворачиваем
-    if (d >= 0) fitPager(); else setTimeout(fitPager, 360);
+    // v1.8.8: всё, что нужно знать о новой карточке, меряем сразу, одним проходом — до любых изменений
+    // страницы. Раньше замеры шли вперемешку со вставкой слоёв, и телефон пересчитывал раскладку 4–5 раз
+    // в самом начале движения (как раз там, где на записях с iPhone пропадали кадры).
+    const bcs = getComputedStyle(body);
+    const radius = bcs.borderTopLeftRadius, shadowStr = bcs.boxShadow || "", shapeStr = bcs.getPropertyValue("corner-shape");
+    const bwPx = parseFloat(bcs.borderTopWidth) || 0;
+    const frR = fresh.getBoundingClientRect(), brR = body.getBoundingClientRect();
+    const afterTop = after.map(([el]) => el.getBoundingClientRect().top);
+    const seg = fresh.querySelector(".seg");
+    const s1 = seg && s0 ? seg.getBoundingClientRect().height || 1 : 1;
+    const title = body.querySelector("h3");
+    const t1 = title && t0 ? title.getBoundingClientRect() : null;
+    const tcs = title ? getComputedStyle(title) : null;
+    const f1 = title ? parseFloat(tcs.fontSize) || f0 : f0;
+    const n1 = title && t1 ? Math.round(t1.height / (parseFloat(tcs.lineHeight) || f1 * 1.3)) : 0;
 
     // Всё движение — сдвигами и масками, которые телефон считает на видеокарте:
     // страница под карточкой не перерисовывается каждый кадр, поэтому без рывков
@@ -4809,19 +4899,18 @@ window.__appStart = () => {
     // С мягким стартом за эти 50 мс проходится всего ~8 точек — прыжка не видно, и конец не кажется «доползанием».
     const ease = "cubic-bezier(.45, 0, .25, 1)", dur = 280, opt = { duration: dur, easing: ease };
     watchFrames("раскрытие карточки", dur);
-    const radius = getComputedStyle(body).borderTopLeftRadius;
     // Свечение и контур карточки в «Стекле» — тени (внешняя и внутренняя «кромка» 1px). Маска раскрытия срезала бы
     // и то и другое: свечение пропадало, а у края, где режет маска, карточка теряла контур. Поэтому на время анимации
     // их рисуют два отдельных слоя: свечение — под карточкой, кромка — поверх; оба плавно меняют высоту вместе с ней.
     // У самой карточки остаются только блики, которым маска не мешает.
     const glowFx = (() => {
-      const parts = (getComputedStyle(body).boxShadow || "").split(/,(?![^(]*\))/).map((x) => x.trim()).filter((x) => x && x !== "none");
+      const parts = shadowStr.split(/,(?![^(]*\))/).map((x) => x.trim()).filter((x) => x && x !== "none");
       const isRing = (x) => /\binset\b/.test(x) && /(^|\s)0px 0px 0px [\d.]+px/.test(x);
       const outer = parts.filter((x) => !/\binset\b/.test(x));
       const ring = parts.filter(isRing);
       if (!outer.length && !ring.length) return null;
       const inner = parts.filter((x) => /\binset\b/.test(x) && !isRing(x)).join(", ") || "none";
-      const fr = fresh.getBoundingClientRect(), br = body.getBoundingClientRect();
+      const fr = frR, br = brR;
       // Всё движется только сдвигом (transform) — так же, как пары ниже: на iPhone сдвиги считает видеокарта,
       // а анимация высоты шла бы отдельно, на основном потоке, и контур «отставал/уезжал» от карточки.
       // позиции — ровно по пикселям экрана: иначе тонкая линия на слое видеокарты размывается (тусклее настоящей)
@@ -4830,7 +4919,7 @@ window.__appStart = () => {
       const H0 = px(h0), H1 = px(h1), hMin = Math.min(H0, H1), hMax = Math.max(H0, H1), R = parseFloat(radius) || 18;
       // форма углов как у карточки: где браузер умеет «сквиркл» (corner-shape), обычная дуга того же радиуса
       // выходит заметно круглее — кромка и свечение шли бы по другой линии, чем край карточки
-      const shape = getComputedStyle(body).getPropertyValue("corner-shape");
+      const shape = shapeStr;
       const box = (st) => { const e = document.createElement("div"); e.setAttribute("aria-hidden", "true");
         Object.assign(e.style, { position: "absolute", pointerEvents: "none", boxSizing: "border-box" }, st);
         if (shape && shape !== "round") e.style.setProperty("corner-shape", shape);
@@ -4851,7 +4940,7 @@ window.__appStart = () => {
         const sh = ring.join(", "), topH = Math.max(R, hMin - R);
         // внутренняя тень рисуется ВНУТРИ рамки (у карточки рамка 1px, хоть и прозрачная) — кромку ставим так же,
         // иначе она на 1 точку снаружи настоящей: контур двоился, а в конце «перепрыгивал» на место
-        const bw = parseFloat(getComputedStyle(body).borderTopWidth) || 0;
+        const bw = bwPx;
         const rIn = `${Math.max(0, R - bw)}px`;
         edge = box({ left: `${L + bw}px`, top: `${T + bw}px`, width: `${Wd - 2 * bw}px`, height: `${hMax - 2 * bw}px`, zIndex: "3" });
         edge.dataset.fx = "edge";
@@ -4870,14 +4959,13 @@ window.__appStart = () => {
     const glowDone = () => { if (glowFx) { glowFx.g.remove(); if (glowFx.edge) glowFx.edge.remove(); fresh.style.isolation = ""; } };
 
     // 1) пары ниже съезжают со старого места на новое
-    for (const [el, top0] of after) {
-      const dy = top0 - el.getBoundingClientRect().top;
+    after.forEach(([el, top0], i) => {
+      const dy = top0 - afterTop[i];
       if (Math.abs(dy) > 0.5) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], opt);
-    }
+    });
     // 2) линия слева растёт/укорачивается вместе с карточкой, кружок на конце остаётся круглым
-    const seg = fresh.querySelector(".seg");
     if (seg && s0) {
-      const s1 = seg.getBoundingClientRect().height || 1, k = s0 / s1;
+      const k = s0 / s1;
       seg.style.transformOrigin = "50% 0";
       seg.animate([{ transform: `scaleY(${k})` }, { transform: "none" }], opt);
       const cap = seg.querySelector(".cap");
@@ -4899,10 +4987,6 @@ window.__appStart = () => {
     // Название: если строки переносятся так же — просто едет и масштабируется. Если перенос другой
     // (в свёрнутой карточке в одну строку, в раскрытой — в две), старое название уезжает и гаснет,
     // а новое появляется на его месте и доезжает — без мгновенного «прыжка» текста
-    const title = body.querySelector("h3");
-    const t1 = title && t0 ? title.getBoundingClientRect() : null;
-    const f1 = title ? parseFloat(getComputedStyle(title).fontSize) || f0 : f0;
-    const n1 = title && t1 ? Math.round(t1.height / (parseFloat(getComputedStyle(title).lineHeight) || f1 * 1.3)) : 0;
     const morph = !!(t1 && n0 && n0 !== n1 && gt);
     if (gt && !morph) gt.style.visibility = "hidden";
     // Фон карточки возвращаем без плавного перехода (иначе после сворачивания он ещё 0,2 с «проявляется»)
@@ -4981,6 +5065,7 @@ window.__appStart = () => {
       c.animate([{ opacity: 0, transform: "translateY(-3px)" }, { opacity: 1, transform: "none" }],
         { duration: 200, delay: (d >= 0 ? 50 : Math.round(dur * (morph ? 0.3 : 0.15))) + 30 * n++, easing: "ease-out", fill: "backwards" });
     }
+    if (d >= 0) fitPager(); else setTimeout(fitPager, 360);
   }
 
   // ---------------- листание дней ----------------
@@ -5018,19 +5103,25 @@ window.__appStart = () => {
   }
   // Высота ленты — как у текущего дня, но до низа экрана: соседние дни при листании видны целиком,
   // а пустого места для прокрутки под коротким днём не появляется
-  function fitPager() {
+  // v1.8.8: где начинается лента и отступ снизу запоминаются (меняются только при перерисовке, повороте
+  // и сжатии шапки), высота пишется, только если изменилась, — после листания на один пересчёт раскладки меньше
+  let pagerGeo = null;
+  function fitPager(fresh) {
     const pg = pagerEl();
     const cur = pg && pg.querySelector("[data-cur]");
     if (!cur) return;
-    const top = pg.getBoundingClientRect().top + window.scrollY;
-    const padBottom = parseFloat(getComputedStyle(app).paddingBottom) || 0;   // место под нижней панелью
-    const visible = window.innerHeight - top - padBottom;
-    pg.style.height = `${Math.max(cur.offsetHeight, Math.round(visible))}px`;
+    if (fresh || !pagerGeo || pagerGeo.pg !== pg) {
+      pagerGeo = { pg, top: pg.getBoundingClientRect().top + window.scrollY,
+        pad: parseFloat(getComputedStyle(app).paddingBottom) || 0 };   // место под нижней панелью
+    }
+    const visible = window.innerHeight - pagerGeo.top - pagerGeo.pad;
+    const h = `${Math.max(cur.offsetHeight, Math.round(visible))}px`;
+    if (pg.style.height !== h) pg.style.height = h;
   }
   function setupPager() {
     const pg = pagerEl();
     if (!pg) return;
-    fitPager();
+    fitPager(true);
     pagerScrollToCurrent(pg);   // лента сама не прокручивается — двигаем дни трансформом
     setupPill();
   }
@@ -5302,7 +5393,7 @@ window.__appStart = () => {
   function putPill(f) {
     const el = pillEl(), r = pillAt(f);
     if (!el || !r) return;
-    const x = snap(r.x), w = `${r.w}px`;
+    const x = snap(r.x), w = `${Math.round(r.w)}px`;   // v1.8.8: целые точки — при листании ширина не пишется каждый кадр
     if (el.style.width !== w) el.style.width = w;
     el.style.transform = `translate3d(${x}px,0,0)`;
     // «окно» таблетки с белыми цифрами едет вместе с ней, а строка цифр внутри — навстречу:
@@ -5465,13 +5556,16 @@ window.__appStart = () => {
       const on = seg.querySelector("button.on");
       if (!on) { th.style.width = "0"; continue; }
       const to = { left: on.offsetLeft, width: on.offsetWidth };
+      // v1.8.8: ширина ставится сразу конечная, а разницу доигрывает scaleX (от центра) — только видеокарта
+      th.style.width = `${to.width}px`;
       if (segFrom && !REDUCED && (segFrom.left !== to.left)) {
         th.classList.remove("go");
-        th.style.transform = `translate3d(${segFrom.left}px,0,0)`; th.style.width = `${segFrom.width}px`;
+        const k = segFrom.width / (to.width || 1);
+        th.style.transform = `translate3d(${segFrom.left - (to.width - segFrom.width) / 2}px,0,0) scaleX(${k.toFixed(4)})`;
         void th.offsetWidth;
         th.classList.add("go", "mv");
       }
-      th.style.transform = `translate3d(${to.left}px,0,0)`; th.style.width = `${to.width}px`;
+      th.style.transform = `translate3d(${to.left}px,0,0)`;
     }
     segFrom = null;
   }
