@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="02d16c0e1bc0">
+<meta name="app-ver" content="0b74cb5cb961">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1317,7 +1317,7 @@ html.nb-on #app > .top h1, html.nb-on #app > .top .eyebrow { opacity: 0; }
   position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 18px; pointer-events: none;
   background: var(--surface2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 0 0 1px var(--border);
 }
-.seg3 .thumb.go { transition: transform .45s var(--ease-spring, ease); }
+.seg3 .thumb.go { transition: transform .45s var(--ease-spring, ease), translate .45s var(--ease-spring, ease); }
 html[data-theme="light"] .seg3 .thumb { background: #FFFFFF; box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
 .seg3 .thumb.mv { animation: lensMv .45s cubic-bezier(.3, .7, .4, 1); }
 
@@ -1760,6 +1760,20 @@ html.d3.glass .row.live :is(.card, .cc) { background: linear-gradient(160deg, rg
 /* нижняя панель: выбранная вкладка — цветом */
 html.d3.glass .tab.on { color: var(--accent); }
 html.d3.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
+
+/* v1.9.5: фон липкой полосы (неделя и дни) — только когда она прилипла к верху и под неё уезжает лента.
+   Пока полоса стоит на месте (у преподавателя — под его карточкой), фона нет: цветная подсветка не обрезается линией */
+.sbar::before { transition: opacity .2s ease, box-shadow .25s ease; }
+.sbar:not(.stuck)::before { opacity: 0; }
+
+/* v1.9.5: линза нижней панели не выходит за её край. «Желе» растягивает линзу от края, который внутри панели
+   (у первой вкладки — от левого, у последней — от правого, у средней — от центра), а к крайней вкладке она едет
+   без пружинного перелёта (класс .edge ставит 29-ios26.js) */
+/* scale действует после сдвига (translate в transform), поэтому точка растяжения — в координатах несдвинутой линзы:
+   сдвиг ti·100% плюс ti·50% внутри неё (0 → левый край, 1 → центр, 2 → правый край) */
+.tabs .lens { transform-origin: calc(var(--ti, 0) * 150%) 50%; }
+.tabs .lens.edge { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
+.seg3 .thumb.go.edge { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
 </style>
 </head>
 <body>
@@ -2151,7 +2165,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.9.4";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.9.5";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4622,7 +4636,7 @@ window.__appStart = () => {
   // ---------------- липкая шапка ----------------
   // Как «большой заголовок» в iOS: при прокрутке полоса с днями прилипает к верху на стекле,
   // а заголовок недели сжимается. Порог с запасом (56 / 8 px), чтобы не дрожало на границе.
-  let barSmall = false, barEl = null, barAnims = [];
+  let barSmall = false, barEl = null, barAnims = [], barTop = 0;
   // v1.8.8: размеры шапки меняются сразу (раскладка пересчитывается один раз), а глазу движение доигрывается
   // сдвигом и масштабом (translate/scale) — их телефон считает на видеокарте. Раньше плавно менялись
   // font-size/width/height/margin, и 0,45 с вся страница пересчитывалась на каждом кадре прокрутки.
@@ -4634,8 +4648,11 @@ window.__appStart = () => {
     const y = window.scrollY;
     if (!barSmall && y > 56) barSmall = true;
     else if (barSmall && y < 8) barSmall = false;
-    bar.classList.toggle("stuck", y > 2);
-    const fresh = bar !== barEl;   // шапка только что нарисована — ставим нужный размер без анимации
+    const fresh = bar !== barEl;
+    // v1.9.5: «прилипла» — только когда полоса и правда стоит у верхнего края. У преподавателя над ней карточка,
+    // и раньше фон полосы появлялся уже при y > 2 — посреди страницы, резкой линией поперёк цветной подсветки
+    if (fresh) barTop = parseFloat(getComputedStyle(bar).top) || 0;
+    bar.classList.toggle("stuck", y > 2 && (bar === app.firstElementChild || bar.getBoundingClientRect().top <= barTop + 1));   // шапка только что нарисована — ставим нужный размер без анимации
     barEl = bar;
     if (bar.classList.contains("small") === barSmall) return;
     const small = barSmall;
@@ -5621,6 +5638,8 @@ window.__appStart = () => {
     lensTi = i;
     if (first) { lens.style.transition = "none"; inn.style.setProperty("--ti", i); void lens.offsetWidth; lens.style.transition = ""; return; }
     inn.style.setProperty("--ti", i);
+    // v1.9.5: к крайней вкладке — без перелёта (пружина выносила линзу за край панели), к средней — с пружинкой
+    lens.classList.toggle("edge", i === 0 || i === tabs.length - 1);
     if (!REDUCED) { lens.classList.remove("mv"); void lens.offsetWidth; lens.classList.add("mv"); }
   }
 
@@ -5663,14 +5682,22 @@ window.__appStart = () => {
       const to = { left: on.offsetLeft, width: on.offsetWidth };
       // v1.8.8: ширина ставится сразу конечная, а разницу доигрывает scaleX (от центра) — только видеокарта
       th.style.width = `${to.width}px`;
+      // v1.9.5: сдвиг — отдельным свойством translate (оно применяется после всех растяжений). Сжатие и «желе» тянутся
+      // от края, который внутри полосы: у первого варианта — от левого, у последнего — от правого, у среднего — от центра.
+      // К крайнему варианту ползунок едет без пружинного перелёта. Раньше «желе» тянуло от точки у левого края полосы
+      // и у «Тёмной» выносило ползунок за край на ~30 точек.
+      const btns = [...seg.querySelectorAll("button")], idx = btns.indexOf(on);
+      const f = idx === 0 ? 0 : idx === btns.length - 1 ? 1 : 0.5;
+      th.style.transformOrigin = `${f * 100}% 50%`;
+      th.classList.toggle("edge", f !== 0.5);
       if (segFrom && !REDUCED && (segFrom.left !== to.left)) {
         th.classList.remove("go");
         const k = segFrom.width / (to.width || 1);
-        th.style.transform = `translate3d(${segFrom.left - (to.width - segFrom.width) / 2}px,0,0) scaleX(${k.toFixed(4)})`;
+        th.style.translate = `${segFrom.left - f * (to.width - segFrom.width)}px 0`; th.style.transform = `scaleX(${k.toFixed(4)})`;
         void th.offsetWidth;
         th.classList.add("go", "mv");
       }
-      th.style.transform = `translate3d(${to.left}px,0,0)`;
+      th.style.translate = `${to.left}px 0`; th.style.transform = "";
     }
     segFrom = null;
   }
