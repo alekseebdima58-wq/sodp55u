@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="a72fd75fbddb">
+<meta name="app-ver" content="99c16b56aaca">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1738,14 +1738,17 @@ html.d3 .hr b { font-size: calc(28px * var(--fs, 1)); font-weight: 800; letter-s
 html.d3.glass .hero { background: linear-gradient(150deg, rgba(var(--k-rgb), .58), rgba(var(--k-rgb), .16) 62%, rgba(255, 255, 255, .05));
   box-shadow: var(--g-edge), 0 26px 60px -18px rgba(var(--k-rgb), .85); }
 html.d3.glass[data-theme="light"] .hero { background: linear-gradient(150deg, rgba(var(--k-rgb), .42), rgba(255, 255, 255, .72) 75%); }
-/* блик по стеклу: медленно вращается. Отдельный слой видеокарты (will-change) — страница при этом не перерисовывается;
-   блок ушёл с экрана или приложение свёрнуто — вращение на паузе (класс .d3off ставит 33-bold-glass.js) */
-html.d3 .hero::after { content: ""; position: absolute; z-index: -1; left: -50%; top: -150%; width: 200%; height: 400%; pointer-events: none;
-  background: conic-gradient(from 0deg, transparent 0 60%, rgba(255, 255, 255, .17) 73%, transparent 86%);
-  will-change: transform; animation: d3spin 12s linear infinite; }
-html.d3 .hero.d3off::after { animation-play-state: paused; }
-@keyframes d3spin { to { transform: rotate(1turn); } }
-@media (prefers-reduced-motion: reduce) { html.d3 .hero::after { animation: none; } }
+/* свет на стекле «Сейчас»: два мягких источника, их вставляет и ведёт 33-bold-glass.js.
+   .hglow — большое размытое свечение, .hstreak — вытянутый блик-отражение. Оба плывут без остановок по своей
+   гладкой случайной траектории; анимацию считает видеокарта (Web Animations: только transform и opacity).
+   Острых краёв нет: радиальные градиенты гаснут внутри своего слоя. Здесь — положение «в покое» (без анимации) */
+html.d3 .hero > .hglow, html.d3 .hero > .hstreak { position: absolute; z-index: -1; left: 50%; top: 50%; pointer-events: none; will-change: transform, opacity; }
+html.d3 .hero > .hglow { width: 380px; height: 380px; margin: -190px 0 0 -190px; transform: translate(-20%, -15%); opacity: .8;
+  background: radial-gradient(circle closest-side, rgba(255, 255, 255, .15), rgba(255, 255, 255, .07) 38%, rgba(255, 255, 255, .02) 68%, transparent); }
+html.d3 .hero > .hstreak { width: 420px; height: 420px; margin: -210px 0 0 -210px; transform: translate(20%, 0) rotate(35deg); opacity: .8;
+  background: radial-gradient(ellipse 15% 46% at 50% 50%, rgba(255, 255, 255, .22), rgba(255, 255, 255, .08) 42%, rgba(255, 255, 255, .02) 72%, transparent); }
+html.d3[data-theme="light"] .hero > .hglow { background: radial-gradient(circle closest-side, rgba(255, 255, 255, .55), rgba(255, 255, 255, .22) 40%, transparent); }
+html.d3[data-theme="light"] .hero > .hstreak { background: radial-gradient(ellipse 15% 46% at 50% 50%, rgba(255, 255, 255, .7), rgba(255, 255, 255, .25) 42%, transparent); }
 
 /* лента: время крупнее, карточки подкрашены цветом типа пары */
 html.d3 .time .st { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
@@ -1992,7 +1995,8 @@ window.__appStart = () => {
       if (tgt) { tgt.removeEventListener("touchmove", tMove, { capture: true }); tgt.removeEventListener("touchend", tEnd, { capture: true }); tgt.removeEventListener("touchcancel", tEnd, { capture: true }); }
       tgt = el;
       if (!el) return;
-      el.addEventListener("touchmove", tMove, { passive: false, capture: true });
+      // в зоне горизонтальных жестов (или когда возможен «назад» от края) — с правом отменить прокрутку, иначе пассивно
+      el.addEventListener("touchmove", tMove, { passive: !(edgeOn || inZone(el)), capture: true });
       el.addEventListener("touchend", tEnd, { passive: true, capture: true });
       el.addEventListener("touchcancel", tEnd, { passive: true, capture: true });
     }
@@ -2084,6 +2088,31 @@ window.__appStart = () => {
       }
     }
     const dMove = once(onMove), dEnd = once(onEnd), tMove = once(onMove), tEnd = once(onEnd);
+    // Пассивные касания (v1.9.3). Обработчик с правом отменить прокрутку (passive: false) заставляет браузер на каждом
+    // движении пальца ждать JS: если приложение в этот момент занято, прокрутка трогается с задержкой.
+    // Отменять прокрутку нужно только горизонтальным жестам — листанию дней и свайпу уведомления (их зоны —
+    // [data-pager] и .ncw, см. Gesture.zones) и свайпу «назад» от края (весь экран, только вне Telegram и только
+    // когда есть куда вернуться — Gesture.edge). Всё остальное (вкладка «Преподаватели», настройки, шапка) — пассивно:
+    // там прокручивает сам телефон, не дожидаясь JS.
+    const ZONE = "[data-pager], .ncw";
+    let edgeOn = false;
+    const inZone = (el) => !!(el && el.closest && el.closest(ZONE));
+    const bMove = (e) => dMove(e);                                            // может отменить прокрутку
+    const pMove = (e) => { if (edgeOn || inZone(e.target)) return; dMove(e); };   // пассивный: в зонах ждёт bMove
+    function zones(root) {
+      for (const el of root.querySelectorAll(ZONE)) {
+        if (el.__gz) continue;
+        el.__gz = 1;
+        el.addEventListener("touchmove", bMove, { passive: false, capture: true });
+      }
+    }
+    function edge(on) {
+      on = !!on;
+      if (on === edgeOn) return;
+      edgeOn = on;
+      if (on) document.addEventListener("touchmove", bMove, { passive: false, capture: true });
+      else document.removeEventListener("touchmove", bMove, { capture: true });
+    }
     let on = false;
     function add(g) {   // g.prio — кто раньше узнаёт своё движение (свайп «назад» от края — первым)
       list.push(g);
@@ -2091,13 +2120,13 @@ window.__appStart = () => {
       if (on) return;
       on = true;
       document.addEventListener("touchstart", onStart, { passive: true, capture: true });
-      document.addEventListener("touchmove", dMove, { passive: false, capture: true });
+      document.addEventListener("touchmove", pMove, { passive: true, capture: true });
       document.addEventListener("touchend", dEnd, { passive: true, capture: true });
       document.addEventListener("touchcancel", dEnd, { passive: true, capture: true });
       document.addEventListener("visibilitychange", () => { if (document.hidden) cancelAll(); });
     }
     const busy = () => !!owner;
-    return { add, busy, cancelAll };
+    return { add, busy, cancelAll, zones, edge };
   })();
 
   // Общая физика «доезда» после отпускания. dist — сколько осталось проехать (px, со знаком),
@@ -2121,7 +2150,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.9.0";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.9.3";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2481,11 +2510,18 @@ window.__appStart = () => {
   // v1.8.7: старт мягче (доля плавного разгона 0,35 → 0,6). На записи с iPhone в начале перехода один кадр замирал:
   // при резком старте это видно как «дёрнулось» (экран уже ушёл на десятки точек и встал), при мягком за этот кадр
   // он проходит в полтора раза меньше — запинку не видно. Конец движения почти тот же.
+  // v1.9.3: на записи с iPhone (открытие «Уведомлений») прежняя кривая давала «замялся — рывок»: первые 0,1 с экран
+  // полз по ~19 точек за кадр, к середине разгонялся до 34 и только потом тормозил — глазу это видно как дёрганье.
+  // Теперь как у iOS: мягкий первый кадр (~15 точек — меньше прежнего, запинки на старте не видно), за 2–3 кадра
+  // выход на скорость и дальше только ровное торможение, без второго разгона.
   const NAV_EASE = (() => {
-    const f = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2) * 0.6 + (1 - Math.pow(1 - k, 3)) * 0.4;
+    const N = 400, v = [], s = [0];
+    for (let i = 0; i <= N; i++) v.push((1 - Math.exp(-(i / N) / 0.07)) * Math.pow(1 - i / N, 2.2));
+    for (let i = 1; i <= N; i++) s.push(s[i - 1] + (v[i] + v[i - 1]) / 2);
+    const f = (k) => s[Math.round(k * N)] / s[N];
     const lin = "linear(" + Array.from({ length: 25 }, (_, i) => f(i / 24).toFixed(4)).join(", ") + ")";
     try { if (CSS.supports("animation-timing-function", lin)) return lin; } catch (e) { /* нет CSS.supports */ }
-    return "cubic-bezier(.35, .55, .2, 1)";
+    return "cubic-bezier(.2, .75, .25, 1)";
   })();
   function navLayers(entry) {
     glassSwipeVars();
@@ -5269,11 +5305,12 @@ window.__appStart = () => {
   // 70–80 мс без единого кадра, ровно в момент «приземления» дня (в отчётах — «рывок, листание»).
   // Теперь готовые дни ленты просто перекладываются (въехавший становится текущим, ушедший — соседом),
   // и достраивается только один новый день с дальней стороны. Шапка и полоса дней в той же неделе
-  // не пересобираются — только отметка выбранного дня. Если что-то сложнее (другая неделя, раскрытые
-  // карточки, у преподавателя меняется кнопка «Сегодня») — по-старому, полной перерисовкой.
+  // не пересобираются — только отметка выбранного дня. Если что-то сложнее (другая неделя или
+  // у преподавателя меняется кнопка «Сегодня») — по-старому, полной перерисовкой.
   function fastShift(c, np, dir) {
     const pg = pagerEl();
-    if (!pg || !dir || PAGER_SPAN !== 1 || np.w !== c.p.w || opened.size || enterNext || slideDir) return false;
+    // v1.9.3: раскрытая карточка больше не заставляет перерисовывать весь экран — см. reuse ниже
+    if (!pg || !dir || PAGER_SPAN !== 1 || np.w !== c.p.w || enterNext || slideDir) return false;
     const isTeacher = view === "teacher";
     const cur = pg.querySelector(":scope > [data-cur]");
     const inc = pg.querySelector(dir > 0 ? ":scope > .page.next" : ":scope > .page.prev");
@@ -5285,10 +5322,13 @@ window.__appStart = () => {
     }
     const step = stepPos(c.data, c.p, dir);
     const isStep = !!step && step.w === np.w && step.d === np.d;
+    // ушедший день с раскрытыми карточками соседом не оставляем: при возврате он должен быть свёрнутым —
+    // его достроит ensureNeighbors уже после того, как новый день показан
+    const reuse = isStep && !opened.size;
     const pageHTML = (q, cls) => `<div class="page ${cls}" aria-hidden="true" inert>${dayBodyHTML(c.data, q.w, q.d, isTeacher, false)}</div>`;
     const back = dir > 0 ? "prev" : "next", fwd = dir > 0 ? "next" : "prev";
-    for (const el of [...pg.children]) if (el !== inc && !(isStep && el === cur)) el.remove();
-    if (isStep) {   // ушедший день остаётся соседом — заново его не строим
+    for (const el of [...pg.children]) if (el !== inc && !(reuse && el === cur)) el.remove();
+    if (reuse) {   // ушедший день остаётся соседом — заново его не строим
       cur.removeAttribute("data-cur");
       cur.className = `page ${back}`;
       cur.setAttribute("aria-hidden", "true");
@@ -6278,14 +6318,88 @@ window.__appStart = () => {
     window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
     if (document.readyState === "complete") navigator.serviceWorker.register("sw.js").catch(() => {});
   }
-  // ---------------- «стекло, смелее»: блик «Сейчас» вращается, только пока его видно ----------------
-  if (D3 && "IntersectionObserver" in window) {
-    const seen = new WeakMap();
-    const io = new IntersectionObserver((es) => { for (const e of es) { seen.set(e.target, e.isIntersecting); e.target.classList.toggle("d3off", !e.isIntersecting || document.hidden); } });
-    const watch = () => { for (const h of app.querySelectorAll(".hero:not([data-io])")) { h.dataset.io = "1"; h.classList.add("d3off"); io.observe(h); } };
+  // ---------------- «стекло, смелее»: свет на блоке «Сейчас» плывёт плавно и хаотично ----------------
+  // Два источника (свечение и блик, вид — в 17-bold-glass.css). Каждый движется по своей гладкой замкнутой кривой:
+  // сумма нескольких синусоид со случайными частотами и фазами. Скорость меняется сама собой, но никогда не падает
+  // скачком до нуля — нет «поехал, притормозил, поехал». Кривые новые при каждом запуске приложения.
+  // Вся траектория отдаётся браузеру одной анимацией (element.animate, только transform и opacity): её считает
+  // видеокарта, JS в кадрах не участвует, и свет не подтормаживает, даже когда приложение занято.
+  // Блок «Сейчас» перерисовался (другой день, вкладка) — свет продолжает с того же места (общее «время света»).
+  // Блок не виден или приложение свёрнуто — анимация на паузе; при «уменьшить движение» свет стоит.
+  if (D3) {
+    const calm = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const canAnim = !calm && typeof Element.prototype.animate === "function";
+    const LOOP = 180;          // секунд до повтора траектории (конец гладко сходится с началом)
+    const STEP = 0.2;          // шаг ключевых кадров, с: между ними — прямые отрезки, на глаз неотличимо от кривой
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    // гладкая периодичная величина: center ± amp, из 3 синусоид с целыми частотами (чтобы за LOOP сойтись в начало)
+    function wave(center, amp, fmin, fmax) {
+      const parts = [0, 1, 2].map(() => ({ f: Math.round(rnd(fmin, fmax)), ph: rnd(0, 2 * Math.PI), w: rnd(.5, 1) }));
+      const sum = parts.reduce((s, p) => s + p.w, 0);
+      return (t) => center + amp * parts.reduce((s, p) => s + p.w * Math.sin(2 * Math.PI * p.f * t / LOOP + p.ph), 0) / sum;
+    }
+    // слой свечения 380px, блика 420px: сдвиг в % слоя ≈ ±45% ширины и ±50% высоты блока
+    const LIGHTS = [
+      { cls: "hglow", x: wave(0, 42, 4, 9), y: wave(0, 30, 4, 9), s: wave(1.02, .27, 3, 8), o: wave(.75, .25, 3, 8) },
+      { cls: "hstreak", x: wave(0, 38, 6, 13), y: wave(0, 24, 6, 13), a: wave(37, 23, 4, 10), s: wave(.97, .17, 5, 11), o: wave(.62, .4, 6, 14) },
+    ];
+    for (const L of LIGHTS) {
+      L.frames = [];
+      for (let t = 0; t <= LOOP + 1e-9; t += STEP) {
+        const tr = `translate(${L.x(t).toFixed(2)}%, ${L.y(t).toFixed(2)}%)` + (L.a ? ` rotate(${L.a(t).toFixed(2)}deg)` : "") + ` scale(${L.s(t).toFixed(3)})`;
+        L.frames.push({ transform: tr, opacity: Math.min(1, Math.max(.12, L.o(t))).toFixed(3) });
+      }
+    }
+    // общее «время света»: идёт, пока свет виден; новый блок подхватывает его с того же места
+    let t0 = performance.now(), pausedAt = performance.now();
+    const phase = () => ((pausedAt != null ? pausedAt : performance.now()) - t0) % (LOOP * 1000);
+    const anims = new Set();
+    const vis = new Set();
+    function sync() {
+      const run = !document.hidden && vis.size > 0;
+      for (const a of anims) if (!a.effect || !a.effect.target || !a.effect.target.isConnected) anims.delete(a);
+      if (run === (pausedAt == null)) return;          // ничего не поменялось — анимации не трогаем
+      if (run) { t0 += performance.now() - pausedAt; pausedAt = null; } else pausedAt = performance.now();
+      const p = phase();
+      for (const a of anims) { try { a.currentTime = p; if (run) a.play(); else a.pause(); } catch (e) { /* старый браузер */ } }
+    }
+    function light(hero) {
+      for (const L of LIGHTS) {
+        const el = document.createElement("i");
+        el.className = L.cls; el.setAttribute("aria-hidden", "true");
+        hero.prepend(el);
+        if (!canAnim) continue;
+        try {
+          const a = el.animate(L.frames, { duration: LOOP * 1000, iterations: Infinity, easing: "linear" });
+          a.currentTime = phase();
+          if (pausedAt != null) a.pause();
+          anims.add(a);
+        } catch (e) { /* без анимации — свет стоит на месте */ }
+      }
+    }
+    const io = "IntersectionObserver" in window
+      ? new IntersectionObserver((es) => { for (const e of es) { if (e.isIntersecting) vis.add(e.target); else vis.delete(e.target); } sync(); })
+      : null;
+    const watch = () => {
+      for (const h of vis) if (!h.isConnected) { vis.delete(h); if (io) io.unobserve(h); }
+      for (const h of app.querySelectorAll(".hero:not([data-io])")) {
+        h.dataset.io = "1"; light(h);
+        if (io) io.observe(h); else vis.add(h);
+      }
+      sync();
+    };
     new MutationObserver(watch).observe(app, { childList: true, subtree: true });
     watch();
-    document.addEventListener("visibilitychange", () => { for (const h of app.querySelectorAll(".hero")) h.classList.toggle("d3off", document.hidden || !seen.get(h)); });
+    document.addEventListener("visibilitychange", sync);
+  }
+  // ---------------- пассивные касания: где жестам можно отменять прокрутку (см. 05-gestures.js) ----------------
+  // После любой перестройки разметки: новым лентам дней и карточкам уведомлений — право отменить прокрутку;
+  // всему экрану — только если вне Telegram есть куда вернуться свайпом от края. Наблюдатель срабатывает до
+  // следующего касания, поэтому браузер заранее знает, где ждать JS, а где прокручивать сразу.
+  {
+    const sync = () => { try { Gesture.zones(app); Gesture.edge(!inTG && stack.length > 0); } catch (e) { /* без этого — как раньше */ } };
+    new MutationObserver(sync).observe(app, { childList: true, subtree: true });
+    sync();
   }
 };
 window.__boot();
