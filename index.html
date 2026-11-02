@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="92992faf5b18">
+<meta name="app-ver" content="ef15299efedf">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1884,16 +1884,21 @@ window.__appStart = () => {
   // Заодно узнаём настоящую частоту кадров у человека (30 — энергосбережение, 60, 120 — ProMotion).
   function watchFrames(where, ms) {
     if (document.hidden || !window.requestAnimationFrame) return;
-    const gaps = [];
+    const gaps = [], ends = [];
     let last = 0;
     const t0 = performance.now();
     const step = (ts) => {
-      if (last) gaps.push(ts - last);
+      if (last) { gaps.push(ts - last); ends.push(ts); }
       last = ts;
       if (ts - t0 < ms && !document.hidden) { requestAnimationFrame(step); return; }
       if (gaps.length < 4) return;
       const body = gaps.slice(1).sort((a, b) => a - b), med = body[Math.floor(body.length / 2)], max = body[body.length - 1];
-      if (max > Math.max(50, med * 3)) DIAG.add("jank", where, max);
+      if (max > Math.max(50, med * 3)) {
+        // v1.8.7: в какой части движения был самый долгий кадр — начало, середина или конец.
+        // По этому видно, что тормозит: подготовка слоёв (начало) или перестройка после остановки (конец).
+        const i = gaps.indexOf(max, 1), k = i > 0 ? (ends[i] - gaps[i] - t0) / Math.max(1, ms) : 0.5;   // где кадр начался
+        DIAG.add("jank", `${where} · ${k < 0.3 ? "начало" : k > 0.75 ? "конец" : "середина"}`, max);
+      }
     };
     requestAnimationFrame(step);
   }
@@ -2050,7 +2055,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.8.6";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.8.7";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2403,9 +2408,12 @@ window.__appStart = () => {
     return anims;
   }
   const animsDone = (anims, ms) => (anims.length ? anims[0].finished : new Promise((r) => setTimeout(r, Math.max(0, ms))));
-  // кривая переходов между экранами (разгон и мягкая остановка, как у iPhone) — точной ломаной, где браузер умеет
+  // кривая переходов между экранами (разгон и мягкая остановка, как у iPhone) — точной ломаной, где браузер умеет.
+  // v1.8.7: старт мягче (доля плавного разгона 0,35 → 0,6). На записи с iPhone в начале перехода один кадр замирал:
+  // при резком старте это видно как «дёрнулось» (экран уже ушёл на десятки точек и встал), при мягком за этот кадр
+  // он проходит в полтора раза меньше — запинку не видно. Конец движения почти тот же.
   const NAV_EASE = (() => {
-    const f = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2) * 0.35 + (1 - Math.pow(1 - k, 3)) * 0.65;
+    const f = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2) * 0.6 + (1 - Math.pow(1 - k, 3)) * 0.4;
     const lin = "linear(" + Array.from({ length: 25 }, (_, i) => f(i / 24).toFixed(4)).join(", ") + ")";
     try { if (CSS.supports("animation-timing-function", lin)) return lin; } catch (e) { /* нет CSS.supports */ }
     return "cubic-bezier(.35, .55, .2, 1)";
@@ -6073,18 +6081,22 @@ window.__appStart = () => {
         dx = 0; mode = 0; vx = 0;
         const pg = p.target.closest && p.target.closest("[data-pager]");
         if (pg) { lockedPager = pg; pg.style.overflowX = "hidden"; }   // у края — жест «назад», а не листание дней
+        // Слои готовим уже на касании, а не на первом сдвиге пальца (v1.8.7): снимок прошлого экрана — копия всей
+        // страницы, и вставка его в первом кадре движения на iPhone давала замерший кадр в начале свайпа.
+        // Пока палец не сдвинулся, всё стоит на месте: прошлый экран закрыт текущим, видно то же, что и было.
+        begin(); setP(0);
         return { sx: p.x };
       },
       decide(st, ddx, ddy) {
         if (Math.abs(ddx) < 6 && Math.abs(ddy) < 6) return 0;
         return ddx > 0 && ddx >= Math.abs(ddy) ? 1 : -1;
       },
-      claim() { mode = 1; begin(); },
+      claim() { mode = 1; if (!under) { begin(); setP(0); } },
       move(st, p) { dx = p.x - st.sx; setP(Math.max(0, dx) / W()); },
       end(st, info) {
         const was = info.claimed;
         mode = 0; unlockPager();
-        if (!was) return;
+        if (!was) { if (!animating) cleanup(); return; }   // касание у края без свайпа — заготовленные слои убираем
         if (info.cancelled) { vx = 0; settle(false); return; }
         dx = info.x - st.sx; vx = info.vx;
         const p = Math.max(0, dx) / W();
