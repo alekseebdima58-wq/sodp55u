@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="d90c06ac073d">
+<meta name="app-ver" content="a72fd75fbddb">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1706,6 +1706,56 @@ html.android .navbar { -webkit-backdrop-filter: blur(12px) saturate(180%); backd
 html.android .ibar { -webkit-backdrop-filter: blur(12px) saturate(180%); backdrop-filter: blur(12px) saturate(180%); }
 html.android.glass .sbar::before { -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6); }
 html.android.glass .days .pill { -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* ================= «Стекло, смелее» (проба, html.d3) =================
+   Та же раскладка, что и сейчас; меняется подача: фон окрашен цветом текущей пары, крупнее заголовки и время,
+   блок «Сейчас» ярче и с медленным бликом, карточки чуть подкрашены цветом своего типа, выбранный день — цветом. */
+
+/* фон — цветом идущей (или ближайшей) пары; нет пары — фирменным синим */
+html.d3 { --amb: var(--acc-rgb); }
+/* цвет пары ставит renderSchedule (свойство --amb у html) */
+html.d3.glass[data-theme="dark"] { --g-a: color-mix(in srgb, rgb(var(--amb)) 62%, #000); --g-c: color-mix(in srgb, rgb(var(--amb)) 45%, #000); --g-op: .75; }
+html.d3.glass[data-theme="light"] { --g-a: color-mix(in srgb, rgb(var(--amb)) 30%, #fff); --g-c: color-mix(in srgb, rgb(var(--amb)) 22%, #fff); --g-op: .95; }
+
+/* шапка: крупный жирный заголовок недели */
+html.d3 .whead { --wrfs: clamp(22px, 6.6vw, 26px); }   /* крупнее прежних 22, но не наезжает на кнопки недели */
+html.d3 h1.wr { font-weight: 800; letter-spacing: -.025em; }
+html.d3 .dayhead h2 { font-size: calc(24px * var(--fs, 1)); font-weight: 800; letter-spacing: -.02em; }
+
+/* выбранный день — цветная линза */
+html.d3.glass .days .pill { background: linear-gradient(180deg, rgba(var(--acc-rgb), .95), rgba(var(--acc-rgb), .7)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 8px 22px rgba(var(--acc-rgb), .45); }
+html.d3.glass .days-on-in, html.d3.glass[data-theme="light"] .days-on-in { color: #FFFFFF; }
+html.d3.glass .days-on .dots i, html.d3.glass[data-theme="light"] .days-on .dots i { background: #FFFFFF; }
+html.d3.glass .days-on .s, html.d3.glass[data-theme="light"] .days-on .s { color: #FFFFFF; opacity: .85; }
+
+/* «Сейчас»: крупнее, насыщеннее, с медленным бликом по стеклу */
+html.d3 .hero { padding: 20px; gap: 14px 16px; border-radius: 30px; overflow: hidden; isolation: isolate; }
+html.d3 .hv-ring { grid-template-columns: 92px minmax(0, 1fr); }
+html.d3 .ring { width: 92px; height: 92px; }
+html.d3 .ring circle { stroke-width: 8; }
+html.d3 .ring .rv b { font-size: 30px; font-weight: 800; }
+html.d3 .hero h3 { font-size: calc(19px * var(--fs, 1)); font-weight: 700; letter-spacing: -.01em; }
+html.d3 .hr b { font-size: calc(28px * var(--fs, 1)); font-weight: 800; letter-spacing: -.03em; }
+html.d3.glass .hero { background: linear-gradient(150deg, rgba(var(--k-rgb), .58), rgba(var(--k-rgb), .16) 62%, rgba(255, 255, 255, .05));
+  box-shadow: var(--g-edge), 0 26px 60px -18px rgba(var(--k-rgb), .85); }
+html.d3.glass[data-theme="light"] .hero { background: linear-gradient(150deg, rgba(var(--k-rgb), .42), rgba(255, 255, 255, .72) 75%); }
+/* блик по стеклу: медленно вращается. Отдельный слой видеокарты (will-change) — страница при этом не перерисовывается;
+   блок ушёл с экрана или приложение свёрнуто — вращение на паузе (класс .d3off ставит 33-bold-glass.js) */
+html.d3 .hero::after { content: ""; position: absolute; z-index: -1; left: -50%; top: -150%; width: 200%; height: 400%; pointer-events: none;
+  background: conic-gradient(from 0deg, transparent 0 60%, rgba(255, 255, 255, .17) 73%, transparent 86%);
+  will-change: transform; animation: d3spin 12s linear infinite; }
+html.d3 .hero.d3off::after { animation-play-state: paused; }
+@keyframes d3spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { html.d3 .hero::after { animation: none; } }
+
+/* лента: время крупнее, карточки подкрашены цветом типа пары */
+html.d3 .time .st { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
+html.d3.glass .row:not(.past) :is(.card, .cc) { background: linear-gradient(160deg, rgba(var(--k-rgb), .16), rgba(255, 255, 255, .05) 62%); }
+html.d3.glass[data-theme="light"] .row:not(.past) :is(.card, .cc) { background: linear-gradient(160deg, rgba(var(--k-rgb), .12), rgba(255, 255, 255, .78) 62%); }
+html.d3.glass .row.live :is(.card, .cc) { background: linear-gradient(160deg, rgba(var(--k-rgb), .36), rgba(255, 255, 255, .06)); }
+
+/* нижняя панель: выбранная вкладка — цветом */
+html.d3.glass .tab.on { color: var(--accent); }
+html.d3.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
 </style>
 </head>
 <body>
@@ -2071,7 +2121,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.8.9";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.9.0";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2337,6 +2387,8 @@ window.__appStart = () => {
   }
   // Оформление «Стекло» — основное; ?glass=0 показывает прежний вид (только для проверки)
   function glassOn() { return !/[?&]glass=0\b/.test(location.search); }
+  // «Стекло, смелее» (v1.9.0) — основной вид: фон цветом идущей пары, крупнее заголовки и блок «Сейчас»
+  const D3 = true;
   // «Стекло» на уезжающем экране (жест «назад»): фон-тень рисуется на самой странице, поэтому ей нужно знать,
   // какой её участок сейчас на экране и какой высоты экран
   function glassSwipeVars() {
@@ -2348,6 +2400,7 @@ window.__appStart = () => {
     const t = effectiveTheme();
     ROOT.dataset.theme = t;
     ROOT.classList.toggle("glass", glassOn());
+    ROOT.classList.toggle("d3", D3);
     ROOT.classList.toggle("android", /Android/i.test(navigator.userAgent));   // слабее размытие стекла (css/16)
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     const bg = BG[t];   // у «Стекла» та же основа (чёрная/белая), так что шапка Telegram совпадает в обоих оформлениях
@@ -3913,6 +3966,11 @@ window.__appStart = () => {
     app.innerHTML = isTeacher
       ? head + off + `<div class="sbar">${s.bar}</div>` + s.html
       : `<div class="sbar">${head}${s.bar}</div>` + off + s.html;
+    if (D3) {   // фон — цветом идущей (или ближайшей) пары
+      const h = app.querySelector("[data-cur] .hero");
+      const rgb = h && getComputedStyle(h).getPropertyValue("--k-rgb").trim();
+      if (rgb) ROOT.style.setProperty("--amb", rgb); else ROOT.style.removeProperty("--amb");
+    }
     syncBar();
     setupPager();
     placeNowLabels(false);
@@ -6219,6 +6277,15 @@ window.__appStart = () => {
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
     window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
     if (document.readyState === "complete") navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+  // ---------------- «стекло, смелее»: блик «Сейчас» вращается, только пока его видно ----------------
+  if (D3 && "IntersectionObserver" in window) {
+    const seen = new WeakMap();
+    const io = new IntersectionObserver((es) => { for (const e of es) { seen.set(e.target, e.isIntersecting); e.target.classList.toggle("d3off", !e.isIntersecting || document.hidden); } });
+    const watch = () => { for (const h of app.querySelectorAll(".hero:not([data-io])")) { h.dataset.io = "1"; h.classList.add("d3off"); io.observe(h); } };
+    new MutationObserver(watch).observe(app, { childList: true, subtree: true });
+    watch();
+    document.addEventListener("visibilitychange", () => { for (const h of app.querySelectorAll(".hero")) h.classList.toggle("d3off", document.hidden || !seen.get(h)); });
   }
 };
 window.__boot();
