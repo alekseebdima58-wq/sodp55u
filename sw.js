@@ -1,11 +1,12 @@
 // Service worker расписания: приложение открывается с главного экрана даже без сети.
 // Страницу отдаём сразу из сохранённой копии и тихо обновляем её из сети. Иконки и шрифты — из кэша
 // с тихим обновлением. Расписание (data/*.json) не трогаем: офлайн-копию держит сама страница.
-const CACHE = "shell-v47";
+const CACHE = "shell-v48";
 const ICONS = ["icon-192", "icon-512", "maskable-512", "apple-touch-icon", "favicon-64"];
 const SHELL = [
   "./",
   "fonts/fonts.css",
+  "telegram-web-app.js",   // копия скрипта Telegram (v1.8.6): запуск в Telegram не ждёт telegram.org
   "icons/badge-96.png",
   ...["", "-light", "-dark"].flatMap((s) => [`manifest${s}.webmanifest`, ...ICONS.map((n) => `icons/${n}${s}.png`)]),
 ];

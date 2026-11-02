@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="b0b7948cf766">
+<meta name="app-ver" content="92992faf5b18">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -73,17 +73,25 @@
 <noscript><link rel="stylesheet" href="fonts/fonts.css"></noscript>
 <script>
   // Скрипт Telegram грузим только внутри Telegram и не ждём его дольше 3 секунд:
-  // если telegram.org тормозит, приложение всё равно откроется (просто без кнопок Telegram).
+  // если он тормозит, приложение всё равно откроется (просто без кнопок Telegram).
+  // С v1.8.6 копия скрипта лежит рядом с приложением (тот же адрес, что у страницы, и кэш service worker):
+  // из России telegram.org отвечает медленно, и запуск в Telegram ждал его до 3 секунд.
+  // Если своей копии нет — берём с telegram.org, как раньше.
   (function () {
     var inTg = /tgWebApp/.test(location.hash + location.search) || !!window.TelegramWebviewProxy || window.parent !== window;
     var tgDone = !inTg, appReady = false, started = false;
     function go() { if (!started && tgDone && appReady && window.__appStart) { started = true; window.__appStart(); } }
     window.__boot = function () { appReady = true; go(); };
     if (inTg) {
-      var s = document.createElement("script");
-      s.src = "https://telegram.org/js/telegram-web-app.js";
-      s.onload = s.onerror = function () { tgDone = true; go(); };
-      document.head.appendChild(s);
+      var srcs = ["telegram-web-app.js", "https://telegram.org/js/telegram-web-app.js"];
+      var loadTg = function (i) {
+        var s = document.createElement("script");
+        s.src = srcs[i];
+        s.onload = function () { tgDone = true; go(); };
+        s.onerror = function () { if (i + 1 < srcs.length) loadTg(i + 1); else { tgDone = true; go(); } };
+        document.head.appendChild(s);
+      };
+      loadTg(0);
       setTimeout(function () { tgDone = true; go(); }, 3000);
     }
   })();
@@ -1668,6 +1676,20 @@ html.glass .row :is(.card, .cc) { border-color: transparent; }
 .rs-ck { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: calc(15px * var(--fs, 1)); color: var(--text); }
 .rs-ck input { width: 20px; height: 20px; accent-color: var(--accent); }
 .rs-note { margin: 14px 0 10px; font-size: calc(12.5px * var(--fs, 1)); line-height: calc(17px * var(--fs, 1)); color: var(--muted); }
+/* ================= Android: стекло размывает слабее (v1.8.6) =================
+   Почти все рывки листания в «Статистике» (52 из 61) — с Android. На главном потоке листание чистое
+   (дни едут сдвигом на видеокарте), а над движущимся днём лежат слои размытия: нижняя панель, шапка недели,
+   кнопки шапки, таблетка дня — их видеокарта пересчитывает каждый кадр. Здесь радиус размытия примерно
+   вдвое меньше, а у таблетки (она сама едет вместе с пальцем) размытия нет совсем.
+   iPhone не затронут. Проверка: рывки Android в v1.8.6 против v1.8.5 в «Статистике». */
+html.android .tabs {
+  -webkit-backdrop-filter: blur(12px) saturate(200%) brightness(1.06); backdrop-filter: blur(12px) saturate(200%) brightness(1.06); }
+html.android .whead .wbtn, html.android .whead .icon-btn.bell, html.android .btn.icon-btn[data-act="back"] {
+  -webkit-backdrop-filter: blur(8px) saturate(180%); backdrop-filter: blur(8px) saturate(180%); }
+html.android .navbar { -webkit-backdrop-filter: blur(12px) saturate(180%); backdrop-filter: blur(12px) saturate(180%); }
+html.android .ibar { -webkit-backdrop-filter: blur(12px) saturate(180%); backdrop-filter: blur(12px) saturate(180%); }
+html.android.glass .sbar::before { -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6); }
+html.android.glass .days .pill { -webkit-backdrop-filter: none; backdrop-filter: none; }
 </style>
 </head>
 <body>
@@ -2028,7 +2050,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.8.5";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.8.6";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2305,6 +2327,7 @@ window.__appStart = () => {
     const t = effectiveTheme();
     ROOT.dataset.theme = t;
     ROOT.classList.toggle("glass", glassOn());
+    ROOT.classList.toggle("android", /Android/i.test(navigator.userAgent));   // слабее размытие стекла (css/16)
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     const bg = BG[t];   // у «Стекла» та же основа (чёрная/белая), так что шапка Telegram совпадает в обоих оформлениях
     if (metaTheme) metaTheme.setAttribute("content", bg);
