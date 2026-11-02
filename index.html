@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="99c16b56aaca">
+<meta name="app-ver" content="02d16c0e1bc0">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -244,7 +244,8 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
 .seg { position: relative; flex: 1; width: 4px; border-radius: 2px; background: rgba(var(--k-rgb), var(--track-a)); }
 .row.past .seg { width: 2px; background: var(--done); }
 .row.past.last .seg { background: transparent; }
-.fill { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 2px; background: var(--k-bar);
+/* v1.9.4: только внутри линии пары — класс .fill есть и у #app (пустой экран уведомлений), и scaleY(0) сплющивал весь экран */
+.seg .fill { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 2px; background: var(--k-bar);
   transform-origin: 50% 0; transform: scaleY(var(--pn, 0)); transition: transform .6s ease; }   /* v1.8.8: масштаб вместо высоты */
 .mark {
   position: absolute; left: 50%; top: var(--p); width: 10px; height: 10px; margin: -5px 0 0 -5px;
@@ -964,7 +965,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 }
 
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
-.ring .arc, .fill, .mark, .nowlbl, .bmark, .bnow { transition-timing-function: var(--ease-spring); }
+.ring .arc, .seg .fill, .mark, .nowlbl, .bmark, .bnow { transition-timing-function: var(--ease-spring); }
 .sbar .eyebrow, .sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day, .sbar .whead .top-actions { transition-timing-function: var(--ease-spring); transition-duration: .45s; }
 
 /* нажатие: элемент чуть проседает и пружинит обратно */
@@ -2150,7 +2151,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.9.3";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.9.4";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
