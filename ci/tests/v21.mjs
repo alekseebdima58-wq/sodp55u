@@ -70,5 +70,21 @@ for (const theme of ['dark', 'light']) {
   ok(end.bg === 'none' && !end.t && end.wc === 'auto', 'после перехода всё убрано', end);
   await c.close();
 }
+{
+  // свет убранного блока «Сейчас» не должен продолжать идти (иначе стили пересчитываются в каждом кадре)
+  const c = await b.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const p = await c.newPage();
+  p.on('pageerror', (e) => errs.push(String(e.message)));
+  await p.route(/fonts\.g|telegram\.org|telegram-web-app\.js|ntfy/, (r) => r.abort());
+  await p.addInitScript(() => { Object.defineProperty(navigator, 'standalone', { get: () => true });
+    const an = Element.prototype.animate; window.__all = [];
+    Element.prototype.animate = function (...a) { const x = an.apply(this, a); if (a[1] && a[1].iterations === Infinity) window.__all.push(x); return x; }; });
+  await p.goto('http://localhost:8772/?now=2026-10-20T11:00'); await p.waitForSelector('.week'); await sleep(1500);
+  await p.tap('.tab[data-tab="teachers"]'); await sleep(800); await p.tap('.tab[data-tab="schedule"]'); await sleep(1200);
+  await p.tap('.tab[data-tab="teachers"]'); await sleep(800); await p.tap('#app .item >> nth=1'); await sleep(1500);
+  const r = await p.evaluate(() => ({ all: window.__all.length, stale: window.__all.filter((a) => a.effect && a.effect.target && !a.effect.target.isConnected && a.playState !== 'idle').length }));
+  ok(r.all >= 4 && r.stale === 0, 'свет убранных блоков «Сейчас» остановлен', r);
+  await c.close();
+}
 ok(!errs.length, 'без ошибок скрипта', errs.slice(0, 3));
 console.log(`\n${res.filter(Boolean).length}/${res.length}`); await b.close();

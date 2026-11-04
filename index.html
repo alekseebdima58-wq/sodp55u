@@ -2214,7 +2214,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.0";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.1";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -6531,7 +6531,10 @@ window.__appStart = () => {
     const vis = new Set();
     function sync() {
       const run = !document.hidden && vis.size > 0;
-      for (const a of anims) if (!a.effect || !a.effect.target || !a.effect.target.isConnected) anims.delete(a);
+      // v2.1: свет убранного блока «Сейчас» (другой день, вкладка) — отменяем, а не просто забываем. Анимация на
+      // элементе, которого уже нет на странице, продолжала идти: браузер обслуживал её в каждом кадре и пересчитывал
+      // стили (на записи с iPhone — по 20–40 мс на кадр, пока на экране есть любой другой движущийся свет)
+      for (const a of anims) if (!a.effect || !a.effect.target || !a.effect.target.isConnected) { try { a.cancel(); } catch (e) { /* уже нет */ } anims.delete(a); }
       if (run === (pausedAt == null)) return;          // ничего не поменялось — анимации не трогаем
       if (run) { t0 += performance.now() - pausedAt; pausedAt = null; } else pausedAt = performance.now();
       const p = phase();
