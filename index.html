@@ -340,6 +340,8 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
   padding: 0 var(--side); display: flow-root;
   scroll-snap-align: start; scroll-snap-stop: always;
 }
+/* v2.0.2: ещё не достроенный день — пустая страница; у неё должна быть высота, иначе WebKit не считает её точкой остановки */
+.pager > .page[data-lazy] { min-height: 60vh; }
 .pager > .page[data-pass] { scroll-snap-align: none; }   /* v2.0: день, к которому лента уже ехала, — на время быстрого свайпа не точка остановки */
 
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 48px 24px 24px; }
