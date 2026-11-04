@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="91e67d3b26b5">
+<meta name="app-ver" content="f8fccd9ef6a0">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -2216,7 +2216,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.1";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.3";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -6506,7 +6506,10 @@ window.__appStart = () => {
     const calm = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
     const canAnim = !calm && typeof Element.prototype.animate === "function";
     const LOOP = 180;          // секунд до повтора траектории (конец гладко сходится с началом)
-    const STEP = 0.2;          // шаг ключевых кадров, с: между ними — прямые отрезки, на глаз неотличимо от кривой
+    // v2.1.2: шаг 1,5 с вместо 0,2 с — 121 ключевой кадр вместо 901. На записи с iPhone с появлением блока «Сейчас»
+    // каждый кадр шёл пересчёт стилей по ~38 мс (в Chromium свет считает видеокарта, в Safari — видимо, нет).
+    // Свет мягкий и размытый — изломы траектории раз в 1,5 с на глаз не видны.
+    const STEP = 1.5;
     const rnd = (a, b) => a + Math.random() * (b - a);
     // гладкая периодичная величина: center ± amp, из 3 синусоид с целыми частотами (чтобы за LOOP сойтись в начало)
     function wave(center, amp, fmin, fmax) {
