@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="4f259bbf0469">
+<meta name="app-ver" content="0b74cb5cb961">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -80,25 +80,19 @@
   (function () {
     var inTg = /tgWebApp/.test(location.hash + location.search) || !!window.TelegramWebviewProxy || window.parent !== window;
     var tgDone = !inTg, appReady = false, started = false;
-    // v1.9.6: для отчёта о медленном запуске — была ли страница скрыта (телефон заблокировали, свернули
-    // приложение или Telegram) и сколько ждали скрипт Telegram
-    window.__bootHidden = !!document.hidden;
-    document.addEventListener("visibilitychange", function () { if (document.hidden) window.__bootHidden = true; });
-    window.__tgWait = 0;
-    function tgReady(timeout) { if (tgDone) return; tgDone = true; window.__tgWait = performance.now(); window.__tgTimeout = !!timeout; go(); }
     function go() { if (!started && tgDone && appReady && window.__appStart) { started = true; window.__appStart(); } }
-    window.__boot = function () { window.__bootAt = performance.now(); appReady = true; go(); };
+    window.__boot = function () { appReady = true; go(); };
     if (inTg) {
       var srcs = ["telegram-web-app.js", "https://telegram.org/js/telegram-web-app.js"];
       var loadTg = function (i) {
         var s = document.createElement("script");
         s.src = srcs[i];
-        s.onload = function () { tgReady(false); };
-        s.onerror = function () { if (i + 1 < srcs.length) loadTg(i + 1); else tgReady(false); };
+        s.onload = function () { tgDone = true; go(); };
+        s.onerror = function () { if (i + 1 < srcs.length) loadTg(i + 1); else { tgDone = true; go(); } };
         document.head.appendChild(s);
       };
       loadTg(0);
-      setTimeout(function () { tgReady(true); }, 3000);
+      setTimeout(function () { tgDone = true; go(); }, 3000);
     }
   })();
 </script>
@@ -1972,38 +1966,25 @@ window.__appStart = () => {
   });
   // Следим за кадрами, пока что-то движется: пропуск больше ~3 кадров подряд — заметный рывок.
   // Заодно узнаём настоящую частоту кадров у человека (30 — энергосбережение, 60, 120 — ProMotion).
-  // v1.9.6: возвращает stop() — закончить замер раньше, ровно когда движение закончилось. Раньше листание
-  // пальцем замерялось фиксированные 0,6 с от начала жеста, а нажатие — до самой смены дня: в замер попадал
-  // кадр, в котором день уже стоит на месте и приложение перекладывает ленту (глазу это не видно —
-  // ничего не двигается), и в отчётах копились «рывки · конец/середина», которых на экране не было.
   function watchFrames(where, ms) {
-    if (document.hidden || !window.requestAnimationFrame) return () => {};
+    if (document.hidden || !window.requestAnimationFrame) return;
     const gaps = [], ends = [];
-    let last = 0, over = false;
+    let last = 0;
     const t0 = performance.now();
-    const judge = () => {
-      if (over) return;
-      over = true;
+    const step = (ts) => {
+      if (last) { gaps.push(ts - last); ends.push(ts); }
+      last = ts;
+      if (ts - t0 < ms && !document.hidden) { requestAnimationFrame(step); return; }
       if (gaps.length < 4) return;
-      const span = Math.max(1, (ends[ends.length - 1] || t0) - t0);
       const body = gaps.slice(1).sort((a, b) => a - b), med = body[Math.floor(body.length / 2)], max = body[body.length - 1];
       if (max > Math.max(50, med * 3)) {
         // v1.8.7: в какой части движения был самый долгий кадр — начало, середина или конец.
         // По этому видно, что тормозит: подготовка слоёв (начало) или перестройка после остановки (конец).
-        const i = gaps.indexOf(max, 1), k = i > 0 ? (ends[i] - gaps[i] - t0) / span : 0.5;   // где кадр начался
+        const i = gaps.indexOf(max, 1), k = i > 0 ? (ends[i] - gaps[i] - t0) / Math.max(1, ms) : 0.5;   // где кадр начался
         DIAG.add("jank", `${where} · ${k < 0.3 ? "начало" : k > 0.75 ? "конец" : "середина"}`, max);
       }
     };
-    const step = (ts) => {
-      if (over) return;
-      if (document.hidden) { over = true; return; }   // свернули посреди движения — замер не в счёт
-      if (last) { gaps.push(ts - last); ends.push(ts); }
-      last = ts;
-      if (ts - t0 < ms) { requestAnimationFrame(step); return; }
-      judge();
-    };
     requestAnimationFrame(step);
-    return judge;
   }
 
   // ---------------- общий движок жестов ----------------
@@ -2184,7 +2165,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.9.6";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v1.9.5";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2239,12 +2220,10 @@ window.__appStart = () => {
       const [h, m] = hm.split(":").map(Number);
       return { date, wd: weekday(date), sec: h * 3600 + m * 60, label: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` };
     }
-    // v1.9.6: форматтер создаётся один раз — samaraNow() зовут и посреди листания, а создание
-    // Intl.DateTimeFormat с часовым поясом на iPhone стоит заметно дороже самого форматирования
-    const parts = (samaraNow.fmt || (samaraNow.fmt = new Intl.DateTimeFormat("en-CA", {
+    const parts = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Europe/Samara", year: "numeric", month: "2-digit", day: "2-digit",
       hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
-    }))).formatToParts(new Date());
+    }).formatToParts(new Date());
     const p = {};
     parts.forEach((x) => { p[x.type] = x.value; });
     const date = `${p.year}-${p.month}-${p.day}`;
@@ -2351,8 +2330,8 @@ window.__appStart = () => {
   })();
   let preferSrc = store.get("src") || "";
   let lastNetError = "";
-  async function fetchFrom(url, ms, ctl) {
-    if (!ctl) ctl = typeof AbortController === "function" ? new AbortController() : null;
+  async function fetchFrom(url, ms) {
+    const ctl = typeof AbortController === "function" ? new AbortController() : null;
     const timer = setTimeout(() => { if (ctl) ctl.abort(); }, ms);
     try {
       const r = await fetch(url, { cache: "no-store", signal: ctl ? ctl.signal : undefined });
@@ -2370,39 +2349,16 @@ window.__appStart = () => {
     const i = srcs.findIndex((x) => x.base === preferSrc);
     if (i > 0) srcs.unshift(srcs.splice(i, 1)[0]);
     const errs = [];
-    // v1.9.6: источники — не строго по очереди. Раньше следующий запрашивался, только когда предыдущий
-    // молчал все 8 секунд: если сайт (GitHub) завис, первый запуск без сохранённого расписания длился
-    // 8–9 с («Медленный запуск · до 8.9 с»). Теперь, если источник не ответил за 1,5 с, параллельно
-    // спрашиваем следующий и берём первый ответ; ошибка источника — сразу переходим к следующему.
-    const j = await new Promise((resolve) => {
-      let i = 0, left = srcs.length, done = false, hedge = 0;
-      const ctls = [];
-      const next = () => {
-        clearTimeout(hedge);
-        if (done || i >= srcs.length) return;
-        const src = srcs[i++];
-        const ctl = typeof AbortController === "function" ? new AbortController() : null;
-        ctls.push(ctl);
-        if (i < srcs.length) hedge = setTimeout(next, 1500);
-        fetchFrom(`${src.base}${path}?t=${Date.now()}`, 8000, ctl).then((v) => {
-          if (done) return;
-          done = true;
-          clearTimeout(hedge);
-          ctls.forEach((c) => { if (c && c !== ctl) try { c.abort(); } catch (e) { /* уже всё */ } });
-          if (preferSrc !== src.base) { preferSrc = src.base; store.set("src", src.base); }
-          resolve(v);
-        }, (e) => {
-          if (done) return;
-          errs.push(`${src.name}: ${e.message}`);
-          if (--left === 0) { done = true; clearTimeout(hedge); resolve(null); } else next();
-        });
-      };
-      next();
-    });
-    if (j) {
-      store.set(key, JSON.stringify(j));
-      lastNetError = "";
-      return j;
+    for (const src of srcs) {
+      try {
+        const j = await fetchFrom(`${src.base}${path}?t=${Date.now()}`, 8000);
+        if (preferSrc !== src.base) { preferSrc = src.base; store.set("src", src.base); }
+        store.set(key, JSON.stringify(j));
+        lastNetError = "";
+        return j;
+      } catch (e) {
+        errs.push(`${src.name}: ${e.message}`);
+      }
     }
     lastNetError = errs.join(" · ");
     const s = store.get(key);
@@ -4660,9 +4616,6 @@ window.__appStart = () => {
       if (slot) {
         slot.innerHTML = dayBodyHTML(c.data, np.w, np.d, view === "teacher", false);
         placeNowLabels(false);
-        // v1.9.6: раскладку нового дня считаем сразу, пока ничего не движется, — иначе она доставалась
-        // первым кадрам листания («рывок · листание (нажатие)»)
-        void slot.offsetHeight;
         // таблетка едет прямо к нужному дню (в той же неделе); при смене недели стоит на месте —
         // иначе она «перелетала» на соседний день, пока уезжала страница
         pillGoal = np.w === c.p.w ? np.d : c.p.d;
@@ -5287,7 +5240,6 @@ window.__appStart = () => {
     const pg = pagerEl();
     if (!pg) return;
     fitPager(true);
-    pagerLayers(pg, true);
     pagerScrollToCurrent(pg);   // лента сама не прокручивается — двигаем дни трансформом
     setupPill();
   }
@@ -5301,11 +5253,7 @@ window.__appStart = () => {
   const DPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
   const snap = (v) => Math.round(v * DPR) / DPR;
   // на время движения каждый день — отдельный слой видеокарты: не перерисовывается, а едет готовой картинкой
-  // v1.9.6: слои дней больше не включаются и не выключаются на каждом листании. Дни и так всё время сдвинуты
-  // трансформом (translate3d), то есть уже лежат на видеокарте, а переключение слоёв при касании и после
-  // остановки заставляло телефон заново собирать их — ровно в начале и в конце движения.
-  // Лента получает слои один раз, когда появляется (setupPager), и держит их, пока её не перерисуют.
-  function pagerLayers(pg, on) { if (pg && on && !pg.classList.contains("paging")) pg.classList.add("paging"); }
+  function pagerLayers(pg, on) { if (pg && pg.classList.contains("paging") !== on) pg.classList.toggle("paging", on); }
   function pagerPages(pg) { return pg.querySelectorAll(":scope > .page"); }
   // ---- «открытие дня» ----
   // Въезжающий день мягко проявляется, уходящий слегка гаснет. Строки внутри дня едут вместе с ним.
@@ -5345,7 +5293,6 @@ window.__appStart = () => {
     const a = pgAnim;
     if (!a) return;
     pgAnim = null;
-    if (a.watch) a.watch();
     const ct = a.anims[0] && a.anims[0].currentTime;
     const k = Math.max(0, Math.min(1, ((ct != null ? ct : performance.now() - a.t0)) / a.T));
     setPagerX(a.pg, a.from + a.dist * pagerCurve(k, a.a));
@@ -5357,8 +5304,7 @@ window.__appStart = () => {
     const from = pgX, dist = to - from;
     scrolling = true;
     let tok = null;
-    // замер кадров кончается вместе с движением — до перекладки ленты (см. watchFrames)
-    const finish = () => { if (pgAnim !== tok) return; if (tok && tok.watch) tok.watch(); pgAnim = null; scrolling = false; done && done(); if (!pgDrag) pagerLayers(pagerEl(), false); };
+    const finish = () => { if (pgAnim !== tok) return; pgAnim = null; scrolling = false; done && done(); if (!pgDrag) pagerLayers(pagerEl(), false); };
     if (Math.abs(dist) < 0.5 || REDUCED) { setPagerX(pg, to); finish(); return; }
     // День продолжает движение ровно с той скоростью, с которой его отпустил палец, плавно
     // разгоняется (если палец был медленным) и мягко тормозит у места — без скачка скорости.
@@ -5370,7 +5316,7 @@ window.__appStart = () => {
     const anims = gpuMove([...pagerPages(pg), pill, on, on && on.firstElementChild], () => setPagerX(pg, to), T, f.ease);
     if (t0) anims.forEach((x) => { try { x.startTime = t0; } catch (e) { /* не умеет — начнёт со следующего кадра */ } });
     tok = pgAnim = { pg, from, dist, a, T, t0: t0 || now0, anims };
-    tok.watch = watchFrames(since ? "листание (бросок)" : "листание (нажатие)", T + 100);
+    watchFrames(since ? "листание (бросок)" : "листание (нажатие)", T);
     animsDone(anims, T - (t0 ? now0 - t0 : 0)).then(finish, () => { /* подхватили пальцем — pagerStop уже всё сделал */ });
   }
   // Быстрая смена дня, когда лента доехала. Раньше весь экран собирался заново — на Android это
@@ -5524,8 +5470,7 @@ window.__appStart = () => {
     },
     claim(d) {
       d.base = pgX;
-      // v1.9.6: замер — пока палец ведёт день (до отпускания); дальше движение доводит «бросок» со своим замером
-      scrolling = true; d.pg.classList.add("drag"); d.watch = watchFrames("листание пальцем", 4000);
+      scrolling = true; d.pg.classList.add("drag"); watchFrames("листание пальцем", 600);
     },
     move(d, p) {
       setPagerX(d.pg, pagerRubber(d.base + p.dx, d.pg.clientWidth || 1));
@@ -5534,7 +5479,6 @@ window.__appStart = () => {
       if (!d.raf) d.raf = requestAnimationFrame((ts) => { d.raf = 0; d.shownAt = ts; d.shownX = pgX; });
     },
     end(d, info) {
-      if (d.watch) { d.watch(); d.watch = null; }
       if (pgDrag === d) pgDrag = null;
       pagerTouch = false;
       d.pg.classList.remove("drag");
@@ -6095,7 +6039,6 @@ window.__appStart = () => {
       load("g").catch(() => {}),
     ]).then(() => { loadedAt = Date.now(); });
   startData.then(() => {
-    window.__bootDataAt = performance.now();   // v1.9.6: для разбора медленного запуска
     setTimeout(() => window.hideSplash && window.hideSplash(), 0);
     let restore = null;
     try { restore = JSON.parse(sessionStorage.getItem("verView") || "null"); sessionStorage.removeItem("verView"); } catch (e) { /* без хранилища */ }
@@ -6117,25 +6060,9 @@ window.__appStart = () => {
     pushVerify();
     setTimeout(statSend, 2000);
     setTimeout(() => diagSend(false), 4000);
-    // медленный запуск: от открытия до готового экрана дольше 4 секунд.
-    // v1.9.6: не считаем запуск, пока страница была скрыта (это время телефон её не открывал, а копил),
-    // и пишем, на что ушло больше всего времени — по этому видно, что чинить дальше
+    // медленный запуск: от открытия до готового экрана дольше 4 секунд
     const bootMs = performance.now();
-    if (bootMs > 4000 && !window.__bootHidden) {
-      let nav = null;
-      try { nav = performance.getEntriesByType("navigation")[0] || null; } catch (e) { /* старый браузер */ }
-      const pageMs = nav && nav.responseEnd > 0 ? nav.responseEnd : 0;
-      const tgMs = window.__tgWait ? Math.max(0, window.__tgWait - (window.__bootAt || 0)) : 0;
-      const appAt = Math.max(window.__bootAt || 0, window.__tgWait || 0), dataAt = window.__bootDataAt || appAt;
-      const parts = [
-        ["загрузка страницы", pageMs],
-        [window.__tgTimeout ? "скрипт Telegram не ответил" : "скрипт Telegram", tgMs],
-        ["расписание из сети", Math.max(0, dataAt - appAt)],
-        ["отрисовка", Math.max(0, bootMs - dataAt)],
-      ];
-      const top = parts.reduce((a, b) => (b[1] > a[1] ? b : a));
-      DIAG.add("slow", `${inTG ? "запуск в Telegram" : "запуск"} · ${top[0]}`, bootMs);
-    }
+    if (bootMs > 4000) DIAG.add("slow", inTG ? "запуск в Telegram" : "запуск", bootMs);
     loadAdminStats().then((st) => {
       // по кнопке «Открыть статистику» из бота: экран открывается поверх «Настроек», «Назад» ведёт туда
       if (st && QS.get("open") === "stats" && view === "schedule" && !navBusy) { go("settings"); go("stats", null, true); }
