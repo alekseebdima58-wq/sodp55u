@@ -5364,8 +5364,13 @@ window.__appStart = () => {
   function pagerCatch(pg) {
     caught = null;
     clearPass(pg);
-    if (!scrolling || !moveDir) return;
-    const f = pg.scrollLeft / (pg.clientWidth || 1), t = moveDir > 0 ? Math.ceil(f - 0.02) : Math.floor(f + 0.02);
+    // в покое лента всегда стоит ровно на дне; если нет — она ещё едет (даже если событие прокрутки
+    // до нас пока не дошло, когда приложение занято). Куда — по последнему сдвигу или от текущего дня
+    const f = pg.scrollLeft / (pg.clientWidth || 1);
+    const dir = moveDir || Math.sign(f - curIndex(pg));
+    if (!dir) return;
+    const t = dir > 0 ? Math.ceil(f - 0.02) : Math.floor(f + 0.02);
+    moveDir = dir;
     // у последнего (первого) дня «проезжать» некуда — он остаётся точкой остановки
     if (Math.abs(f - t) > 0.02 && pg.children[t]) caught = { x: pg.scrollLeft, t, dir: moveDir, pass: !!pg.children[t + moveDir] };
   }
