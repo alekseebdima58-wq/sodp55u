@@ -1799,6 +1799,9 @@ html.d3.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
 .tabs .lens { transform-origin: calc(var(--ti, 0) * 150%) 50%; }
 .tabs .lens.edge { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
 .seg3 .thumb.go.edge { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
+
+/* v2.1.2: свет на «Сейчас» выключен в настройках */
+html.nolight .hero > .hglow, html.nolight .hero > .hstreak { display: none; }
 </style>
 </head>
 <body>
@@ -2214,7 +2217,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.1";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.2";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4590,6 +4593,9 @@ window.__appStart = () => {
         <div class="seg3" role="group" aria-label="Тема">${opts.map(([v, l]) =>
           `<button data-act="theme" data-v="${v}" aria-pressed="${pref === v}" class="${pref === v ? "on" : ""}">${l}</button>`).join("")}</div></div>
       ${textSizeHTML()}
+      ${D3 ? `<div class="list" style="margin-top:10px"><div class="srow"><div class="body"><span class="nm">Свет на «Сейчас»</span>
+        <span class="sub">Плавающий блик на блоке текущей пары</span></div>
+        <button class="sw" role="switch" data-act="light" aria-checked="${typeof lightOn === "function" ? lightOn() : true}" aria-label="Свет на «Сейчас»"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
       ${fsSupported() ? `<div class="list" style="margin-top:10px"><div class="srow"><div class="body"><span class="nm">Во весь экран</span>
         <span class="sub">Без шапки Telegram, больше места для пар</span></div>
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
@@ -4902,6 +4908,11 @@ window.__appStart = () => {
     } else if (act === "notif") {
       haptic("light");
       go("notif", null, true);
+    } else if (act === "light") {
+      haptic("select");
+      const on = !(typeof lightOn === "function" ? lightOn() : true);
+      if (typeof setLight === "function") setLight(on);
+      el.setAttribute("aria-checked", String(on));
     } else if (act === "fs") {
       haptic("select");
       setFullscreen(!tg.isFullscreen);
@@ -6504,7 +6515,10 @@ window.__appStart = () => {
     const calm = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
     const canAnim = !calm && typeof Element.prototype.animate === "function";
     const LOOP = 180;          // секунд до повтора траектории (конец гладко сходится с началом)
-    const STEP = 0.2;          // шаг ключевых кадров, с: между ними — прямые отрезки, на глаз неотличимо от кривой
+    // v2.1.2: шаг 1,5 с вместо 0,2 с — 121 ключевой кадр вместо 901. На записи с iPhone с появлением блока «Сейчас»
+    // каждый кадр шёл пересчёт стилей по ~38 мс (в Chromium свет считает видеокарта, в Safari — видимо, нет).
+    // Свет мягкий и размытый — изломы траектории раз в 1,5 с на глаз не видны.
+    const STEP = 1.5;
     const rnd = (a, b) => a + Math.random() * (b - a);
     // гладкая периодичная величина: center ± amp, из 3 синусоид с целыми частотами (чтобы за LOOP сойтись в начало)
     function wave(center, amp, fmin, fmax) {
@@ -6529,8 +6543,12 @@ window.__appStart = () => {
     const phase = () => ((pausedAt != null ? pausedAt : performance.now()) - t0) % (LOOP * 1000);
     const anims = new Set();
     const vis = new Set();
+    // v2.1.2: свет можно выключить в «Настройках» (Оформление → «Свет на „Сейчас“»)
+    window.lightOn = () => store.get("light") !== "0";
+    ROOT.classList.toggle("nolight", !lightOn());
+    window.setLight = (on) => { store.set("light", on ? "1" : "0"); ROOT.classList.toggle("nolight", !on); sync(); };
     function sync() {
-      const run = !document.hidden && vis.size > 0;
+      const run = !document.hidden && vis.size > 0 && lightOn();
       // v2.1: свет убранного блока «Сейчас» (другой день, вкладка) — отменяем, а не просто забываем. Анимация на
       // элементе, которого уже нет на странице, продолжала идти: браузер обслуживал её в каждом кадре и пересчитывал
       // стили (на записи с iPhone — по 20–40 мс на кадр, пока на экране есть любой другой движущийся свет)
