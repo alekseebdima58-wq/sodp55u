@@ -5335,7 +5335,7 @@ window.__appStart = () => {
     if ("onscrollend" in window) pg.addEventListener("scrollend", () => armSettle(pg, 30), { passive: true });
     pg.addEventListener("touchstart", (e) => {
       const t = e.touches && e.touches[0];
-      fingerAt = t ? { x: t.clientX, y: t.clientY } : null; fingerMoved = false; tapGoal = null;
+      fingerAt = t ? { x: t.clientX, y: t.clientY } : null; fingerMoved = false; fingerDx = 0; tapGoal = null;
       pagerTouch = true; pagerCatch(pg);
     }, { passive: true });
     // коснулся ленты на лету и отпустил, не сдвигая (нажатие по экрану во время листания) — день не теряется:
@@ -5351,7 +5351,10 @@ window.__appStart = () => {
     pg.addEventListener("touchend", up, { passive: true });
     pg.addEventListener("touchmove", (e) => {
       const t = e.touches && e.touches[0];
-      if (t && fingerAt && Math.hypot(t.clientX - fingerAt.x, t.clientY - fingerAt.y) > 8) fingerMoved = true;
+      if (!t || !fingerAt) return;
+      fingerDx = t.clientX - fingerAt.x;
+      if (Math.hypot(fingerDx, t.clientY - fingerAt.y) > 8) fingerMoved = true;
+      followCatch(pg);
     }, { passive: true });
   }
   // Быстрые свайпы подряд. Каждый день — обязательная остановка (scroll-snap-stop: always): один свайп —
@@ -5359,7 +5362,7 @@ window.__appStart = () => {
   // в ту же сторону — этот день уже «засчитан»: на время свайпа он перестаёт быть точкой остановки,
   // и лента встаёт на следующий (три быстрых свайпа — три дня, как раньше). Просто коснулся на лету
   // или потянул назад — обычное поведение: лента встаёт на ближайший день.
-  let lastX = 0, moveDir = 0, caught = null, fingerAt = null, fingerMoved = false, tapGoal = null;
+  let lastX = 0, moveDir = 0, caught = null, fingerAt = null, fingerMoved = false, fingerDx = 0, tapGoal = null;
   function clearPass(pg) { for (const x of pg.querySelectorAll(":scope > [data-pass]")) x.removeAttribute("data-pass"); }
   function pagerCatch(pg) {
     caught = null;
@@ -5376,7 +5379,8 @@ window.__appStart = () => {
   }
   function followCatch(pg) {
     if (!caught || !pagerTouch) return;
-    const d = (pg.scrollLeft - caught.x) * caught.dir, el = pg.children[caught.t];
+    // считаем по пальцу, а не по прокрутке: лента может ещё ехать сама и под неподвижным пальцем
+    const d = -fingerDx * caught.dir, el = pg.children[caught.t];
     if (!el) return;
     if (d > 8 && caught.pass && !el.hasAttribute("data-pass")) { clearPass(pg); el.setAttribute("data-pass", ""); }
     else if (d < -8 && el.hasAttribute("data-pass")) el.removeAttribute("data-pass");
