@@ -467,9 +467,17 @@ html.ptr-hold #app { will-change: transform; }
 .under-dim { position: fixed; inset: 0; z-index: 2; pointer-events: none; background: rgba(0, 0, 0, .14); }
 html[data-theme="dark"] .under-dim { background: rgba(0, 0, 0, .42); }
 html.nav-anim #app, html.nav-anim .tabs { pointer-events: none; }   /* пока экран едет — нажатия не ловим */
-html.swiping #app { position: relative; z-index: 3; background: var(--bg); will-change: transform;
-  box-shadow: -1px 0 0 rgba(255, 255, 255, .04), -14px 0 32px rgba(0, 0, 0, .28); }
-html[data-theme="light"].swiping #app { box-shadow: -14px 0 30px rgba(0, 0, 0, .14); }
+/* v2.0.1: экран — всегда отдельный слой видеокарты, а фон и тень на время перехода — на своём слое (#app::before).
+   Раньше всё это включалось в первый кадр перехода: телефон заново собирал и перерисовывал весь экран вместе с
+   большой тенью — на записи с iPhone экран в начале перехода стоял 2–3 кадра, а потом прыгал на 40–80 точек. */
+#app { position: relative; z-index: 3; will-change: transform; }
+#app::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; will-change: opacity;
+  background: var(--bg); box-shadow: -1px 0 0 rgba(255, 255, 255, .04), -14px 0 32px rgba(0, 0, 0, .28); }
+html[data-theme="light"] #app::before { box-shadow: -14px 0 30px rgba(0, 0, 0, .14); }
+html.swiping #app::before { opacity: 1; }
+/* снимок прошлого экрана под уезжающим — без размытия «стекла» и свечения: он затемнён и едет, разницы не видно,
+   а рисовать его в первом кадре перехода телефону в разы легче */
+.under *, .under *::before, .under *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 html.swiping, html.swiping body { overflow-x: clip; }   /* уехавший вбок экран не расширяет страницу (иначе телефон «отъезжает» и прыгает нижняя панель) */
 .nlink .alt { margin-top: 10px; text-align: center; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
 .nlink .alt .flink { font-size: calc(13px * var(--fs, 1)); }
@@ -1665,7 +1673,7 @@ html.glass {
 }
 /* жест «назад»: прошлый экран под пальцем и уезжающий экран — на том же фоне, без «вспышки» в чёрное */
 html.glass .under { background: var(--g-img), var(--bg); }
-html.glass.swiping #app {
+html.glass #app::before {
   background: var(--g-img), var(--bg);
   background-repeat: no-repeat; background-size: 100% var(--g-vh, 100vh); background-position: 0 var(--g-sy, 0px);
 }
@@ -2186,7 +2194,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.0.0";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.0.1";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2534,7 +2542,7 @@ window.__appStart = () => {
       // соседние дни не удаляем, а только прячем: дни стоят в ряд и сдвинуты на ширину экрана, и без соседа
       // текущий день съезжал за левый край — под пальцем и при «назад» лента пар пропадала, а потом появлялась рывком
       c.querySelectorAll("[data-pager] .page.prev, [data-pager] .page.next").forEach((e) => e.remove());   // v2.0: у копии нет прокрутки — оставляем только текущий день
-      c.querySelectorAll("video").forEach((e) => e.remove());
+      c.querySelectorAll("video, .hglow, .hstreak").forEach((e) => e.remove());   // v2.0.1: свет на карточке «Сейчас» в снимке не нужен
       return c;
     } catch (e) { return null; }
   }
