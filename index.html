@@ -2196,7 +2196,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.0.3";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.0.4";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -5397,7 +5397,7 @@ window.__appStart = () => {
     if (!rafOn) rafOn = requestAnimationFrame(() => {
       rafOn = 0;
       if (pg !== pagerEl()) return;
-      if (!pillTL.length) pillFromScroll(pg);   // таблетку, где умеет телефон, ведёт сама прокрутка (pillTimeline)
+      pillFromScroll(pg);
       followCatch(pg);
       // v2.0.2: дни по пути НЕ достраиваем на ходу — любая перестройка ленты под пальцем заставляет телефон
       // пересчитать защёлкивание, и свайп «упирается». Они и так готовы заранее (сразу ±2 дня, остальные — в паузе).
@@ -5509,43 +5509,11 @@ window.__appStart = () => {
     armSettle(pg, 160);
     return true;
   }
-  // v2.0.3: таблетка дня — прямо от прокрутки ленты (scroll-driven animations): её двигает телефон в том же
-  // потоке и с той же частотой, что и саму ленту (на iPhone до 120 кадров). Раньше её двигал JS на каждое
-  // событие прокрутки: не чаще 60 раз в секунду и на кадр позже ленты — рядом с плавной лентой она шла «ступеньками».
-  // Ключевые точки — положение таблетки для каждого дня ленты (в чужой неделе — у края), между ними — линейно.
-  let pillTL = [];
-  const CAN_TL = typeof ScrollTimeline === "function";
-  function pillTimeline(pg) {
-    pillTL.forEach((a) => { try { a.cancel(); } catch (e) { /* уже нет */ } });
-    pillTL = [];
-    const c = curPos(), el = pillEl();
-    if (!CAN_TL || REDUCED || !pg || !c || !el || !pillPos.length) return false;
-    const N = pg.children.length;
-    if (N < 2) return false;
-    const base = c.p.w * 7, on = el.parentNode.querySelector(".days-on"), inn = on && on.firstElementChild;
-    const xs = [];
-    for (let i = 0; i < N; i++) xs.push(snap(pillAt(Math.max(0, Math.min(6, i - base))).x));
-    const frames = (fn) => {
-      const out = [];
-      for (let i = 0; i < N; i++) {   // в одинаковых подряд точках достаточно первой и последней
-        if (i > 0 && i < N - 1 && xs[i] === xs[i - 1] && xs[i] === xs[i + 1]) continue;
-        out.push({ offset: i / (N - 1), transform: fn(xs[i]) });
-      }
-      return out;
-    };
-    try {
-      const tl = new ScrollTimeline({ source: pg, axis: "x" });
-      const add = (node, fn) => { if (node) pillTL.push(node.animate(frames(fn), { timeline: tl, fill: "both", easing: "linear" })); };
-      add(el, (x) => `translate3d(${x}px,0,0)`);
-      add(on, (x) => `translate3d(${x}px,0,0)`);
-      add(inn, (x) => (x ? `translate3d(${-x}px,0,0)` : "none"));
-      return true;
-    } catch (e) {
-      pillTL.forEach((a) => { try { a.cancel(); } catch (x) { /* уже нет */ } });
-      pillTL = [];
-      return false;
-    }
-  }
+  // v2.0.4: таблетку снова двигает JS по событиям прокрутки. В v2.0.3 её вела анимация, привязанная к прокрутке
+  // (ScrollTimeline), но запись «Временной шкалы» с iPhone показала: Safari обновляет такие анимации на КАЖДОМ кадре,
+  // даже когда ничего не движется, — 20–76 пересчётов стилей и пересборок слоёв в секунду в покое (без неё — ноль,
+  // а во время свайпов пересчётов в 3–4 раза меньше). Плавнее от неё не стало, а лишней работы — заметно.
+
   // ---- таблетка выбранного дня: плавно едет за листанием и к нажатому дню ----
   let pillPos = [];
   function pillEl() { return app.querySelector(".days .pill"); }
@@ -5596,7 +5564,6 @@ window.__appStart = () => {
     inn.style.columnGap = cs.columnGap;
     putPill(c.p.d);
     el.classList.add("ready");
-    pillTimeline(pagerEl());   // v2.0.3: дальше таблетку ведёт прокрутка ленты (переезд по нажатию ниже — поверх)
     // день сменили нажатием / кнопкой «Сегодня» в той же неделе — таблетка переезжает, а не прыгает
     const wk = c.data.weeks[c.p.w].monday;
     if (pillPrev && pillPrev.week === wk && pillPrev.d !== c.p.d && !REDUCED) {
