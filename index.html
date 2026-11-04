@@ -473,10 +473,12 @@ html.nav-anim #app, html.nav-anim .tabs { pointer-events: none; }   /* пока 
    Раньше всё это включалось в первый кадр перехода: телефон заново собирал и перерисовывал весь экран вместе с
    большой тенью — на записи с iPhone экран в начале перехода стоял 2–3 кадра, а потом прыгал на 40–80 точек. */
 #app { position: relative; z-index: 3; will-change: transform; }
-#app::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; will-change: opacity;
+/* v2.0.6: слой фона перехода есть только во время перехода — в покое он занимал 16 МБ памяти видеокарты (вкладка «Слои»)
+   и ничего не показывал */
+#app::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; display: none;
   background: var(--bg); box-shadow: -1px 0 0 rgba(255, 255, 255, .04), -14px 0 32px rgba(0, 0, 0, .28); }
 html[data-theme="light"] #app::before { box-shadow: -14px 0 30px rgba(0, 0, 0, .14); }
-html.swiping #app::before { opacity: 1; }
+html.swiping #app::before { display: block; }
 /* снимок прошлого экрана под уезжающим — без размытия «стекла» и свечения: он затемнён и едет, разницы не видно,
    а рисовать его в первом кадре перехода телефону в разы легче */
 .under *, .under *::before, .under *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
@@ -2196,7 +2198,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.0.5";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.0.6";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2644,7 +2646,10 @@ window.__appStart = () => {
       if (warm) { L.set(from); app.style.opacity = ""; }
       watchFrames("переход между экранами", dur);
       const anims = gpuMove(L.els, () => L.set(to), dur, NAV_EASE);
-      animsDone(anims, dur).then(done, done);
+      // v2.0.6: слои перехода убираем на кадр позже — когда последний кадр движения точно показан
+      // (уборка — пересборка слоёв на 15–28 мс; в одном кадре с концом движения она давала рывок в конце)
+      const fin = () => requestAnimationFrame(() => done());
+      animsDone(anims, dur).then(fin, fin);
     });
   }
 
