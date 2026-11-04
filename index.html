@@ -2194,7 +2194,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.0.1";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.0.2";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -5314,7 +5314,7 @@ window.__appStart = () => {
         if (fillPage(pg, ci + k) || fillPage(pg, ci - k)) { fillTimer = setTimeout(step, 40); return; }
       }
     };
-    fillTimer = setTimeout(step, 300);
+    fillTimer = setTimeout(step, 150);
   }
   // Таблетка — за лентой: дробный номер дня в текущей неделе (в чужой неделе стоит у края)
   function pillFromScroll(pg) {
@@ -5404,7 +5404,8 @@ window.__appStart = () => {
       pillFromScroll(pg);
       followCatch(pg);
       const c = curPos(), r = Math.round(pg.scrollLeft / (pg.clientWidth || 1));
-      fillAround(pg, r);   // дни по пути — готовы заранее (обычно уже достроены в паузе)
+      // v2.0.2: дни по пути НЕ достраиваем на ходу — любая перестройка ленты под пальцем заставляет телефон
+      // пересчитать защёлкивание, и свайп «упирается». Они и так готовы заранее (сразу ±2 дня, остальные — в паузе).
       if (c && Math.floor(r / 7) === c.p.w) markDay(r % 7);
     });
     armSettle(pg, 140);
@@ -5417,7 +5418,13 @@ window.__appStart = () => {
       const W = pg.clientWidth || 1, x = pg.scrollLeft, f = x / W;
       if (pagerTouch || Math.abs(x - lastLeft) > 0.5 || Math.abs(f - Math.round(f)) > 0.02) { lastLeft = x; armSettle(pg, 100); return; }
       lastLeft = -1;
-      pagerSettle(pg, Math.round(f));
+      // v2.0.2: перекладываем ленту в начале кадра — касание, если палец уже коснулся, к этому моменту
+      // обработано, и мы не меняем ленту под пальцем
+      requestAnimationFrame(() => {
+        if (pg !== pagerEl()) return;
+        if (pagerTouch || Math.abs(pg.scrollLeft - x) > 0.5) { armSettle(pg, 100); return; }
+        pagerSettle(pg, Math.round(f));
+      });
     }, ms);
   }
   function pagerSettle(pg, i) {
@@ -5480,10 +5487,22 @@ window.__appStart = () => {
     slideDir = 0;
     markDay(np.d);
     liveSig = dayModel(c.data, np.w, np.d, isTeacher).sig;
-    fitPager();
+    fitQuiet(pg);
     putPill(np.d);
     pagerScrollToCurrent(pg);
     pagerFillLater(pg);
+  }
+  // Высота ленты под новый день — только когда пальца нет и лента стоит: смена высоты прокручиваемой ленты
+  // тоже заставляет телефон заново ставить защёлкивание (под пальцем это ощущается как «что-то мешает»)
+  let fitTimer = 0;
+  function fitQuiet(pg) {
+    clearTimeout(fitTimer);
+    const run = () => {
+      if (pg !== pagerEl()) return;
+      if (pagerTouch || scrolling) { fitTimer = setTimeout(run, 200); return; }
+      fitPager();
+    };
+    if (!pagerTouch && !scrolling) run(); else fitTimer = setTimeout(run, 200);
   }
   // Поехать к дню (нажатие по полосе дней, «Сегодня», другая неделя): лента плавно прокручивается сама
   function pagerGo(np, instant) {
