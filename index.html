@@ -1139,7 +1139,7 @@ html[data-theme="light"] .nc { background: var(--surface); box-shadow: 0 1px 2px
    отставала и дёргалась туда-сюда (на записи экрана — скачки на 10–20 px между соседними кадрами) */
 .ncw.ncsw > .nc, .ncw.ncsw > .nc:active { transition: none; }
 /* то же при листании дней: палец начал на карточке пары — она не «вдавливается», пока едет лента */
-.pager.drag .cc:active, .pager.drag .item:active, .pager.drag .card:active, .pager.drag .hero:active { transform: none; transition: none; }
+
 @supports (corner-shape: squircle) { .nc { corner-shape: squircle; border-radius: 30px; } .nc-ic { corner-shape: squircle; border-radius: 13px; } }
 
 /* значки у переключателей уведомлений */
@@ -2196,7 +2196,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.0.2";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.0.3";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4653,7 +4653,6 @@ window.__appStart = () => {
     return springCache;
   }
   // Переход на другой день/неделю по нажатию (свайп пальцем идёт своей дорогой — через ленту).
-  let quietCommit = false;
   function moveTo(np) {
     const c = curPos();
     if (!c || !np) return;
@@ -5247,10 +5246,6 @@ window.__appStart = () => {
     const id = view === "teacher" ? target : "g";
     return mem[id] && pos[id] ? { id, data: mem[id], p: pos[id] } : null;
   }
-  function hasNeighbor(dir) {
-    const c = curPos();
-    return !!(c && neighborPos(c.data, c.p.w, c.p.d, dir));
-  }
   // Высота ленты — как у текущего дня, но до низа экрана: соседние дни при листании видны целиком,
   // а пустого места для прокрутки под коротким днём не появляется
   // v1.8.8: где начинается лента и отступ снизу запоминаются (меняются только при перерисовке, повороте
@@ -5290,7 +5285,6 @@ window.__appStart = () => {
   let pgAnim = null;          // { goal } — лента едет к дню после нажатия (по полосе дней, «Сегодня», неделя)
   const DPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
   const snap = (v) => Math.round(v * DPR) / DPR;
-  function pagerPages(pg) { return pg.querySelectorAll(":scope > .page"); }
   const posOfIndex = (i) => ({ w: Math.floor(i / 7), d: i % 7 });
   // Дни подальше от текущего сначала пустые и достраиваются в паузах; рядом — ±PAGER_SPAN — готовы сразу
   function fillPage(pg, i) {
@@ -5403,12 +5397,10 @@ window.__appStart = () => {
     if (!rafOn) rafOn = requestAnimationFrame(() => {
       rafOn = 0;
       if (pg !== pagerEl()) return;
-      pillFromScroll(pg);
+      if (!pillTL.length) pillFromScroll(pg);   // таблетку, где умеет телефон, ведёт сама прокрутка (pillTimeline)
       followCatch(pg);
-      const c = curPos(), r = Math.round(pg.scrollLeft / (pg.clientWidth || 1));
       // v2.0.2: дни по пути НЕ достраиваем на ходу — любая перестройка ленты под пальцем заставляет телефон
       // пересчитать защёлкивание, и свайп «упирается». Они и так готовы заранее (сразу ±2 дня, остальные — в паузе).
-      if (c && Math.floor(r / 7) === c.p.w) markDay(r % 7);
     });
     armSettle(pg, 140);
   }
@@ -5442,7 +5434,6 @@ window.__appStart = () => {
     clearPass(pg);
     const quiet = !!pgAnim;
     pgAnim = null;
-    pillGoal = null;
     const c = curPos();
     if (!c) return;
     i = Math.max(0, Math.min(c.data.weeks.length * 7 - 1, i));
@@ -5518,9 +5509,43 @@ window.__appStart = () => {
     armSettle(pg, 160);
     return true;
   }
-  // совместимость со старыми вызовами
-  function ensureNeighbors() { const pg = pagerEl(); if (pg) fillAround(pg, curIndex(pg)); return false; }
-  function pagerLayers() {}
+  // v2.0.3: таблетка дня — прямо от прокрутки ленты (scroll-driven animations): её двигает телефон в том же
+  // потоке и с той же частотой, что и саму ленту (на iPhone до 120 кадров). Раньше её двигал JS на каждое
+  // событие прокрутки: не чаще 60 раз в секунду и на кадр позже ленты — рядом с плавной лентой она шла «ступеньками».
+  // Ключевые точки — положение таблетки для каждого дня ленты (в чужой неделе — у края), между ними — линейно.
+  let pillTL = [];
+  const CAN_TL = typeof ScrollTimeline === "function";
+  function pillTimeline(pg) {
+    pillTL.forEach((a) => { try { a.cancel(); } catch (e) { /* уже нет */ } });
+    pillTL = [];
+    const c = curPos(), el = pillEl();
+    if (!CAN_TL || REDUCED || !pg || !c || !el || !pillPos.length) return false;
+    const N = pg.children.length;
+    if (N < 2) return false;
+    const base = c.p.w * 7, on = el.parentNode.querySelector(".days-on"), inn = on && on.firstElementChild;
+    const xs = [];
+    for (let i = 0; i < N; i++) xs.push(snap(pillAt(Math.max(0, Math.min(6, i - base))).x));
+    const frames = (fn) => {
+      const out = [];
+      for (let i = 0; i < N; i++) {   // в одинаковых подряд точках достаточно первой и последней
+        if (i > 0 && i < N - 1 && xs[i] === xs[i - 1] && xs[i] === xs[i + 1]) continue;
+        out.push({ offset: i / (N - 1), transform: fn(xs[i]) });
+      }
+      return out;
+    };
+    try {
+      const tl = new ScrollTimeline({ source: pg, axis: "x" });
+      const add = (node, fn) => { if (node) pillTL.push(node.animate(frames(fn), { timeline: tl, fill: "both", easing: "linear" })); };
+      add(el, (x) => `translate3d(${x}px,0,0)`);
+      add(on, (x) => `translate3d(${x}px,0,0)`);
+      add(inn, (x) => (x ? `translate3d(${-x}px,0,0)` : "none"));
+      return true;
+    } catch (e) {
+      pillTL.forEach((a) => { try { a.cancel(); } catch (x) { /* уже нет */ } });
+      pillTL = [];
+      return false;
+    }
+  }
   // ---- таблетка выбранного дня: плавно едет за листанием и к нажатому дню ----
   let pillPos = [];
   function pillEl() { return app.querySelector(".days .pill"); }
@@ -5571,6 +5596,7 @@ window.__appStart = () => {
     inn.style.columnGap = cs.columnGap;
     putPill(c.p.d);
     el.classList.add("ready");
+    pillTimeline(pagerEl());   // v2.0.3: дальше таблетку ведёт прокрутка ленты (переезд по нажатию ниже — поверх)
     // день сменили нажатием / кнопкой «Сегодня» в той же неделе — таблетка переезжает, а не прыгает
     const wk = c.data.weeks[c.p.w].monday;
     if (pillPrev && pillPrev.week === wk && pillPrev.d !== c.p.d && !REDUCED) {
@@ -5583,7 +5609,6 @@ window.__appStart = () => {
   }
   let pillPrev = null;   // где стояла таблетка до перерисовки
   function rememberPill(f) { const c = curPos(); if (c) pillPrev = { week: c.data.weeks[c.p.w].monday, d: c.p.d, f: f == null ? c.p.d : f }; }
-  let pillGoal = null;   // дальний переход: к какому дню едет таблетка
   {
     const up = (e) => { if (e.touches && e.touches.length) return; if (pagerTouch) pagerTouch = false; };
     document.addEventListener("touchend", up, { passive: true, capture: true });
