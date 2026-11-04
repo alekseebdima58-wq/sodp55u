@@ -1,0 +1,46 @@
+// Новые элементы iOS 26: линза вкладок, сжимающийся заголовок, ползунок темы, круглая кнопка «Удалить»
+import { chromium, touchSession } from '../lib.mjs';
+const b = await chromium.launch(); const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const port = process.argv[2] || 8772;
+let ok = 0, n = 0; const T = (name, c, info = '') => { n++; if (c) ok++; console.log(`${c ? 'OK  ' : 'FAIL'} ${name} ${info}`); };
+const c = await b.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }); const p = await c.newPage();
+const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+await p.route(/fonts\.g|telegram\.org|telegram-web-app\.js|ntfy/, (r) => r.abort());
+await p.goto(`http://localhost:${port}/?now=2026-10-20T10:20&n=15.1.0.1&ts=1&k=` + 'cd'.repeat(16)); await p.waitForSelector('.week'); await sleep(900);
+const lens = () => p.evaluate(() => { const l = document.querySelector('.tabs .lens').getBoundingClientRect(), on = document.querySelector('.tab.on').getBoundingClientRect(); return { dl: Math.round(l.left - on.left), dw: Math.round(l.width - on.width) }; });
+let L = await lens(); T('линза стоит под «Расписанием»', Math.abs(L.dl) <= 1 && Math.abs(L.dw) <= 1, JSON.stringify(L));
+await p.tap('[data-tab="teachers"]'); await sleep(150);
+const mid = await p.evaluate(() => { const l = document.querySelector('.tabs .lens'); return { x: new DOMMatrix(getComputedStyle(l).transform).m41, w: l.getBoundingClientRect().width }; });
+T('линза едет к «Преподавателям» (в пути, не прыжком)', mid.x > 5 && mid.x < mid.w * 0.999 || mid.x > 0, JSON.stringify(mid));
+await sleep(700); L = await lens(); T('…и встаёт ровно под вкладку', Math.abs(L.dl) <= 1, JSON.stringify(L));
+const nb = () => p.evaluate(() => ({ on: document.documentElement.classList.contains('nb-on'), back: document.documentElement.classList.contains('nb-back-on'), t: document.querySelector('.nb-title').textContent, vis: getComputedStyle(document.querySelector('.navbar')).visibility }));
+let s = await nb(); T('вверху экрана плашки нет', !s.on && s.vis === 'hidden', JSON.stringify(s));
+await p.evaluate(() => scrollTo(0, 300)); await sleep(400); s = await nb();
+T('прокрутили — плашка с маленьким «Преподаватели»', s.on && s.t === 'Преподаватели' && s.vis === 'visible', JSON.stringify(s));
+T('без кнопки «назад» на вкладке', !s.back, JSON.stringify(s));
+await p.evaluate(() => scrollTo(0, 0)); await sleep(400); s = await nb(); T('вернулись наверх — плашка ушла', !s.on, JSON.stringify(s));
+await p.tap('[data-tab="schedule"]'); await sleep(700); await p.tap('[data-act="notif"]'); await sleep(800);
+await p.evaluate(() => scrollTo(0, 400)); await sleep(400); s = await nb();
+T('«Уведомления»: плашка и кнопка «назад»', s.on && s.back && s.t === 'Уведомления', JSON.stringify(s));
+await p.tap('.nb-back'); await sleep(900);
+const v = await p.evaluate(() => !!document.querySelector('[data-pager]') && !document.documentElement.classList.contains('nb-on'));
+T('«назад» в плашке возвращает к расписанию, плашка скрыта', v);
+await p.tap('[data-tab="settings"]'); await sleep(800);
+const th = () => p.evaluate(() => { const t = document.querySelector('.seg3 .thumb').getBoundingClientRect(), on = document.querySelector('.seg3 button.on').getBoundingClientRect(); return { dl: Math.round(t.left - on.left), dw: Math.round(t.width - on.width) }; });
+let t = await th(); T('ползунок темы под выбранным вариантом', Math.abs(t.dl) <= 1 && Math.abs(t.dw) <= 1, JSON.stringify(t));
+await p.tap('.seg3 button[data-v="dark"]'); await sleep(120);
+const tm = await th(); T('выбрали «Тёмная» — ползунок в пути', Math.abs(tm.dl) > 3, JSON.stringify(tm));
+await sleep(700); t = await th(); T('…и доехал', Math.abs(t.dl) <= 1 && Math.abs(t.dw) <= 1, JSON.stringify(t));
+await p.tap('.seg3 button[data-v="auto"]'); await sleep(800);
+// круглая кнопка «Удалить»
+await p.tap('[data-tab="schedule"]'); await sleep(700); await p.tap('[data-act="notif"]'); await sleep(800);
+const r = await (await p.$('#app .ncw')).boundingBox(); const cdp = await touchSession(p); const y = r.y + 40, x0 = r.x + r.width - 20;
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] });
+for (let i = 1; i <= 10; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 - 8 * i, y }] }); await sleep(16); }
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(600);
+const del = await p.evaluate(() => { const d = document.querySelector('#app .ncw .nc-del').getBoundingClientRect(); return { w: Math.round(d.width), h: Math.round(d.height) }; });
+T('открылась круглая кнопка 56×56', del.w === 56 && del.h === 56, JSON.stringify(del));
+await p.tap('#app .ncw .nc-del'); await sleep(900);
+T('нажали — уведомление удалено', (await p.$$('#app .ncw')).length < 3 || !!(await p.$('.toast')));
+T('нет ошибок JS', !errs.length, errs.join(' | '));
+console.log(`\n${ok}/${n}`); await b.close();

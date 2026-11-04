@@ -1,8 +1,6 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="4f259bbf0469">
-<meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
@@ -329,17 +327,20 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
 /* появление ленты при смене дня/недели */
 
 
-/* Листание дней ведёт приложение само (как в приложениях iOS): лента идёт за пальцем 1:1,
-   короткий быстрый бросок перелистывает день, медленный короткий — возвращает. Вертикальная прокрутка — родная. */
+/* v2.0: листание дней — родная прокрутка с защёлкиванием: за пальцем ведёт и доводит день сам телефон
+   (в отдельном потоке, с системной физикой), по одному дню за свайп. Вертикальная прокрутка — тоже родная. */
 .pager {
-  display: flex; margin: 0 calc(-1 * var(--side)); overflow: hidden;
-  touch-action: pan-y; overscroll-behavior-x: contain; overflow-anchor: none; scrollbar-width: none;
+  display: flex; margin: 0 calc(-1 * var(--side)); overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain; overflow-anchor: none; scrollbar-width: none;
 }
 .pager::-webkit-scrollbar { display: none; }
 .page {
   position: relative; isolation: isolate; flex: 0 0 100%; min-width: 0; align-self: flex-start;
   padding: 0 var(--side); display: flow-root;
+  scroll-snap-align: start; scroll-snap-stop: always;
 }
+.pager > .page[data-pass] { scroll-snap-align: none; }   /* v2.0: день, к которому лента уже ехала, — на время быстрого свайпа не точка остановки */
 
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 48px 24px 24px; }
 .empty .ic {
@@ -934,7 +935,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
   background: var(--accent);  opacity: 0; will-change: transform, width; }
 .days .pill.ready { opacity: 1; }
 /* листание: на время движения каждый день — свой слой видеокарты (текст едет вместе с рамками, без дрожи) */
-.pager.paging > .page { will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+/* v2.0: дни не сдвигаются трансформом — их прокручивает телефон, отдельные слои не нужны */
 .days:has(.pill.ready) .day.on { background: transparent; border-color: transparent; box-shadow: none; }
 .day { transition: color .18s ease, opacity .18s ease; }
 @supports (corner-shape: squircle) { .days .pill { corner-shape: squircle; border-radius: 26px; } }
@@ -2128,7 +2129,8 @@ window.__appStart = () => {
     // [data-pager] и .ncw, см. Gesture.zones) и свайпу «назад» от края (весь экран, только вне Telegram и только
     // когда есть куда вернуться — Gesture.edge). Всё остальное (вкладка «Преподаватели», настройки, шапка) — пассивно:
     // там прокручивает сам телефон, не дожидаясь JS.
-    const ZONE = "[data-pager], .ncw";
+    // v2.0: лента дней — родная прокрутка, её касания пассивны (иначе iPhone ждал бы JS на каждом движении пальца)
+    const ZONE = ".ncw";
     let edgeOn = false;
     const inZone = (el) => !!(el && el.closest && el.closest(ZONE));
     const bMove = (e) => dMove(e);                                            // может отменить прокрутку
@@ -2184,7 +2186,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v1.9.6";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.0.0";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2531,7 +2533,7 @@ window.__appStart = () => {
       c.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
       // соседние дни не удаляем, а только прячем: дни стоят в ряд и сдвинуты на ширину экрана, и без соседа
       // текущий день съезжал за левый край — под пальцем и при «назад» лента пар пропадала, а потом появлялась рывком
-      c.querySelectorAll("[data-pager] .page.prev, [data-pager] .page.next").forEach((e) => { e.style.visibility = "hidden"; e.innerHTML = ""; });
+      c.querySelectorAll("[data-pager] .page.prev, [data-pager] .page.next").forEach((e) => e.remove());   // v2.0: у копии нет прокрутки — оставляем только текущий день
       c.querySelectorAll("video").forEach((e) => e.remove());
       return c;
     } catch (e) { return null; }
@@ -2910,7 +2912,7 @@ window.__appStart = () => {
       <div class="blbl">${I.cup}<span data-btext>Перерыв · ${esc(it.text)}</span></div></li>`;
   }
 
-  const PAGER_SPAN = 1;   // соседи по одному дню с каждой стороны — строятся сразу, во время свайпа ничего не вставляется
+  const PAGER_SPAN = 2;   // v2.0: сколько дней с каждой стороны от текущего готовы сразу (остальные — в паузах)
   // Сосед через n дней (dir = ±n): шагаем по одному, пока не кончатся недели
   function stepPos(data, p, dir) {
     let q = p;
@@ -2967,16 +2969,17 @@ window.__appStart = () => {
     }
     bar += `</nav>`;
 
-    // Текущий день и по PAGER_SPAN соседей с каждой стороны — лежат за краями экрана.
-    // Запас нужен для быстрых свайпов подряд: лента успевает уехать на 2–3 дня, пока не «переложилась».
-    const side = (dir) => { const out = []; let q = p; for (let k = 0; k < PAGER_SPAN && (q = neighborPos(data, q.w, q.d, dir)); k++) out.push(q); return out; };
-    // Выбранный день и по одному соседу с каждой стороны — сразу, одним куском. Достраивать ленту
-    // во время касания нельзя: iPhone в этот момент не даёт поправить прокрутку, и дни накладываются.
-    const page = (q, cls) => `<div class="page ${cls}" aria-hidden="true" inert>${dayBodyHTML(data, q.w, q.d, isTeacher, false)}</div>`;
+    // v2.0: в ленте — все дни расписания подряд (родная прокрутка с защёлкиванием, см. 23-pager.js).
+    // Номер страницы = неделя × 7 + день. Текущий и по PAGER_SPAN соседей — готовы сразу, остальные
+    // достраиваются в паузах (pagerFillLater) или по пути, если до них долистали раньше.
+    const N = data.weeks.length * 7, ci = p.w * 7 + p.d;
     let html = `<div class="pager" data-pager>`;
-    html += side(-1).reverse().map((q) => page(q, "prev")).join("");
-    html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur>${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`;
-    html += side(1).map((q) => page(q, "next")).join("");
+    for (let i = 0; i < N; i++) {
+      const q = { w: Math.floor(i / 7), d: i % 7 };
+      if (i === ci) { html += `<div class="page cur${slideDir > 0 ? " from-r" : slideDir < 0 ? " from-l" : ""}" data-cur data-i="${i}">${dayBodyHTML(data, p.w, p.d, isTeacher, enterNext, m)}</div>`; continue; }
+      const near = Math.abs(i - ci) <= PAGER_SPAN;
+      html += `<div class="page ${i < ci ? "prev" : "next"}" data-i="${i}"${near ? "" : " data-lazy"} aria-hidden="true" inert>${near ? dayBodyHTML(data, q.w, q.d, isTeacher, false) : ""}</div>`;
+    }
     html += `</div>`;
     liveSig = m.sig;
     return { html, bar, notToday: notToday && todayInData, wl, wr, prevW, nextW, isCur: label === "Эта неделя" };
@@ -4649,29 +4652,10 @@ window.__appStart = () => {
     if (pgAnim && pgAnim.goal && pgAnim.goal.w === np.w && pgAnim.goal.d === np.d) return;
     const k = (np.w - c.p.w) * 7 + (np.d - c.p.d);
     if (!k) return;
-    ensureNeighbors();
-    // Любой переход (соседний или дальний день, «Сегодня», другая неделя) — тем же движением, что и
-    // при листании: нужный день кладём в соседний слот ленты, лента уезжает целиком, таблетка едет к нему.
-    const pg = pagerEl();
-    if (pg && !pgAnim && !REDUCED) {
-      const dir = Math.sign(k);
-      if (Math.abs(k) === 1 && hasNeighbor(k)) { quietCommit = true; slideTo(pg, k, 0); if (pgAnim) pgAnim.goal = np; return; }
-      const slot = pg.querySelector(dir > 0 ? ":scope > .page.next" : ":scope > .page.prev");
-      if (slot) {
-        slot.innerHTML = dayBodyHTML(c.data, np.w, np.d, view === "teacher", false);
-        placeNowLabels(false);
-        // v1.9.6: раскладку нового дня считаем сразу, пока ничего не движется, — иначе она доставалась
-        // первым кадрам листания («рывок · листание (нажатие)»)
-        void slot.offsetHeight;
-        // таблетка едет прямо к нужному дню (в той же неделе); при смене недели стоит на месте —
-        // иначе она «перелетала» на соседний день, пока уезжала страница
-        pillGoal = np.w === c.p.w ? np.d : c.p.d;
-        haptic("select");
-        slideTo(pg, dir, 0, np);
-        if (pgAnim) pgAnim.goal = np;
-        return;
-      }
-    }
+    // v2.0: соседний день — родной плавной прокруткой ленты (таблетка едет за лентой, день становится
+    // текущим, когда лента встала). Дальний день или другая неделя — сразу на место, а содержимое дня
+    // мягко въезжает сбоку (как раньше): иначе лента пролетала бы через все дни по пути.
+    if (Math.abs(k) === 1 && pagerGo(np)) return;
     rememberPill();
     pos[c.id] = np;
     opened.clear();
@@ -5239,23 +5223,14 @@ window.__appStart = () => {
   const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   let scrolling = false, pagerTouch = false;
   function pagerEl() { return app.querySelector("[data-pager]"); }
-  function curIndex(pg) { return pg.querySelectorAll(":scope > .page.prev").length; }
-  // Keep the current page in the viewport when the three-page window is relaid
-  // out. WebKit needs an actual scroll container here; assigning scrollLeft to
-  // overflow:hidden may be silently ignored, leaving the current page one full
-  // screen to the right after a fast swipe.
+  // v2.0: в ленте лежат ВСЕ дни расписания подряд (неделя × 7 + день) — номер страницы = номер дня
+  function curIndex(pg) { const cur = pg && pg.querySelector(":scope > [data-cur]"); return cur ? +cur.dataset.i || 0 : 0; }
+  // Текущий день — ровно в окне ленты. Сдвиг без анимации: так ставим ленту после перерисовки,
+  // пока ничего не движется (на экране подмена не видна)
   function pagerScrollToCurrent(pg) {
     if (!pg) return;
-    const left = curIndex(pg) * pg.clientWidth;
-    // Some WebKit versions report scrollLeft but do not move flex children.
-    // Keep a transform base as the authoritative page position.
-    pgBaseX = -left;
-    pg.scrollLeft = 0;
-    // текущий сдвиг пальца/анимации (pgX) сохраняем — иначе, если раскладка поменяется посреди
-    // движения, день прыгнет на место
-    const total = snap(pgBaseX + pgX);
-    const t = total ? `translate3d(${total}px,0,0)` : "";
-    pagerPages(pg).forEach((el) => { el.style.transform = t; });
+    const x = curIndex(pg) * (pg.clientWidth || 1);
+    if (Math.abs(pg.scrollLeft - x) > 0.5) pg.scrollLeft = x;
   }
   function curPos() {
     if (view !== "schedule" && view !== "teacher") return null;
@@ -5287,126 +5262,198 @@ window.__appStart = () => {
     const pg = pagerEl();
     if (!pg) return;
     fitPager(true);
-    pagerLayers(pg, true);
-    pagerScrollToCurrent(pg);   // лента сама не прокручивается — двигаем дни трансформом
+    pagerScrollToCurrent(pg);
+    lastX = pg.scrollLeft; moveDir = 0;
+    pagerBind(pg);
     setupPill();
+    pagerFillLater(pg);
   }
 
-  // ---- листание дней: как в iOS, через видеокарту ----
-  // Дни (текущий и по соседу с каждой стороны) сдвигаются трансформом — это делает видеокарта,
-  // главный поток не нагружается, поэтому без подёргиваний. Таблетка в полосе дней едет вместе с пальцем.
-  let pgDrag = null, pgAnim = null, pgX = 0, syncRender = false, pgBaseX = 0;
-  // Сдвиги — ровно по точкам экрана телефона: при дробных сдвигах текст выравнивается отдельно
-  // от рамок и «дрожит» внутри карточки
+  // ---- листание дней: v2.0 — ведёт сам телефон ----
+  // Раньше каждый сдвиг пальца шёл через JS: лента двигалась, только когда освобождался основной поток,
+  // и любая занятость приложения (перестройка дня, отрисовка) была видна рывком под пальцем.
+  // Теперь дни лежат в родной горизонтальной прокрутке с защёлкиванием (scroll-snap): за пальцем ведёт
+  // и доводит день сама iOS — в отдельном потоке и с системной физикой, как в нативных приложениях.
+  // JS только смотрит: двигает таблетку в полосе дней, а когда лента остановилась — делает день текущим.
+  // Тяжёлая работа (смена дня, перестройка недели, достройка дней) идёт только в покое.
+  let syncRender = false;
+  let pgAnim = null;          // { goal } — лента едет к дню после нажатия (по полосе дней, «Сегодня», неделя)
   const DPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
   const snap = (v) => Math.round(v * DPR) / DPR;
-  // на время движения каждый день — отдельный слой видеокарты: не перерисовывается, а едет готовой картинкой
-  // v1.9.6: слои дней больше не включаются и не выключаются на каждом листании. Дни и так всё время сдвинуты
-  // трансформом (translate3d), то есть уже лежат на видеокарте, а переключение слоёв при касании и после
-  // остановки заставляло телефон заново собирать их — ровно в начале и в конце движения.
-  // Лента получает слои один раз, когда появляется (setupPager), и держит их, пока её не перерисуют.
-  function pagerLayers(pg, on) { if (pg && on && !pg.classList.contains("paging")) pg.classList.add("paging"); }
   function pagerPages(pg) { return pg.querySelectorAll(":scope > .page"); }
-  // ---- «открытие дня» ----
-  // Въезжающий день мягко проявляется, уходящий слегка гаснет. Строки внутри дня едут вместе с ним.
-  let cascadeSide = 0;
-  function cascadeReset(page) {
-    if (!page) return;
-    page.style.opacity = "";
+  const posOfIndex = (i) => ({ w: Math.floor(i / 7), d: i % 7 });
+  // Дни подальше от текущего сначала пустые и достраиваются в паузах; рядом — ±PAGER_SPAN — готовы сразу
+  function fillPage(pg, i) {
+    const el = pg && pg.children[i];
+    if (!el || !el.hasAttribute("data-lazy")) return false;
+    const c = curPos();
+    if (!c) return false;
+    const q = posOfIndex(i);
+    if (!c.data.weeks[q.w]) return false;
+    el.innerHTML = dayBodyHTML(c.data, q.w, q.d, view === "teacher", false);
+    el.removeAttribute("data-lazy");
+    return true;
   }
-  function cascade(pg, off) {
-    if (REDUCED) return;
-    const dir = Math.sign(off), p = Math.min(1, Math.abs(off));
-    const cur = pg.querySelector(":scope > [data-cur]");
-    const inc = dir > 0 ? pg.querySelector(":scope > .page.next") : dir < 0 ? pg.querySelector(":scope > .page.prev") : null;
-    if (cascadeSide && cascadeSide !== dir) {   // сменили направление — прошлый въезжающий день вернуть как был
-      cascadeReset(pg.querySelector(cascadeSide > 0 ? ":scope > .page.next" : ":scope > .page.prev"));
+  function fillAround(pg, i, r = PAGER_SPAN) { for (let k = i - r; k <= i + r; k++) fillPage(pg, k); }
+  let fillTimer = 0;
+  function pagerFillLater(pg) {
+    clearTimeout(fillTimer);
+    const step = () => {
+      if (pg !== pagerEl() || !pg.isConnected) return;
+      if (scrolling || pagerTouch) { fillTimer = setTimeout(step, 250); return; }   // в движении — не мешаем
+      const ci = curIndex(pg), n = pg.children.length;
+      for (let k = 1; k < n; k++) {   // ближайший к текущему недостроенный день — по одному за раз
+        if (fillPage(pg, ci + k) || fillPage(pg, ci - k)) { fillTimer = setTimeout(step, 40); return; }
+      }
+    };
+    fillTimer = setTimeout(step, 300);
+  }
+  // Таблетка — за лентой: дробный номер дня в текущей неделе (в чужой неделе стоит у края)
+  function pillFromScroll(pg) {
+    const c = curPos();
+    if (!c || !pillPos.length) return;
+    const f = pg.scrollLeft / (pg.clientWidth || 1) - c.p.w * 7;
+    putPill(Math.max(0, Math.min(6, f)));
+  }
+  function markDay(d) {   // подсветка дня в полосе — как только понятно, куда приехали
+    const c = curPos();
+    if (!c) return;
+    const week = c.data.weeks[c.p.w], today = samaraNow().date;
+    for (const b of app.querySelectorAll(".days .day")) {
+      const bd = +b.dataset.d, on = bd === d;
+      if (b.classList.contains("on") === on) continue;
+      b.classList.toggle("on", on);
+      b.classList.toggle("dim", addDays(week.monday, bd) < today && !on);
+      b.setAttribute("aria-pressed", String(on));
     }
-    cascadeSide = dir;
-    // «Открытие дня» — мягкая смена прозрачности целых дней. Строки внутри дня едут вместе
-    // со страницей, без отставания: название и преподаватель не съезжают и не возвращаются
-    if (cur) cur.style.opacity = p ? (1 - 0.35 * p).toFixed(3) : "";
-    if (inc) inc.style.opacity = p < 0.999 ? (0.55 + 0.45 * p).toFixed(3) : "";
   }
-  function setPagerX(pg, x) {
-    pgX = x;
-    const total = snap(pgBaseX + x);
-    const t = total ? `translate3d(${total}px,0,0)` : "";
-    pagerPages(pg).forEach((el) => { el.style.transform = t; });
-    const W = pg.clientWidth || 1, off = -x / W;            // -1 … 1, плюс — к следующему дню
-    cascade(pg, off);
-    pillFollow(off);
-    if (Math.abs(off) < 0.02) previewChips(0);
+  let settleTimer = 0, lastLeft = -1, rafOn = 0;
+  function pagerBind(pg) {
+    if (pg.__pg) return;
+    pg.__pg = 1;
+    pg.addEventListener("scroll", () => onPagerScroll(pg), { passive: true });
+    if ("onscrollend" in window) pg.addEventListener("scrollend", () => armSettle(pg, 30), { passive: true });
+    pg.addEventListener("touchstart", (e) => {
+      const t = e.touches && e.touches[0];
+      fingerAt = t ? { x: t.clientX, y: t.clientY } : null; fingerMoved = false; tapGoal = null;
+      pagerTouch = true; pagerCatch(pg);
+    }, { passive: true });
+    // коснулся ленты на лету и отпустил, не сдвигая (нажатие по экрану во время листания) — день не теряется:
+    // лента доезжает туда, куда ехала (сама iOS в этом случае встала бы на ближайший день)
+    const up = (e) => {
+      if (e.touches && e.touches.length) return;
+      const k = caught;
+      if (!k || fingerMoved || pg !== pagerEl()) return;
+      caught = null;
+      tapGoal = k.t;
+      requestAnimationFrame(() => { pg.scrollTo({ left: k.t * (pg.clientWidth || 1), behavior: REDUCED ? "auto" : "smooth" }); armSettle(pg, 160); });
+    };
+    pg.addEventListener("touchend", up, { passive: true });
+    pg.addEventListener("touchmove", (e) => {
+      const t = e.touches && e.touches[0];
+      if (t && fingerAt && Math.hypot(t.clientX - fingerAt.x, t.clientY - fingerAt.y) > 8) fingerMoved = true;
+    }, { passive: true });
   }
-  // кривая листания: путь (доля) за время k при начальной скорости a (в долях пути за всё время)
-  const pagerCurve = flingAt;
-  // остановить листание на лету (подхватили пальцем): лента остаётся ровно там, где её видно
-  function pagerStop() {
-    const a = pgAnim;
-    if (!a) return;
-    pgAnim = null;
-    if (a.watch) a.watch();
-    const ct = a.anims[0] && a.anims[0].currentTime;
-    const k = Math.max(0, Math.min(1, ((ct != null ? ct : performance.now() - a.t0)) / a.T));
-    setPagerX(a.pg, a.from + a.dist * pagerCurve(k, a.a));
-    a.anims.forEach((x) => x.cancel());
+  // Быстрые свайпы подряд. Каждый день — обязательная остановка (scroll-snap-stop: always): один свайп —
+  // один день. Но если новый свайп начался, пока лента ещё доезжала к дню, и палец ведёт ленту дальше
+  // в ту же сторону — этот день уже «засчитан»: на время свайпа он перестаёт быть точкой остановки,
+  // и лента встаёт на следующий (три быстрых свайпа — три дня, как раньше). Просто коснулся на лету
+  // или потянул назад — обычное поведение: лента встаёт на ближайший день.
+  let lastX = 0, moveDir = 0, caught = null, fingerAt = null, fingerMoved = false, tapGoal = null;
+  function clearPass(pg) { for (const x of pg.querySelectorAll(":scope > [data-pass]")) x.removeAttribute("data-pass"); }
+  function pagerCatch(pg) {
+    caught = null;
+    clearPass(pg);
+    if (!scrolling || !moveDir) return;
+    const f = pg.scrollLeft / (pg.clientWidth || 1), t = moveDir > 0 ? Math.ceil(f - 0.02) : Math.floor(f + 0.02);
+    // у последнего (первого) дня «проезжать» некуда — он остаётся точкой остановки
+    if (Math.abs(f - t) > 0.02 && pg.children[t]) caught = { x: pg.scrollLeft, t, dir: moveDir, pass: !!pg.children[t + moveDir] };
   }
-  function pagerAnim(pg, to, v, done, since) {
-    pagerStop();
-    pagerLayers(pg, true);
-    const from = pgX, dist = to - from;
+  function followCatch(pg) {
+    if (!caught || !pagerTouch) return;
+    const d = (pg.scrollLeft - caught.x) * caught.dir, el = pg.children[caught.t];
+    if (!el) return;
+    if (d > 8 && caught.pass && !el.hasAttribute("data-pass")) { clearPass(pg); el.setAttribute("data-pass", ""); }
+    else if (d < -8 && el.hasAttribute("data-pass")) el.removeAttribute("data-pass");
+  }
+  function onPagerScroll(pg) {
+    if (pg !== pagerEl()) return;
     scrolling = true;
-    let tok = null;
-    // замер кадров кончается вместе с движением — до перекладки ленты (см. watchFrames)
-    const finish = () => { if (pgAnim !== tok) return; if (tok && tok.watch) tok.watch(); pgAnim = null; scrolling = false; done && done(); if (!pgDrag) pagerLayers(pagerEl(), false); };
-    if (Math.abs(dist) < 0.5 || REDUCED) { setPagerX(pg, to); finish(); return; }
-    // День продолжает движение ровно с той скоростью, с которой его отпустил палец, плавно
-    // разгоняется (если палец был медленным) и мягко тормозит у места — без скачка скорости.
-    // Раньше после отпускания скорость сразу вырастала в 2–3 раза: глаз видел рывок и «30 кадров».
-    const f = fling(dist, v, { full: pg.clientWidth || 390 }), T = f.T, a = f.a;
-    // отсчёт — с кадра, в котором показано последнее положение пальца (since): движение продолжается ровно с него
-    const now0 = performance.now(), t0 = since && now0 - since < 50 ? since : 0;
-    const pill = pillEl(), on = pill && pill.parentNode.querySelector(".days-on");
-    const anims = gpuMove([...pagerPages(pg), pill, on, on && on.firstElementChild], () => setPagerX(pg, to), T, f.ease);
-    if (t0) anims.forEach((x) => { try { x.startTime = t0; } catch (e) { /* не умеет — начнёт со следующего кадра */ } });
-    tok = pgAnim = { pg, from, dist, a, T, t0: t0 || now0, anims };
-    tok.watch = watchFrames(since ? "листание (бросок)" : "листание (нажатие)", T + 100);
-    animsDone(anims, T - (t0 ? now0 - t0 : 0)).then(finish, () => { /* подхватили пальцем — pagerStop уже всё сделал */ });
+    const x = pg.scrollLeft;
+    if (Math.abs(x - lastX) > 0.5) { moveDir = Math.sign(x - lastX); lastX = x; }
+    if (!rafOn) rafOn = requestAnimationFrame(() => {
+      rafOn = 0;
+      if (pg !== pagerEl()) return;
+      pillFromScroll(pg);
+      followCatch(pg);
+      const c = curPos(), r = Math.round(pg.scrollLeft / (pg.clientWidth || 1));
+      fillAround(pg, r);   // дни по пути — готовы заранее (обычно уже достроены в паузе)
+      if (c && Math.floor(r / 7) === c.p.w) markDay(r % 7);
+    });
+    armSettle(pg, 140);
   }
-  // Быстрая смена дня, когда лента доехала. Раньше весь экран собирался заново — на Android это
-  // 70–80 мс без единого кадра, ровно в момент «приземления» дня (в отчётах — «рывок, листание»).
-  // Теперь готовые дни ленты просто перекладываются (въехавший становится текущим, ушедший — соседом),
-  // и достраивается только один новый день с дальней стороны. Шапка и полоса дней в той же неделе
-  // не пересобираются — только отметка выбранного дня. Если что-то сложнее (другая неделя или
-  // у преподавателя меняется кнопка «Сегодня») — по-старому, полной перерисовкой.
-  function fastShift(c, np, dir) {
-    const pg = pagerEl();
-    // v1.9.3: раскрытая карточка больше не заставляет перерисовывать весь экран — см. reuse ниже
-    if (!pg || !dir || PAGER_SPAN !== 1 || np.w !== c.p.w || enterNext || slideDir) return false;
-    const isTeacher = view === "teacher";
-    const cur = pg.querySelector(":scope > [data-cur]");
-    const inc = pg.querySelector(dir > 0 ? ":scope > .page.next" : ":scope > .page.prev");
-    if (!cur || !inc) return false;
-    if (isTeacher) {   // у преподавателя в шапке кнопка «Сегодня» — если она должна появиться или пропасть, перерисуем всё
+  // «Остановилась»: прокрутка не менялась ms, палец отпущен и день встал ровно по краю
+  function armSettle(pg, ms) {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      if (pg !== pagerEl()) { scrolling = false; return; }
+      const W = pg.clientWidth || 1, x = pg.scrollLeft, f = x / W;
+      if (pagerTouch || Math.abs(x - lastLeft) > 0.5 || Math.abs(f - Math.round(f)) > 0.02) { lastLeft = x; armSettle(pg, 100); return; }
+      lastLeft = -1;
+      pagerSettle(pg, Math.round(f));
+    }, ms);
+  }
+  function pagerSettle(pg, i) {
+    if (tapGoal != null && i !== tapGoal) {   // браузер после нажатия встал не туда — доезжаем туда, куда ехали
+      const g = tapGoal; tapGoal = null;
+      pg.scrollTo({ left: g * (pg.clientWidth || 1), behavior: REDUCED ? "auto" : "smooth" });
+      armSettle(pg, 160);
+      return;
+    }
+    tapGoal = null;
+    scrolling = false;
+    moveDir = 0; lastX = pg.scrollLeft; caught = null;
+    clearPass(pg);
+    const quiet = !!pgAnim;
+    pgAnim = null;
+    pillGoal = null;
+    const c = curPos();
+    if (!c) return;
+    i = Math.max(0, Math.min(c.data.weeks.length * 7 - 1, i));
+    if (i === curIndex(pg)) { pillFromScroll(pg); markDay(c.p.d); return; }
+    if (!quiet) haptic("select");
+    commitIndex(pg, c, i);
+  }
+  // Лента встала на другом дне — он становится текущим. Внутри недели — перекладываем отметки
+  // (готовая страница уже на экране), в другой неделе — перерисовываем шапку и ленту целиком (в покое).
+  function commitIndex(pg, c, i) {
+    const np = posOfIndex(i), isTeacher = view === "teacher";
+    let partial = np.w === c.p.w;
+    if (partial && isTeacher) {   // у преподавателя в шапке кнопка «Сегодня» — появилась/пропала — рисуем всё
       const def = pickDefault(c.data);
       const notToday = (q) => !(q.w === def.w && q.d === def.d && dayModel(c.data, q.w, q.d, true).isToday);
-      if (notToday(c.p) !== notToday(np)) return false;
+      if (notToday(c.p) !== notToday(np)) partial = false;
     }
-    const step = stepPos(c.data, c.p, dir);
-    const isStep = !!step && step.w === np.w && step.d === np.d;
-    // ушедший день с раскрытыми карточками соседом не оставляем: при возврате он должен быть свёрнутым —
-    // его достроит ensureNeighbors уже после того, как новый день показан
-    const reuse = isStep && !opened.size;
-    const pageHTML = (q, cls) => `<div class="page ${cls}" aria-hidden="true" inert>${dayBodyHTML(c.data, q.w, q.d, isTeacher, false)}</div>`;
-    const back = dir > 0 ? "prev" : "next", fwd = dir > 0 ? "next" : "prev";
-    for (const el of [...pg.children]) if (el !== inc && !(reuse && el === cur)) el.remove();
-    if (reuse) {   // ушедший день остаётся соседом — заново его не строим
-      cur.removeAttribute("data-cur");
-      cur.className = `page ${back}`;
-      cur.setAttribute("aria-hidden", "true");
-      cur.inert = true;
+    if (!partial) {
+      pos[c.id] = np;
+      opened.clear();
+      enterNext = false;
+      slideDir = 0;
+      syncRender = true;
+      try { render(); } finally { syncRender = false; }
+      return;
     }
-    inc.className = "page cur";
+    const old = pg.querySelector(":scope > [data-cur]"), inc = pg.children[i], oi = curIndex(pg);
+    fillPage(pg, i);
+    if (old) {
+      old.removeAttribute("data-cur");
+      // раскрытые карточки ушедшего дня — свёрнутыми (страница за краем, подмену не видно)
+      if (opened.size) old.innerHTML = dayBodyHTML(c.data, c.p.w, c.p.d, isTeacher, false);
+      old.setAttribute("aria-hidden", "true");
+      old.inert = true;
+    }
+    const lo = Math.min(oi, i), hi = Math.max(oi, i), pages = pg.children;
+    for (let k = lo; k <= hi; k++) if (pages[k]) pages[k].classList.toggle("prev", k < i), pages[k].classList.toggle("next", k > i), pages[k].classList.toggle("cur", k === i);
     inc.setAttribute("data-cur", "");
     inc.removeAttribute("aria-hidden");
     inc.inert = false;
@@ -5414,144 +5461,28 @@ window.__appStart = () => {
     opened.clear();
     enterNext = false;
     slideDir = 0;
-    pillGoal = null;
-    // полоса дней: выбранный день и «прошедшие» (затухшие) дни
-    const week = c.data.weeks[np.w], today = samaraNow().date;
-    for (const b of app.querySelectorAll(".days .day")) {
-      const d = +b.dataset.d, on = d === np.d, date = addDays(week.monday, d);
-      b.classList.toggle("on", on);
-      b.classList.toggle("dim", date < today && !on);
-      b.setAttribute("aria-pressed", String(on));
-    }
+    markDay(np.d);
     liveSig = dayModel(c.data, np.w, np.d, isTeacher).sig;
-    pagerScrollToCurrent(pg);
-    setPagerX(pg, 0);
-    pagerPages(pg).forEach((el) => { el.style.opacity = ""; });
     fitPager();
     putPill(np.d);
-    // недостающих соседей достраиваем после того, как новый день уже показан (следующий кадр не ждёт);
-    // если палец успел раньше — их построит касание (ensureNeighbors в начале жеста «листание дней»)
-    const later = () => { if (ensureNeighbors(true)) setTimeout(later, 0); };   // по одному дню за раз — без долгих задач
-    requestAnimationFrame(() => setTimeout(later, 0));
+    pagerScrollToCurrent(pg);
+    pagerFillLater(pg);
+  }
+  // Поехать к дню (нажатие по полосе дней, «Сегодня», другая неделя): лента плавно прокручивается сама
+  function pagerGo(np, instant) {
+    const pg = pagerEl(), c = curPos();
+    if (!pg || !c || pg.children.length !== c.data.weeks.length * 7) return false;
+    const i = np.w * 7 + np.d;
+    fillAround(pg, i);
+    pgAnim = { goal: np };
+    scrolling = true;
+    pg.scrollTo({ left: i * (pg.clientWidth || 1), behavior: instant || REDUCED ? "auto" : "smooth" });
+    armSettle(pg, 160);
     return true;
   }
-  // Соседние дни ленты: если какого-то не хватает — достроить (быстро: по одному дню)
-  function ensureNeighbors(one) {
-    const pg = pagerEl(), c = curPos(), cur = pg && pg.querySelector(":scope > [data-cur]");
-    if (!pg || !c || !cur || PAGER_SPAN !== 1 || pgDrag || pgAnim && one) return false;
-    const isTeacher = view === "teacher";
-    let added = false;
-    for (const dir of [-1, 1]) {
-      const cls = dir > 0 ? "next" : "prev";
-      if (pg.querySelector(`:scope > .page.${cls}`)) continue;
-      const q = neighborPos(c.data, c.p.w, c.p.d, dir);
-      if (!q) continue;
-      cur.insertAdjacentHTML(dir > 0 ? "afterend" : "beforebegin",
-        `<div class="page ${cls}" aria-hidden="true" inert>${dayBodyHTML(c.data, q.w, q.d, isTeacher, false)}</div>`);
-      if (dir < 0) pagerScrollToCurrent(pg);   // слева добавился день — лента остаётся на месте
-      if (pgX) pagerPages(pg).forEach((el) => { el.style.transform = cur.style.transform; });
-      added = true;
-      if (one) return true;   // ещё может не хватать второго — позовут снова (надписи «сейчас» расставит domWatch)
-    }
-    return false;
-  }
-  // уехать на соседний день (dir = ±1) и сменить его (новый день встаёт ровно туда же — подмена незаметна)
-  function slideTo(pg, dir, v, np, since) {
-    const W = pg.clientWidth || 1;
-    const commit = () => { if (np) commitTo(np); else if (dir) commitDay(dir); };
-    pagerAnim(pg, -dir * W, v, () => {
-      pillGoal = null;
-      if (dir) commit(); else setPagerX(pg, 0);
-    }, since);
-    // если ленту подхватят пальцем на лету — этот день засчитываем сразу (см. pagerDown)
-    if (pgAnim && dir) { pgAnim.dir = dir; pgAnim.commit = commit; }
-  }
-  // дальний переход: лента уже стоит на нужном дне — фиксируем его без вибро и анимаций
-  function commitTo(np) {
-    const c = curPos();
-    if (!c) return;
-    if (fastShift(c, np, Math.sign((np.w - c.p.w) * 7 + (np.d - c.p.d)))) return;
-    pos[c.id] = np;
-    opened.clear();
-    enterNext = false;
-    slideDir = 0;
-    pgX = 0;
-    render();
-  }
-  // Листание дней пальцем — через общий движок жестов (05-gestures.js): он узнаёт горизонтальное
-  // движение, считает скорость и отдаёт жест одному владельцу. Здесь — только то, что касается ленты.
-  const pagerRubber = (x, W) => {   // дальше дней нет — тянется туго, как резинка
-    const minX = hasNeighbor(1) ? -W : 0, maxX = hasNeighbor(-1) ? W : 0;
-    if (x < minX) x = minX - (minX - x) / 3;
-    if (x > maxX) x = maxX + (x - maxX) / 3;
-    return x;
-  };
-  Gesture.add({
-    name: "листание дней",
-    axis: "x", slop: 7, ratio: 1.15,
-    start(p) {
-      let pg = p.target.closest && p.target.closest("[data-pager]");
-      if (!pg || !app.contains(pg)) return null;
-      if (stack.length && p.x <= 24 && !inTG) return null;   // у края — свайп «назад»
-      if (!pgAnim) ensureNeighbors();
-      if (pgAnim) {
-        // Подхватили на лету: день, к которому ехала лента, сразу становится текущим, а лента остаётся
-        // ровно там, где её видно (иначе три быстрых свайпа подряд листали только на один день).
-        const a = pgAnim;
-        // Read the incoming page's actual position before relaying the
-        // three-page window.  WebKit can lag the Web Animation currentTime by
-        // a frame, which otherwise leaves the page 5–15 px away from the
-        // exact position seen under the finger.
-        const W0 = pg.clientWidth || 1;
-        const incoming = pg.querySelector(a.dir > 0 ? ":scope > .page.next" : ":scope > .page.prev");
-        const pgLeft = pg.getBoundingClientRect().left;
-        const incomingLeft = incoming && incoming.getBoundingClientRect().left;
-        const visualX = incoming && Number.isFinite(incomingLeft) ? incomingLeft - pgLeft - a.dir * W0 : null;
-        pagerStop();
-        if (a.dir && a.commit) {
-          const W = pg.clientWidth || 1;
-          const x = visualX == null ? pgX : visualX;
-          pillGoal = null;
-          syncRender = true;
-          try { a.commit(); } finally { syncRender = false; }
-          const npg = pagerEl();
-          if (npg) { pg = npg; pagerLayers(pg, true); setPagerX(pg, x + a.dir * W); }
-        }
-      }
-      pagerTouch = true;
-      pagerLayers(pg, true);   // слои готовим заранее, на касании — чтобы первый кадр движения не тормозил
-      return (pgDrag = { pg, base: pgX });
-    },
-    claim(d) {
-      d.base = pgX;
-      // v1.9.6: замер — пока палец ведёт день (до отпускания); дальше движение доводит «бросок» со своим замером
-      scrolling = true; d.pg.classList.add("drag"); d.watch = watchFrames("листание пальцем", 4000);
-    },
-    move(d, p) {
-      setPagerX(d.pg, pagerRubber(d.base + p.dx, d.pg.clientWidth || 1));
-      // запоминаем кадр, в котором это положение появилось на экране: после отпускания движение
-      // продолжается ровно с него — без «прыжка» и без «замирания»
-      if (!d.raf) d.raf = requestAnimationFrame((ts) => { d.raf = 0; d.shownAt = ts; d.shownX = pgX; });
-    },
-    end(d, info) {
-      if (d.watch) { d.watch(); d.watch = null; }
-      if (pgDrag === d) pgDrag = null;
-      pagerTouch = false;
-      d.pg.classList.remove("drag");
-      if (!info.claimed) { if (pgX && !pgAnim) slideTo(d.pg, 0, 0); else if (!pgAnim) pagerLayers(d.pg, false); return; }
-      const W = d.pg.clientWidth || 1;
-      if (!info.cancelled) setPagerX(d.pg, pagerRubber(d.base + info.dx, W));   // последний сдвиг пальца — тоже в счёт
-      const vx = info.vx;
-      const off = -pgX / W;                                   // плюс — тянем к следующему дню
-      let dir = 0;
-      if (vx < -0.3 || (off > 0.35 && vx < 0.25)) dir = 1;
-      else if (vx > 0.3 || (off < -0.35 && vx > -0.25)) dir = -1;
-      if (dir && !hasNeighbor(dir)) dir = 0;
-      if (d.raf) { cancelAnimationFrame(d.raf); d.raf = 0; }
-      slideTo(d.pg, dir, vx, null, vx && d.shownX === pgX ? d.shownAt : 0);
-    },
-  });
-
+  // совместимость со старыми вызовами
+  function ensureNeighbors() { const pg = pagerEl(); if (pg) fillAround(pg, curIndex(pg)); return false; }
+  function pagerLayers() {}
   // ---- таблетка выбранного дня: плавно едет за листанием и к нажатому дню ----
   let pillPos = [];
   function pillEl() { return app.querySelector(".days .pill"); }
@@ -5615,56 +5546,16 @@ window.__appStart = () => {
   let pillPrev = null;   // где стояла таблетка до перерисовки
   function rememberPill(f) { const c = curPos(); if (c) pillPrev = { week: c.data.weeks[c.p.w].monday, d: c.p.d, f: f == null ? c.p.d : f }; }
   let pillGoal = null;   // дальний переход: к какому дню едет таблетка
-  function pillFollow(off) {
-    const c = curPos();
-    if (!c || !pillPos.length) return;
-    if (pillGoal != null) { putPill(c.p.d + (pillGoal - c.p.d) * Math.min(1, Math.abs(off))); return; }
-    const np = off ? stepPos(c.data, c.p, Math.sign(off)) : c.p;
-    if (np && np.w !== c.p.w) { putPill(c.p.d); return; }   // соседний день — в другой неделе: таблетка стоит
-    putPill(c.p.d + off);
-  }
-
   {
     const up = (e) => { if (e.touches && e.touches.length) return; if (pagerTouch) pagerTouch = false; };
     document.addEventListener("touchend", up, { passive: true, capture: true });
     document.addEventListener("touchcancel", up, { passive: true, capture: true });
   }
-  // Подсветка (цвет цифр) дня в строке сверху — как только понятно, куда листаем
-  function previewChips(dir) {
-    const c = curPos();
-    if (!c) return;
-    const np = dir ? stepPos(c.data, c.p, dir) : c.p;
-    if (!np || np.w !== c.p.w) return;
-    const week = c.data.weeks[np.w], today = samaraNow().date;
-    app.querySelectorAll(".days .day").forEach((b) => {
-      const d = +b.dataset.d, on = d === np.d;
-      if (b.classList.contains("on") === on) return;
-      b.classList.toggle("on", on);
-      b.classList.toggle("dim", addDays(week.monday, d) < today && !on);
-      b.setAttribute("aria-pressed", String(on));
-    });
-  }
-  function commitDay(dir) {
-    const c = curPos();
-    const np = c && stepPos(c.data, c.p, dir);
-    if (!np) return;
-    if (fastShift(c, np, dir)) { if (!quietCommit) haptic("select"); quietCommit = false; return; }
-    pos[c.id] = np;
-    opened.clear();
-    enterNext = false;
-    slideDir = 0;
-    if (!quietCommit) haptic("select");
-    quietCommit = false;
-    pgX = 0;
-    render();   // новый день стоит ровно там же, где остановилась лента, — подмена незаметна
-  }
-  // Пролистать на соседний день кнопкой/клавишей — тем же движением, что и пальцем
+  // Пролистать на соседний день кнопкой/клавишей — той же родной прокруткой, что и пальцем
   function shiftDay(dir) {
-    const pg = pagerEl();
-    if (!pg || !hasNeighbor(dir) || pgAnim) return false;
-    ensureNeighbors();
-    slideTo(pg, dir, 0);
-    return true;
+    const c = curPos(), np = c && stepPos(c.data, c.p, dir);
+    if (!np || pgAnim) return false;
+    return pagerGo(np);
   }
   // На компьютере — стрелками ← →
   document.addEventListener("keydown", (e) => {
