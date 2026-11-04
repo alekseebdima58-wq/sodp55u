@@ -469,20 +469,24 @@ html.ptr-hold #app { will-change: transform; }
 .under-dim { position: fixed; inset: 0; z-index: 2; pointer-events: none; background: rgba(0, 0, 0, .14); }
 html[data-theme="dark"] .under-dim { background: rgba(0, 0, 0, .42); }
 html.nav-anim #app, html.nav-anim .tabs { pointer-events: none; }   /* пока экран едет — нажатия не ловим */
-/* v2.0.1: экран — всегда отдельный слой видеокарты, а фон и тень на время перехода — на своём слое (#app::before).
-   Раньше всё это включалось в первый кадр перехода: телефон заново собирал и перерисовывал весь экран вместе с
-   большой тенью — на записи с iPhone экран в начале перехода стоял 2–3 кадра, а потом прыгал на 40–80 точек. */
-#app { position: relative; z-index: 3; will-change: transform; }
-/* v2.0.6: слой фона перехода есть только во время перехода — в покое он занимал 16 МБ памяти видеокарты (вкладка «Слои»)
-   и ничего не показывал */
-#app::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; display: none;
+/* v2.1: экран — отдельный слой видеокарты только во время перехода и жестов (в покое — 30–36 МБ, и каждое
+   нажатие пересобирало его: склейка кадра 25–40 мс). Слой заводится заранее: при касании у края (жест «назад»)
+   и за два кадра до начала движения (navRun). */
+#app { position: relative; z-index: 3; }
+html.swiping #app { will-change: transform; }
+/* Подложка уезжающего экрана (его фон и тень слева) — отдельный элемент рядом с #app, а не #app::before.
+   Слой внутри экрана заставлял телефон выносить на свои слои всё, что лежит над ним (полоса дней, кнопки, строки
+   списков — по 0,1–1 МБ каждая). Подложка во весь экран и едет тем же сдвигом, что и экран. */
+#appbg { position: fixed; inset: 0; z-index: 3; pointer-events: none; display: none;
   background: var(--bg); box-shadow: -1px 0 0 rgba(255, 255, 255, .04), -14px 0 32px rgba(0, 0, 0, .28); }
-html[data-theme="light"] #app::before { box-shadow: -14px 0 30px rgba(0, 0, 0, .14); }
-html.swiping #app::before { display: block; }
+html[data-theme="light"] #appbg { box-shadow: -14px 0 30px rgba(0, 0, 0, .14); }
+html.swiping #appbg { display: block; will-change: transform, opacity; }
 /* снимок прошлого экрана под уезжающим — без размытия «стекла» и свечения: он затемнён и едет, разницы не видно,
    а рисовать его в первом кадре перехода телефону в разы легче */
 .under *, .under *::before, .under *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
-html.swiping, html.swiping body { overflow-x: clip; }   /* уехавший вбок экран не расширяет страницу (иначе телефон «отъезжает» и прыгает нижняя панель) */
+/* уехавший вбок экран не расширяет страницу (иначе телефон «отъезжает» и прыгает нижняя панель).
+   v2.1: всегда, а не только во время жеста — смена overflow у <html> перекладывала и перерисовывала всю страницу */
+html, body { overflow-x: clip; }
 .nlink .alt { margin-top: 10px; text-align: center; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
 .nlink .alt .flink { font-size: calc(13px * var(--fs, 1)); }
 @media (prefers-reduced-motion: reduce) { .ncard .nhead .chev svg { transition: none; } }
@@ -1551,6 +1555,8 @@ html.glass .tabs { background: rgba(255, 255, 255, .14); }
 html.glass[data-theme="light"] .tabs { background: rgba(255, 255, 255, .5); }
 html.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
 
+/* v2.1: тени-свечения карточек короче (размытие 30–34 → 16–20 точек): на дне до 36 карточек, и каждая перерисовка
+   ленты считала столько больших размытых теней; на вид почти то же */
 /* карточки пар — цветное стекло под вид занятия: лекция зелёная, практика янтарная, лаба фиолетовая.
    Размеры отсвета — в точках, а не в процентах: у свёрнутой и раскрытой карточки он одинаковый,
    поэтому в начале и в конце раскрытия цвет карточки не «перескакивает» */
@@ -1558,19 +1564,19 @@ html.glass .row:not(.past) :is(.card, .cc) {
   background:
     radial-gradient(360px 110px at 0 0, rgba(var(--k-rgb), .30), rgba(var(--k-rgb), 0) 60%),
     linear-gradient(160deg, rgba(var(--k-rgb), .16), rgba(255, 255, 255, .04) 130px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .30), inset 0 0 0 1px rgba(var(--k-rgb), .32), 0 14px 30px -14px rgba(var(--k-rgb), .55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .30), inset 0 0 0 1px rgba(var(--k-rgb), .32), 0 10px 18px -10px rgba(var(--k-rgb), .55);
 }
 html.glass .row.live :is(.card, .cc) {
   background:
     radial-gradient(360px 110px at 0 0, rgba(var(--k-rgb), .42), rgba(var(--k-rgb), 0) 65%),
     linear-gradient(160deg, rgba(var(--k-rgb), .24), rgba(255, 255, 255, .05) 130px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38), inset 0 0 0 1px rgba(var(--k-rgb), .5), 0 16px 34px -12px rgba(var(--k-rgb), .7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38), inset 0 0 0 1px rgba(var(--k-rgb), .5), 0 12px 20px -9px rgba(var(--k-rgb), .7);
 }
 html.glass[data-theme="light"] .row:not(.past) :is(.card, .cc) {
   background:
     radial-gradient(360px 110px at 0 0, rgba(var(--k-rgb), .22), rgba(var(--k-rgb), 0) 60%),
     linear-gradient(160deg, rgba(255, 255, 255, .80), rgba(var(--k-rgb), .10) 130px);
-  box-shadow: inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(var(--k-rgb), .28), 0 12px 26px -14px rgba(var(--k-rgb), .45);
+  box-shadow: inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(var(--k-rgb), .28), 0 9px 16px -10px rgba(var(--k-rgb), .45);
 }
 html.glass[data-theme="light"] .row.live :is(.card, .cc) {
   background:
@@ -1676,13 +1682,13 @@ html.glass {
     radial-gradient(70% 45% at 25% 100%, color-mix(in srgb, var(--g-c) calc(var(--g-op) * 100%), transparent) 0%, transparent 70%);
 }
 /* жест «назад»: прошлый экран под пальцем и уезжающий экран — на том же фоне, без «вспышки» в чёрное */
-html.glass .under { background: var(--g-img), var(--bg); }
-html.glass #app::before {
-  background: var(--g-img), var(--bg);
-  background-repeat: no-repeat; background-size: 100% var(--g-vh, 100vh); background-position: 0 var(--g-sy, 0px);
-}
+html.glass .under, html.glass #appbg { background: var(--g-img), var(--bg); }
 /* заставка при запуске — сразу на фоне приложения, без смены чёрного на цветной */
 html.glass #splash { background: var(--g-img), var(--bg); }
+/* v2.1: фон готовой картинкой (рисует paintBackdrop в js/08-theme.js) — растягивается на весь экран,
+   перерисовка такого слоя почти бесплатная (три градиента с маской на весь экран — дорого) */
+html.glass.gpic body::before { background: var(--g-img) 0 0 / 100% 100% no-repeat; opacity: 1; -webkit-mask-image: none; mask-image: none; }
+html.glass.gpic :is(.under, #appbg, #splash) { background: var(--g-img) 0 0 / 100% 100% no-repeat, var(--bg); }
 
 /* окно «Установка на главный экран» — непрозрачное: под ним экран расписания, текст не должен просвечивать */
 html.glass[data-theme="dark"] .isheet { background: linear-gradient(160deg, #1B1D23, #121317); border-color: transparent;
@@ -2019,6 +2025,16 @@ window.__appStart = () => {
     return judge;
   }
 
+  // v2.1: один наблюдатель за разметкой экрана вместо трёх (подписи «сейчас», зоны жестов, свет на «Сейчас»).
+  // Каждая достройка дня в ленте будила все три, и каждый просматривал весь экран.
+  const appDomFns = [];
+  let appDomMO = null;
+  function onAppDom(fn) {
+    appDomFns.push(fn);
+    if (appDomMO) return;
+    appDomMO = new MutationObserver((recs) => { for (const f of appDomFns) { try { f(recs); } catch (e) { /* один не мешает другим */ } } });
+    appDomMO.observe(app, { childList: true, subtree: true });
+  }
   // ---------------- общий движок жестов ----------------
   // Все жесты приложения — листание дней, свайп уведомления, «потяни — обновится», свайп «назад» от края —
   // идут через один обработчик касаний. Раньше у каждого был свой: свои пороги, три разных способа считать
@@ -2198,7 +2214,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.0.6";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.0";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2491,19 +2507,79 @@ window.__appStart = () => {
   function glassOn() { return !/[?&]glass=0\b/.test(location.search); }
   // «Стекло, смелее» (v1.9.0) — основной вид: фон цветом идущей пары, крупнее заголовки и блок «Сейчас»
   const D3 = true;
-  // «Стекло» на уезжающем экране (жест «назад»): фон-тень рисуется на самой странице, поэтому ей нужно знать,
-  // какой её участок сейчас на экране и какой высоты экран
-  function glassSwipeVars() {
-    const a = document.getElementById("app");
-    ROOT.style.setProperty("--g-sy", `${a ? Math.round(-a.getBoundingClientRect().top) : Math.round(scrollY)}px`);
-    ROOT.style.setProperty("--g-vh", `${innerHeight}px`);
+  // v2.1: фон «Стекла» (три цветных пятна) — готовой картинкой. Раньше это были три радиальных градиента с маской
+  // на весь экран (слой 31,6 МБ): на записи с iPhone он перерисовывался при каждом переходе (40+ раз за минуту), и
+  // каждая такая перерисовка — заново все градиенты в разрешении экрана. Теперь пятна один раз рисуются в маленькую
+  // картинку (в 2 раза меньше экрана — пятна размытые, разницы не видно) и растягиваются: перерисовка почти бесплатная.
+  // Та же картинка — у снимка прошлого экрана и подложки уезжающего экрана (--g-img). Пока картинки нет
+  // (самый первый кадр, старый браузер) — работают прежние CSS-градиенты.
+  let bdKey = "", bdUrl = "", bdQueued = 0;
+  function queueBackdrop() {
+    if (bdQueued) return;
+    bdQueued = requestAnimationFrame(() => setTimeout(() => { bdQueued = 0; paintBackdrop(); }, 0));
   }
+  function paintBackdrop() {
+    if (!ROOT.classList.contains("glass") || !document.body) return;
+    try {
+      const W = Math.max(1, Math.round(innerWidth)), H = Math.max(64, Math.round(innerHeight / 64) * 64);   // высота — с шагом 64: панели браузера то прячутся, то появляются — пятна размытые, растяжение на пару процентов не видно
+      const probe = document.createElement("i");
+      probe.style.cssText = "position:fixed;left:0;top:0;width:0;visibility:hidden;pointer-events:none;height:calc(var(--safe-top, 0px) + var(--top-gap, 0px))";
+      document.body.appendChild(probe);
+      const pc = document.createElement("canvas"); pc.width = pc.height = 1;
+      const px = pc.getContext("2d", { willReadFrequently: true });
+      const rgb = (name) => {   // цвет переменной → [r, g, b] (через сам браузер: color-mix и т. п. он уже посчитал)
+        probe.style.color = `var(${name})`;
+        px.clearRect(0, 0, 1, 1); px.fillStyle = "#000"; px.fillStyle = getComputedStyle(probe).color; px.fillRect(0, 0, 1, 1);
+        const d = px.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2]];
+      };
+      const A = rgb("--g-a"), B = rgb("--g-b"), C = rgb("--g-c"), BG = rgb("--bg");
+      const op = Math.max(0, Math.min(1, parseFloat(getComputedStyle(ROOT).getPropertyValue("--g-op")) || 0));
+      const veil = probe.getBoundingClientRect().height || 0;
+      probe.remove();
+      const key = [W, H, A, B, C, BG, op, Math.round(veil)].join("|");
+      if (key === bdKey) return;
+      bdKey = key;
+      const cw = Math.ceil(W / 2), ch = Math.ceil(H / 2);
+      const off = document.createElement("canvas"); off.width = cw; off.height = ch;
+      const o = off.getContext("2d");
+      // как radial-gradient(RX% RY% at X% Y%, цвет 0%, transparent 70%); верхний слой CSS рисуем последним
+      const spot = (x, y, rx, ry, c) => {
+        o.save(); o.translate(x * cw, y * ch); o.scale(rx * cw, ry * ch);
+        const g = o.createRadialGradient(0, 0, 0, 0, 0, 1), s = `${c[0]},${c[1]},${c[2]}`;
+        g.addColorStop(0, `rgba(${s},1)`); g.addColorStop(0.7, `rgba(${s},0)`); g.addColorStop(1, `rgba(${s},0)`);
+        o.fillStyle = g; o.fillRect(-20, -20, 40, 40); o.restore();
+      };
+      spot(0.25, 1.00, 0.70, 0.45, C);
+      spot(1.00, 0.38, 0.55, 0.35, B);
+      spot(0.12, 0.08, 0.60, 0.40, A);
+      // под часами пятна плавно сходят на нет (как маска у прежнего фона)
+      o.globalCompositeOperation = "destination-in";
+      const m = o.createLinearGradient(0, (veil + 8) / 2, 0, (veil + 160) / 2);
+      m.addColorStop(0, "rgba(0,0,0,0)"); m.addColorStop(1, "rgba(0,0,0,1)");
+      o.fillStyle = m; o.fillRect(0, 0, cw, ch);
+      const cv = document.createElement("canvas"); cv.width = cw; cv.height = ch;
+      const x = cv.getContext("2d");
+      x.fillStyle = `rgb(${BG[0]},${BG[1]},${BG[2]})`; x.fillRect(0, 0, cw, ch);
+      x.globalAlpha = op; x.drawImage(off, 0, 0);
+      const apply = (url) => {
+        if (key !== bdKey) { if (url.startsWith("blob:")) URL.revokeObjectURL(url); return; }   // пока рисовали — всё поменялось
+        const was = bdUrl; bdUrl = url;
+        ROOT.style.setProperty("--g-img", `url("${url}")`);
+        ROOT.classList.add("gpic");
+        if (was.startsWith("blob:")) setTimeout(() => URL.revokeObjectURL(was), 2000);
+      };
+      if (cv.toBlob && window.URL && URL.createObjectURL) cv.toBlob((b) => { if (b) apply(URL.createObjectURL(b)); }, "image/png");
+      else apply(cv.toDataURL("image/png"));
+    } catch (e) { /* без картинки — остаются CSS-градиенты */ }
+  }
+  window.addEventListener("resize", queueBackdrop, { passive: true });
   function applyTheme() {
     const t = effectiveTheme();
     ROOT.dataset.theme = t;
     ROOT.classList.toggle("glass", glassOn());
     ROOT.classList.toggle("d3", D3);
     ROOT.classList.toggle("android", /Android/i.test(navigator.userAgent));   // слабее размытие стекла (css/16)
+    queueBackdrop();
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     const bg = BG[t];   // у «Стекла» та же основа (чёрная/белая), так что шапка Telegram совпадает в обоих оформлениях
     if (metaTheme) metaTheme.setAttribute("content", bg);
@@ -2604,8 +2680,9 @@ window.__appStart = () => {
     try { if (CSS.supports("animation-timing-function", lin)) return lin; } catch (e) { /* нет CSS.supports */ }
     return "cubic-bezier(.2, .75, .25, 1)";
   })();
+  // v2.1: подложка уезжающего экрана — его фон и тень (см. css/05: раньше это был #app::before)
+  const appBg = (() => { const e = document.createElement("div"); e.id = "appbg"; e.setAttribute("aria-hidden", "true"); app.before(e); return e; })();
   function navLayers(entry) {
-    glassSwipeVars();
     ROOT.classList.add("swiping", "nav-anim");
     const under = document.createElement("div");
     under.className = "under";
@@ -2619,17 +2696,17 @@ window.__appStart = () => {
     const w = app.getBoundingClientRect().width || innerWidth;
     const set = (p) => {   // 0 — новый экран на месте, 1 — уехал вправо целиком
       set.p = p;
-      app.style.transform = p > 0.0005 ? `translate3d(${navSnap(p * w)}px,0,0)` : "";
+      app.style.transform = appBg.style.transform = p > 0.0005 ? `translate3d(${navSnap(p * w)}px,0,0)` : "";
       under.style.transform = `translate3d(${navSnap(-0.3 * w * (1 - p))}px,0,0)`;
       dim.style.opacity = String(1 - p);
     };
     const clear = () => {
       ROOT.classList.remove("swiping", "nav-anim");
-      app.style.transform = "";
+      app.style.transform = appBg.style.transform = appBg.style.opacity = "";
       if (under.firstChild) under.firstChild.remove();   // снимок остаётся в стеке — для жеста «назад»
       under.remove(); dim.remove();
     };
-    return { set, clear, els: [app, under, dim] };
+    return { set, clear, els: [app, appBg, under, dim] };
   }
   // Движение запускаем только после двух кадров: в первом браузер рисует снимок прошлого экрана и заводит слои
   // для видеокарты — на iPhone это 40–70 мс. Если часы анимации уже идут, экран в этом кадре «прыгает» на ~70 точек,
@@ -2641,9 +2718,9 @@ window.__appStart = () => {
     // на записи с iPhone старт перехода «полз, а потом прыгал». Так все его слои готовы до начала движения.
     const warm = from === 1 && !navRM();
     L.set(from);   // прошлый экран (снимок) — на месте и без затемнения
-    if (warm) { app.style.transform = ""; app.style.opacity = "0.01"; }
+    if (warm) { app.style.transform = appBg.style.transform = ""; app.style.opacity = appBg.style.opacity = "0.01"; }
     twoFrames().then(() => {
-      if (warm) { L.set(from); app.style.opacity = ""; }
+      if (warm) { L.set(from); app.style.opacity = appBg.style.opacity = ""; }
       watchFrames("переход между экранами", dur);
       const anims = gpuMove(L.els, () => L.set(to), dur, NAV_EASE);
       // v2.0.6: слои перехода убираем на кадр позже — когда последний кадр движения точно показан
@@ -2970,10 +3047,11 @@ window.__appStart = () => {
     }
     return html;
   }
-  function scheduleHTML(data, id, isTeacher) {
-    const p = pos[id];
+  // Шапка недели и полоса дней (v2.1: отдельно от ленты — при переходе на другую неделю перерисовываются только они,
+  // лента со всеми днями уже на месте)
+  function barParts(data, p, isTeacher, m) {
     const week = data.weeks[p.w];
-    const m = dayModel(data, p.w, p.d, isTeacher);
+    m = m || dayModel(data, p.w, p.d, isTeacher);
     const now = samaraNow();
     const def = pickDefault(data);
     const notToday = !(p.w === def.w && p.d === def.d && m.isToday);
@@ -2997,6 +3075,12 @@ window.__appStart = () => {
         <span class="s">${SHORT[d]}</span><span class="n">${dayNum(date)}</span><span class="dots">${dots}</span></button>`;
     }
     bar += `</nav>`;
+    return { bar, notToday: notToday && todayInData, wl, wr, prevW, nextW, isCur: label === "Эта неделя" };
+  }
+  function scheduleHTML(data, id, isTeacher) {
+    const p = pos[id];
+    const m = dayModel(data, p.w, p.d, isTeacher);
+    const b = barParts(data, p, isTeacher, m);
 
     // v2.0: в ленте — все дни расписания подряд (родная прокрутка с защёлкиванием, см. 23-pager.js).
     // Номер страницы = неделя × 7 + день. Текущий и по PAGER_SPAN соседей — готовы сразу, остальные
@@ -3011,7 +3095,7 @@ window.__appStart = () => {
     }
     html += `</div>`;
     liveSig = m.sig;
-    return { html, bar, notToday: notToday && todayInData, wl, wr, prevW, nextW, isCur: label === "Эта неделя" };
+    return { ...b, html };
   }
 
   // ---------------- экраны ----------------
@@ -4042,6 +4126,11 @@ window.__appStart = () => {
     const body = JSON.stringify({ q: "seen", t: id });
     fetch(index.relay, { method: "POST", body }).catch(() => fetch(index.relay, { method: "POST", body, mode: "no-cors" }).catch(() => {}));
   }
+  function groupHeadHTML(s) {
+    const bell = `<button class="btn icon-btn bell" data-act="notif" aria-label="Изменения в расписании${hasUnseen() ? ", есть новые" : ""}">${I.bell}${hasUnseen() ? `<span class="badge"></span>` : ""}</button>`;
+    return `<div class="top week whead"><div class="ht"><div class="eyebrow">${s.isCur ? `<span class="grp">${esc((index && index.group) || "СОДП-55у")} · </span>` : ""}${s.wl}</div><h1 class="wr" aria-live="polite">${s.wr}</h1></div>
+        <div class="top-actions">${s.prevW}${s.nextW}${bell}</div></div>`;
+  }
   async function renderSchedule(token) {
     const isTeacher = view === "teacher";
     const id = isTeacher ? target : "g";
@@ -4082,9 +4171,7 @@ window.__appStart = () => {
           <div style="min-width:0"><h1 class="nm">${esc(name)}</h1>
           <div class="sub">${subj.length ? esc(subj.join(", ")) : "Расписание преподавателя"}</div></div></div>`;
     } else {
-      const bell = `<button class="btn icon-btn bell" data-act="notif" aria-label="Изменения в расписании${hasUnseen() ? ", есть новые" : ""}">${I.bell}${hasUnseen() ? `<span class="badge"></span>` : ""}</button>`;
-      head = `<div class="top week whead"><div class="ht"><div class="eyebrow">${s.isCur ? `<span class="grp">${esc((index && index.group) || "СОДП-55у")} · </span>` : ""}${s.wl}</div><h1 class="wr" aria-live="polite">${s.wr}</h1></div>
-        <div class="top-actions">${s.prevW}${s.nextW}${bell}</div></div>`;
+      head = groupHeadHTML(s);
     }
     const off = data._offline
       ? `<button class="offline" data-act="retry-net" title="${esc(lastNetError)}"><span>${navigator.onLine === false ? "Нет сети" : "Не удалось обновить"} — показано сохранённое</span><u>Повторить</u></button>`
@@ -4096,7 +4183,12 @@ window.__appStart = () => {
     if (D3) {   // фон — цветом идущей (или ближайшей) пары
       const h = app.querySelector("[data-cur] .hero");
       const rgb = h && getComputedStyle(h).getPropertyValue("--k-rgb").trim();
-      if (rgb) ROOT.style.setProperty("--amb", rgb); else ROOT.style.removeProperty("--amb");
+      // v2.1: только если цвет поменялся — переменная у <html> заставляет пересчитать стили всей страницы
+      // и заново нарисовать фон (на записи с iPhone — при каждой перерисовке расписания)
+      if ((rgb || "") !== (ROOT.style.getPropertyValue("--amb") || "").trim()) {
+        if (rgb) ROOT.style.setProperty("--amb", rgb); else ROOT.style.removeProperty("--amb");
+        queueBackdrop();
+      }
     }
     syncBar();
     setupPager();
@@ -4593,12 +4685,11 @@ window.__appStart = () => {
   // Надписи «сейчас» расставляются сами после ЛЮБОЙ перестройки разметки (новый день, соседняя страница,
   // перерисованная карточка): раньше это надо было не забыть вызвать вручную, и пару раз забывали — тогда
   // «сейчас 12:14» ложилось на время конца пары. Наблюдатель срабатывает до отрисовки кадра, так что мигания нет.
-  const domWatch = new MutationObserver((recs) => {
+  onAppDom((recs) => {
     for (const r of recs) for (const n of r.addedNodes) {
       if (n.nodeType === 1 && (n.matches(".row.live") || n.querySelector(".row.live"))) { placeNowLabels(false); return; }
     }
   });
-  domWatch.observe(app, { childList: true, subtree: true });
 
   // Раз в 15 секунд: если статусы пар не поменялись — двигаем только шкалу и подписи,
   // чтобы не перезапускать анимации; если поменялись — перерисовываем день целиком.
@@ -4684,6 +4775,7 @@ window.__appStart = () => {
     // текущим, когда лента встала). Дальний день или другая неделя — сразу на место, а содержимое дня
     // мягко въезжает сбоку (как раньше): иначе лента пролетала бы через все дни по пути.
     if (Math.abs(k) === 1 && pagerGo(np)) return;
+    if (pagerJump(np, Math.sign(k))) return;   // v2.1: без перерисовки экрана
     rememberPill();
     pos[c.id] = np;
     opened.clear();
@@ -5324,12 +5416,18 @@ window.__appStart = () => {
     const step = () => {
       if (pg !== pagerEl() || !pg.isConnected) return;
       if (scrolling || pagerTouch) { fillTimer = setTimeout(step, 250); return; }   // в движении — не мешаем
+      // v2.1: ближайшие к текущему недостроенные дни — по 4 за раз и реже. Раньше по одному каждые 40 мс:
+      // на записи с iPhone после смены недели ~1 с шли 12–15 пересчётов раскладки ленты и 40–48 вызовов
+      // наблюдателей за полсекунды — и если в это время листать, это было видно
       const ci = curIndex(pg), n = pg.children.length;
-      for (let k = 1; k < n; k++) {   // ближайший к текущему недостроенный день — по одному за раз
-        if (fillPage(pg, ci + k) || fillPage(pg, ci - k)) { fillTimer = setTimeout(step, 40); return; }
+      let done = 0;
+      for (let k = 1; k < n && done < 4; k++) {
+        if (fillPage(pg, ci + k)) done++;
+        if (done < 4 && fillPage(pg, ci - k)) done++;
       }
+      if (done) fillTimer = setTimeout(step, 180);
     };
-    fillTimer = setTimeout(step, 150);
+    fillTimer = setTimeout(step, 300);
   }
   // Таблетка — за лентой: дробный номер дня в текущей неделе (в чужой неделе стоит у края)
   function pillFromScroll(pg) {
@@ -5460,21 +5558,26 @@ window.__appStart = () => {
     if (!quiet) haptic("select");
     commitIndex(pg, c, i);
   }
-  // Лента встала на другом дне — он становится текущим. Внутри недели — перекладываем отметки
-  // (готовая страница уже на экране), в другой неделе — перерисовываем шапку и ленту целиком (в покое).
-  function commitIndex(pg, c, i) {
+  // Лента встала на другом дне — он становится текущим. Готовая страница уже на экране — перекладываем отметки.
+  // v2.1: и в другой неделе тоже: лента со всеми днями на месте, перерисовываются только шапка недели и полоса дней
+  // (раньше — весь экран заново: 32 мс работы и склейка ещё 36 мс ровно в момент, когда день встаёт на место).
+  // anim — день «въезжает» сбоку (переход по кнопке недели, «Сегодня», нажатие на дальний день).
+  function commitIndex(pg, c, i, anim) {
     const np = posOfIndex(i), isTeacher = view === "teacher";
-    let partial = np.w === c.p.w;
-    if (partial && isTeacher) {   // у преподавателя в шапке кнопка «Сегодня» — появилась/пропала — рисуем всё
+    const sameWeek = np.w === c.p.w;
+    let partial = true;
+    if (isTeacher) {   // у преподавателя в шапке кнопка «Сегодня» — появилась/пропала — рисуем всё
       const def = pickDefault(c.data);
       const notToday = (q) => !(q.w === def.w && q.d === def.d && dayModel(c.data, q.w, q.d, true).isToday);
       if (notToday(c.p) !== notToday(np)) partial = false;
     }
+    const sbar = app.querySelector(".sbar");
+    if (!sameWeek && !sbar) partial = false;
     if (!partial) {
       pos[c.id] = np;
       opened.clear();
       enterNext = false;
-      slideDir = 0;
+      slideDir = anim || 0;
       syncRender = true;
       try { render(); } finally { syncRender = false; }
       return;
@@ -5490,19 +5593,49 @@ window.__appStart = () => {
     }
     const lo = Math.min(oi, i), hi = Math.max(oi, i), pages = pg.children;
     for (let k = lo; k <= hi; k++) if (pages[k]) pages[k].classList.toggle("prev", k < i), pages[k].classList.toggle("next", k > i), pages[k].classList.toggle("cur", k === i);
+    // v2.1: метка «въехать сбоку» остаётся у страницы после анимации — без этого, вернувшись листанием
+    // на такой день, его содержимое въезжало ещё раз
+    if (old) old.classList.remove("from-r", "from-l");
+    inc.classList.remove("from-r", "from-l");
+    if (anim && !REDUCED) {
+      inc.classList.add(anim > 0 ? "from-r" : "from-l");
+      setTimeout(() => inc.classList.remove("from-r", "from-l"), 400);
+    }
     inc.setAttribute("data-cur", "");
     inc.removeAttribute("aria-hidden");
     inc.inert = false;
+    const pillFrom = sameWeek && anim ? c.p.d : null;
     pos[c.id] = np;
     opened.clear();
     enterNext = false;
     slideDir = 0;
-    markDay(np.d);
+    if (!sameWeek) {
+      const b = barParts(c.data, np, isTeacher);
+      sbar.innerHTML = isTeacher ? b.bar : groupHeadHTML(b) + b.bar;
+      pillPrev = null;
+      setupPill();
+    } else markDay(np.d);
     liveSig = dayModel(c.data, np.w, np.d, isTeacher).sig;
     fitQuiet(pg);
-    putPill(np.d);
+    if (pillFrom != null) {   // нажали на дальний день той же недели — таблетка переезжает, а не прыгает
+      const pl = pillEl(), on = pl && pl.parentNode.querySelector(".days-on");
+      putPill(pillFrom);
+      if (pl) gpuMove([pl, on, on && on.firstElementChild], () => putPill(np.d), 380,
+        typeof springEase === "function" ? springEase() : "cubic-bezier(.22, 1, .36, 1)");
+    } else if (sameWeek) putPill(np.d);
     pagerScrollToCurrent(pg);
+    lastX = pg.scrollLeft;
     pagerFillLater(pg);
+  }
+  // Сразу на день (кнопки недели, «Сегодня», нажатие на дальний день): лента встаёт на место без прокрутки
+  // через все дни по пути, а содержимое дня мягко въезжает сбоку
+  function pagerJump(np, dir) {
+    const pg = pagerEl(), c = curPos();
+    if (!pg || !c || scrolling || pagerTouch || pg.children.length !== c.data.weeks.length * 7) return false;
+    const i = np.w * 7 + np.d;
+    if (!pg.children[i] || i === curIndex(pg)) return false;
+    commitIndex(pg, c, i, dir || 0);
+    return true;
   }
   // Высота ленты под новый день — только когда пальца нет и лента стоит: смена высоты прокручиваемой ленты
   // тоже заставляет телефон заново ставить защёлкивание (под пальцем это ощущается как «что-то мешает»)
@@ -5973,6 +6106,7 @@ window.__appStart = () => {
     ROOT.style.setProperty("--safe-top", fs ? `${(+sa.top || 0) + (+ca.top || 0)}px` : "0px");
     ROOT.style.setProperty("--safe-bottom", `${(+sa.bottom || 0) + (+ca.bottom || 0)}px`);
     ROOT.classList.toggle("fs", fs);
+    queueBackdrop();   // пятна фона плавно сходят на нет под часами — высота шторки поменялась
   }
   function setFullscreen(on) {
     if (!fsSupported()) return;
@@ -6268,7 +6402,6 @@ window.__appStart = () => {
     const W = () => app.getBoundingClientRect().width || innerWidth;
     const unlockPager = () => { if (lockedPager) { lockedPager.style.overflowX = ""; lockedPager = null; } };
     function begin() {
-      glassSwipeVars();
       ROOT.classList.add("swiping");
       const e = stack[stack.length - 1];
       under = document.createElement("div");
@@ -6283,13 +6416,13 @@ window.__appStart = () => {
     }
     function setP(p) {   // 0 — экран на месте, 1 — уехал целиком
       const w = W();
-      app.style.transform = `translate3d(${snap(p * w)}px,0,0)`;
+      app.style.transform = appBg.style.transform = `translate3d(${snap(p * w)}px,0,0)`;
       if (under) under.style.transform = `translate3d(${snap(-0.3 * w * (1 - p))}px,0,0)`;
       if (dim) dim.style.opacity = String(1 - p);
     }
     function cleanup() {
       ROOT.classList.remove("swiping");
-      app.style.transform = "";
+      app.style.transform = appBg.style.transform = "";
       if (under) { if (under.firstChild) under.firstChild.remove(); under.remove(); under = null; }   // снимок остаётся в стеке
       if (dim) { dim.remove(); dim = null; }
     }
@@ -6429,7 +6562,7 @@ window.__appStart = () => {
       }
       sync();
     };
-    new MutationObserver(watch).observe(app, { childList: true, subtree: true });
+    onAppDom(watch);
     watch();
     document.addEventListener("visibilitychange", sync);
   }
@@ -6439,7 +6572,7 @@ window.__appStart = () => {
   // следующего касания, поэтому браузер заранее знает, где ждать JS, а где прокручивать сразу.
   {
     const sync = () => { try { Gesture.zones(app); Gesture.edge(!inTG && stack.length > 0); } catch (e) { /* без этого — как раньше */ } };
-    new MutationObserver(sync).observe(app, { childList: true, subtree: true });
+    onAppDom(sync);
     sync();
   }
 };
