@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="327d4494f584">
+<meta name="app-ver" content="e10391547c42">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -2244,7 +2244,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.8";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.9";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2645,7 +2645,17 @@ window.__appStart = () => {
       for (const ch of app.childNodes) {
         if (ch.nodeType === 1 && ch.matches("[data-pager]")) {
           const pg = ch.cloneNode(false), cur = ch.querySelector(":scope > [data-cur]");
-          if (cur) pg.appendChild(cur.cloneNode(true));
+          if (cur) {
+            // v2.1.9: что ниже экрана — в копию не берём: на записи с iPhone при открытии «Уведомлений» копия всего дня
+            // давала пересчёт стилей 24 мс прямо в нажатии. Отрезаем только снизу — выше ничего не сдвигается
+            const lim = window.innerHeight + 80;
+            const cut = [...cur.querySelectorAll(":scope > *, :scope > ol > li")].filter((e) => e.getBoundingClientRect().top > lim);
+            cut.forEach((e) => e.setAttribute("data-snapcut", ""));
+            const cc = cur.cloneNode(true);
+            cut.forEach((e) => e.removeAttribute("data-snapcut"));
+            cc.querySelectorAll("[data-snapcut]").forEach((e) => e.remove());
+            pg.appendChild(cc);
+          }
           c.appendChild(pg);
         } else c.appendChild(ch.cloneNode(true));
       }
@@ -5421,10 +5431,12 @@ window.__appStart = () => {
       // на записи с iPhone после смены недели ~1 с шли 12–15 пересчётов раскладки ленты и 40–48 вызовов
       // наблюдателей за полсекунды — и если в это время листать, это было видно
       const ci = curIndex(pg), n = pg.children.length;
+      // v2.1.9: и не дольше ~6 мс за раз — у преподавателя на записи одна такая порция шла 36 мс
       let done = 0;
-      for (let k = 1; k < n && done < 4; k++) {
+      const t0 = performance.now(), over = () => done && performance.now() - t0 > 6;
+      for (let k = 1; k < n && done < 4 && !over(); k++) {
         if (fillPage(pg, ci + k)) done++;
-        if (done < 4 && fillPage(pg, ci - k)) done++;
+        if (done < 4 && !over() && fillPage(pg, ci - k)) done++;
       }
       if (done) fillTimer = setTimeout(step, 180);
     };
@@ -5584,8 +5596,11 @@ window.__appStart = () => {
       return;
     }
     const old = pg.querySelector(":scope > [data-cur]"), inc = pg.children[i], oi = curIndex(pg);
-    // v2.1.5: сразу и соседние дни (±2) — иначе при листании без пауз дальше двух дней от начала шли пустые страницы
-    fillAround(pg, i);
+    // v2.1.5: и соседние дни (±2) — иначе при листании без пауз дальше двух дней от начала шли пустые страницы.
+    // v2.1.9: соседей — не в этом же кадре, а каждым днём отдельной маленькой задачей сразу после: на записи с iPhone
+    // остановка на дне стоила кадр в 40 мс (пересчёт стилей 13 мс + склейка 22 мс) — ровно когда день встаёт на место
+    fillPage(pg, i);
+    for (const k of [i + 1, i - 1, i + 2, i - 2]) setTimeout(() => { if (pg.isConnected && !pagerTouch) fillPage(pg, k); }, 0);
     if (old) {
       old.removeAttribute("data-cur");
       // раскрытые карточки ушедшего дня — свёрнутыми (страница за краем, подмену не видно)
