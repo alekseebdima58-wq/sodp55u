@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="a96fac8b9806">
+<meta name="app-ver" content="6434ac3d91f5">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -74,13 +74,13 @@
 <script>
   // Скрипт Telegram грузим только внутри Telegram и не ждём его дольше 3 секунд:
   // если он тормозит, приложение всё равно откроется (просто без кнопок Telegram).
-  // С v1.8.6 копия скрипта лежит рядом с приложением (тот же адрес, что у страницы, и кэш service worker):
+  // Копия скрипта лежит рядом с приложением (тот же адрес, что у страницы, и кэш service worker):
   // из России telegram.org отвечает медленно, и запуск в Telegram ждал его до 3 секунд.
   // Если своей копии нет — берём с telegram.org, как раньше.
   (function () {
     var inTg = /tgWebApp/.test(location.hash + location.search) || !!window.TelegramWebviewProxy || window.parent !== window;
     var tgDone = !inTg, appReady = false, started = false;
-    // v1.9.6: для отчёта о медленном запуске — была ли страница скрыта (телефон заблокировали, свернули
+    // Для отчёта о медленном запуске — была ли страница скрыта (телефон заблокировали, свернули
     // приложение или Telegram) и сколько ждали скрипт Telegram
     window.__bootHidden = !!document.hidden;
     document.addEventListener("visibilitychange", function () { if (document.hidden) window.__bootHidden = true; });
@@ -104,7 +104,7 @@
 </script>
 <style>
 /* ---------- палитра ---------- */
-/* Шкалы оформления (v1.8.9) — новые стили берут значения только отсюда, чтобы всё было «из одного набора»:
+/* Шкалы оформления — новые стили берут значения только отсюда, чтобы всё было «из одного набора»:
    скругления: 2–4 (полоски и метки) · 8 · 10 · 12 · 14 · 18 · 22 · 26 · 30 · 34 · 999 (круглое);
    внутреннее скругление = внешнее минус отступ (карточка 22 с полем 4 → внутри 18);
    размер текста: 12 · 13 · 14 · 15 · 16 · 17 · 20 · 22 · 24 · 28 (+ крупные цифры 30 и 56);
@@ -250,9 +250,9 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
 .seg { position: relative; flex: 1; width: 4px; border-radius: 2px; background: rgba(var(--k-rgb), var(--track-a)); }
 .row.past .seg { width: 2px; background: var(--done); }
 .row.past.last .seg { background: transparent; }
-/* v1.9.4: только внутри линии пары — класс .fill есть и у #app (пустой экран уведомлений), и scaleY(0) сплющивал весь экран */
+/* Только внутри линии пары — класс .fill есть и у #app (пустой экран уведомлений), и scaleY(0) сплющивал весь экран */
 .seg .fill { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 2px; background: var(--k-bar);
-  transform-origin: 50% 0; transform: scaleY(var(--pn, 0)); transition: transform .6s ease; }   /* v1.8.8: масштаб вместо высоты */
+  transform-origin: 50% 0; transform: scaleY(var(--pn, 0)); transition: transform .6s ease; }   /* Масштаб вместо высоты */
 .mark {
   position: absolute; left: 50%; top: var(--p); width: 10px; height: 10px; margin: -5px 0 0 -5px;
   border-radius: 50%; background: var(--k-bar); border: 2px solid var(--bg); transition: top .6s ease;
@@ -316,7 +316,7 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
   border-radius: 50%; background: var(--text); border: 2px solid var(--bg); transition: top .6s ease;
 }
 .bnow { position: absolute; right: 0; top: var(--p); margin-top: -8px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; line-height: calc(16px * var(--fs, 1)); transition: top .6s ease; }
-/* v1.8.8: отметки «сейчас» едут сдвигом (translate), а не через top — без перерасчёта раскладки.
+/* Отметки «сейчас» едут сдвигом (translate), а не через top — без перерасчёта раскладки.
    100cqh — высота линии (она — контейнер). Где контейнеров нет (старые телефоны) — как раньше, через top. */
 @supports (container-type: size) {
   .row.live .seg, .brk.active .rail2, .brk.active .time { container-type: size; }
@@ -329,7 +329,7 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
 /* появление ленты при смене дня/недели */
 
 
-/* v2.0: листание дней — родная прокрутка с защёлкиванием: за пальцем ведёт и доводит день сам телефон
+/* Листание дней — родная прокрутка с защёлкиванием: за пальцем ведёт и доводит день сам телефон
    (в отдельном потоке, с системной физикой), по одному дню за свайп. Вертикальная прокрутка — тоже родная. */
 .pager {
   display: flex; margin: 0 calc(-1 * var(--side)); overflow-x: auto; overflow-y: hidden;
@@ -342,9 +342,9 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
   padding: 0 var(--side); display: flow-root;
   scroll-snap-align: start; scroll-snap-stop: always;
 }
-/* v2.0.2: ещё не достроенный день — пустая страница; у неё должна быть высота, иначе WebKit не считает её точкой остановки */
+/* Ещё не достроенный день — пустая страница; у неё должна быть высота, иначе WebKit не считает её точкой остановки */
 .pager > .page[data-lazy] { min-height: 60vh; }
-.pager > .page[data-pass] { scroll-snap-align: none; }   /* v2.0: день, к которому лента уже ехала, — на время быстрого свайпа не точка остановки */
+.pager > .page[data-pass] { scroll-snap-align: none; }   /* День, к которому лента уже ехала, — на время быстрого свайпа не точка остановки */
 
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 48px 24px 24px; }
 .empty .ic {
@@ -471,7 +471,7 @@ html.ptr-hold #app { will-change: transform; }
 .under-dim { position: fixed; inset: 0; z-index: 2; pointer-events: none; background: rgba(0, 0, 0, .14); }
 html[data-theme="dark"] .under-dim { background: rgba(0, 0, 0, .42); }
 html.nav-anim #app, html.nav-anim .tabs { pointer-events: none; }   /* пока экран едет — нажатия не ловим */
-/* v2.1: экран — отдельный слой видеокарты только во время перехода и жестов (в покое — 30–36 МБ, и каждое
+/* Экран — отдельный слой видеокарты только во время перехода и жестов (в покое — 30–36 МБ, и каждое
    нажатие пересобирало его: склейка кадра 25–40 мс). Слой заводится заранее: при касании у края (жест «назад»)
    и за два кадра до начала движения (navRun). */
 #app { position: relative; z-index: 3; }
@@ -487,7 +487,7 @@ html.swiping #appbg { display: block; will-change: transform, opacity; }
    а рисовать его в первом кадре перехода телефону в разы легче */
 .under *, .under *::before, .under *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 /* уехавший вбок экран не расширяет страницу (иначе телефон «отъезжает» и прыгает нижняя панель).
-   v2.1: всегда, а не только во время жеста — смена overflow у <html> перекладывала и перерисовывала всю страницу */
+   Всегда, а не только во время жеста — смена overflow у <html> перекладывала и перерисовывала всю страницу */
 html, body { overflow-x: clip; }
 .nlink .alt { margin-top: 10px; text-align: center; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
 .nlink .alt .flink { font-size: calc(13px * var(--fs, 1)); }
@@ -508,7 +508,7 @@ html, body { overflow-x: clip; }
 /* слои перехода — сразу на видеокарте, ещё до начала движения */
 .under, .under-dim { will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 
-/* v2.1.12: родная «резинка» страницы по вертикали выключена всегда — сверху её заменяет «потяни — обновится».
+/* Родная «резинка» страницы по вертикали выключена всегда — сверху её заменяет «потяни — обновится».
    Раньше её выключали только на время касания у верха, а смена стиля <html> перерисовывала весь экран */
 html { overscroll-behavior-y: none; }
 /* ---------- настройки ---------- */
@@ -757,12 +757,12 @@ html[data-theme="light"] .tabs {
   transition: background-color .25s ease, box-shadow .25s ease;
 }
 /* фон шапки — сплошной: при прокрутке текст ленты не должен просвечивать под «СОДП-55у» и днями */
-/* v1.8.8: фон — отдельным слоем (::before), как у «Стекла»: при сжатии шапки он доезжает масштабом */
+/* Фон — отдельным слоем (::before), как у «Стекла»: при сжатии шапки он доезжает масштабом */
 html:not(.glass) .sbar::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--bg);
   transition: box-shadow .25s ease; }
 html:not(.glass) .sbar.stuck::before { box-shadow: 0 1px 0 var(--hair); }
 
-/* v1.8.8: размеры шапки меняются один раз, без плавного перехода (font-size/width/height/margin пересчитывали
+/* Размеры шапки меняются один раз, без плавного перехода (font-size/width/height/margin пересчитывали
    раскладку всей страницы каждый кадр). Само движение доигрывают сдвиг и масштаб — flipBar в 20-springs-sticky.js */
 .sbar .eyebrow { max-height: 18px; }
 .sbar.small .whead .eyebrow { max-height: 0; opacity: 0; }
@@ -957,7 +957,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
   background: var(--accent);  opacity: 0; will-change: transform, width; }
 .days .pill.ready { opacity: 1; }
 /* листание: на время движения каждый день — свой слой видеокарты (текст едет вместе с рамками, без дрожи) */
-/* v2.0: дни не сдвигаются трансформом — их прокручивает телефон, отдельные слои не нужны */
+/* Дни не сдвигаются трансформом — их прокручивает телефон, отдельные слои не нужны */
 .days:has(.pill.ready) .day.on { background: transparent; border-color: transparent; box-shadow: none; }
 .day { transition: color .18s ease, opacity .18s ease; }
 @supports (corner-shape: squircle) { .days .pill { corner-shape: squircle; border-radius: 26px; } }
@@ -989,14 +989,14 @@ button.offline span { min-width: 0; text-wrap: balance; }
 
 /* --- пружинные кривые: рассчитаны из затухающей пружины (перелёт ~4% и ~16%) --- */
 :root { --ease-spring: cubic-bezier(.22, 1, .36, 1); --ease-bounce: cubic-bezier(.34, 1.56, .64, 1); }
-/* v2.1.8: кривые linear(…) (точная пружина с перелётом) убраны. На записи с iPhone всё, что двигалось по такой
+/* Кривые linear(…) (точная пружина с перелётом) убраны. На записи с iPhone всё, что двигалось по такой
    кривой — шапка недели при прокрутке, переходы между экранами, таблетка, нажатия, — шло не на видеокарте, а через
    приложение: пересчёт стилей в каждом кадре (3–5 мс), и малейшая занятость давала рывок. Анимации с обычной
    cubic-bezier (свет на «Сейчас», точка «идёт пара») в покое пересчётов не дают — их телефон считает сам. */
 
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
 .ring .arc, .seg .fill, .mark, .nowlbl, .bmark, .bnow { transition-timing-function: var(--ease-spring); }
-/* v2.1.5: в шапке недели размеры НЕ анимируются переходами — сжатие/разжатие доигрывает FLIP (js/20) сдвигом
+/* В шапке недели размеры НЕ анимируются переходами — сжатие/разжатие доигрывает FLIP (js/20) сдвигом
    и масштабом. Здесь стояли только длительность и кривая без списка свойств — то есть «всё»: при прокрутке вниз
    0,45 с плавно менялись max-height подписи, размер шрифта заголовка, отступы и размер кнопок — раскладка всей
    страницы на каждом кадре, а лента под шапкой ползла сама по себе (на видео с iPhone — «дёргается») */
@@ -1004,7 +1004,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 .sbar .wbtn, .sbar .icon-btn { transition-property: background-color, border-color, color, opacity, box-shadow, transform, translate, scale;
   transition-duration: .2s, .2s, .2s, .2s, .2s, .5s, .45s, .45s;
   transition-timing-function: ease, ease, ease, ease, ease, var(--ease-spring), var(--ease-spring), var(--ease-spring); }
-/* v2.1.6: сжатая шапка — только сдвиг/масштаб/прозрачность (размеры шапки не меняются, см. js/20). Насколько
+/* Сжатая шапка — только сдвиг/масштаб/прозрачность (размеры шапки не меняются, см. js/20). Насколько
    сдвинуть и сжать каждую часть, js меряет один раз и кладёт в --bx/--by/--bk/--bi/--bb */
 .sbar h1.wr, .sbar .days { transition: translate .45s var(--ease-spring), scale .45s var(--ease-spring); }
 .sbar h1.wr, .sbar .whead .top-actions > *, .sbar .days { transform-origin: 0 0; }
@@ -1583,7 +1583,7 @@ html.glass .tabs { background: rgba(255, 255, 255, .14); }
 html.glass[data-theme="light"] .tabs { background: rgba(255, 255, 255, .5); }
 html.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
 
-/* v2.1: тени-свечения карточек короче (размытие 30–34 → 16–20 точек): на дне до 36 карточек, и каждая перерисовка
+/* Тени-свечения карточек короче (размытие 30–34 → 16–20 точек): на дне до 36 карточек, и каждая перерисовка
    ленты считала столько больших размытых теней; на вид почти то же */
 /* карточки пар — цветное стекло под вид занятия: лекция зелёная, практика янтарная, лаба фиолетовая.
    Размеры отсвета — в точках, а не в процентах: у свёрнутой и раскрытой карточки он одинаковый,
@@ -1713,16 +1713,16 @@ html.glass {
 html.glass .under, html.glass #appbg { background: var(--g-img), var(--bg); }
 /* заставка при запуске — сразу на фоне приложения, без смены чёрного на цветной */
 html.glass #splash { background: var(--g-img), var(--bg); }
-/* v2.1: фон готовой картинкой (рисует paintBackdrop в js/08-theme.js) — растягивается на весь экран,
+/* Фон готовой картинкой (рисует paintBackdrop в js/08-theme.js) — растягивается на весь экран,
    перерисовка такого слоя почти бесплатная (три градиента с маской на весь экран — дорого) */
 html.glass.gpic body::before { background: var(--g-img) 0 0 / 100% 100% no-repeat; opacity: 1; -webkit-mask-image: none; mask-image: none; }
 html.glass.gpic :is(.under, #appbg, #splash) { background: var(--g-img) 0 0 / 100% 100% no-repeat, var(--bg); }
-/* v2.1.4: шапка под часами — тот же фон, что и под ней (раньше — сплошная чёрная полоса) */
+/* Шапка под часами — тот же фон, что и под ней (раньше — сплошная чёрная полоса) */
 html.glass.gpic .topveil { background: var(--g-img) 0 0 / 100% var(--bd-h, 100vh) no-repeat, var(--bg); }
-/* v2.1.13: у шапки снизу была тёмная растушёвка в 12 точек (из цвета фона в прозрачность) — на цветном фоне
+/* У шапки снизу была тёмная растушёвка в 12 точек (из цвета фона в прозрачность) — на цветном фоне
    она рисовала заметную полосу поперёк экрана. С общим фоном растушёвка не нужна: шва нет */
 html.glass.gpic .topveil::after { display: none; }
-/* v2.1.14: когда шапка прилипла, её стекло затемняет фон (--g-bar) — полоса под часами темнеет так же и вместе с ней */
+/* Когда шапка прилипла, её стекло затемняет фон (--g-bar) — полоса под часами темнеет так же и вместе с ней */
 html.glass.gpic .topveil::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--g-bar);
   opacity: 0; transition: opacity .2s ease; }
 html.glass.gpic .topveil.dim::before { opacity: 1; }
@@ -1755,12 +1755,12 @@ html.glass .row :is(.card, .cc) { border-color: transparent; }
 .rs-ck { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: calc(15px * var(--fs, 1)); color: var(--text); }
 .rs-ck input { width: 20px; height: 20px; accent-color: var(--accent); }
 .rs-note { margin: 14px 0 10px; font-size: calc(13px * var(--fs, 1)); line-height: calc(17px * var(--fs, 1)); color: var(--muted); }
-/* ================= Android: стекло размывает слабее (v1.8.6) =================
+/* ================= Android: стекло размывает слабее =================
    Почти все рывки листания в «Статистике» (52 из 61) — с Android. На главном потоке листание чистое
    (дни едут сдвигом на видеокарте), а над движущимся днём лежат слои размытия: нижняя панель, шапка недели,
    кнопки шапки, таблетка дня — их видеокарта пересчитывает каждый кадр. Здесь радиус размытия примерно
    вдвое меньше, а у таблетки (она сама едет вместе с пальцем) размытия нет совсем.
-   iPhone не затронут. Проверка: рывки Android в v1.8.6 против v1.8.5 в «Статистике». */
+   iPhone не затронут. Проверка — рывки Android в «Статистике». */
 html.android .tabs {
   -webkit-backdrop-filter: blur(12px) saturate(200%); backdrop-filter: blur(12px) saturate(200%); }
 html.android .whead .wbtn, html.android .whead .icon-btn.bell, html.android .btn.icon-btn[data-act="back"] {
@@ -1823,12 +1823,12 @@ html.d3.glass .row.live :is(.card, .cc) { background: linear-gradient(160deg, rg
 html.d3.glass .tab.on { color: var(--accent); }
 html.d3.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
 
-/* v1.9.5: фон липкой полосы (неделя и дни) — только когда она прилипла к верху и под неё уезжает лента.
+/* Фон липкой полосы (неделя и дни) — только когда она прилипла к верху и под неё уезжает лента.
    Пока полоса стоит на месте (у преподавателя — под его карточкой), фона нет: цветная подсветка не обрезается линией */
 .sbar::before { transition: opacity .2s ease, box-shadow .25s ease, scale .45s var(--ease-spring); }
 .sbar:not(.stuck)::before { opacity: 0; }
 
-/* v1.9.5: линза нижней панели не выходит за её край. «Желе» растягивает линзу от края, который внутри панели
+/* Линза нижней панели не выходит за её край. «Желе» растягивает линзу от края, который внутри панели
    (у первой вкладки — от левого, у последней — от правого, у средней — от центра), а к крайней вкладке она едет
    без пружинного перелёта (класс .edge ставит 29-ios26.js) */
 /* scale действует после сдвига (translate в transform), поэтому точка растяжения — в координатах несдвинутой линзы:
@@ -1837,7 +1837,7 @@ html.d3.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
 .tabs .lens.edge { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
 .seg3 .thumb.go.edge { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
 
-/* v2.1.7: вариант «wrap» (см. js/33) — свет в своём слое размером ровно с карточку */
+/* Вариант «wrap» (см. js/33) — свет в своём слое размером ровно с карточку */
 html.d3 .hero > .hlights { position: absolute; inset: 0; z-index: -1; overflow: hidden; border-radius: inherit; pointer-events: none; will-change: transform; }
 /* вариант «static» — свет нарисован прямо в карточке, без своего слоя */
 html.d3[data-lv="static"] .hero .hglow, html.d3[data-lv="static"] .hero .hstreak { will-change: auto; }
@@ -2033,7 +2033,7 @@ window.__appStart = () => {
   });
   // Следим за кадрами, пока что-то движется: пропуск больше ~3 кадров подряд — заметный рывок.
   // Заодно узнаём настоящую частоту кадров у человека (30 — энергосбережение, 60, 120 — ProMotion).
-  // v1.9.6: возвращает stop() — закончить замер раньше, ровно когда движение закончилось. Раньше листание
+  // Возвращает stop() — закончить замер раньше, ровно когда движение закончилось. Раньше листание
   // пальцем замерялось фиксированные 0,6 с от начала жеста, а нажатие — до самой смены дня: в замер попадал
   // кадр, в котором день уже стоит на месте и приложение перекладывает ленту (глазу это не видно —
   // ничего не двигается), и в отчётах копились «рывки · конец/середина», которых на экране не было.
@@ -2049,7 +2049,7 @@ window.__appStart = () => {
       const span = Math.max(1, (ends[ends.length - 1] || t0) - t0);
       const body = gaps.slice(1).sort((a, b) => a - b), med = body[Math.floor(body.length / 2)], max = body[body.length - 1];
       if (max > Math.max(50, med * 3)) {
-        // v1.8.7: в какой части движения был самый долгий кадр — начало, середина или конец.
+        // В какой части движения был самый долгий кадр — начало, середина или конец.
         // По этому видно, что тормозит: подготовка слоёв (начало) или перестройка после остановки (конец).
         const i = gaps.indexOf(max, 1), k = i > 0 ? (ends[i] - gaps[i] - t0) / span : 0.5;   // где кадр начался
         DIAG.add("jank", `${where} · ${k < 0.3 ? "начало" : k > 0.75 ? "конец" : "середина"}`, max);
@@ -2067,7 +2067,7 @@ window.__appStart = () => {
     return judge;
   }
 
-  // v2.1: один наблюдатель за разметкой экрана вместо трёх (подписи «сейчас», зоны жестов, свет на «Сейчас»).
+  // Один наблюдатель за разметкой экрана вместо трёх (подписи «сейчас», зоны жестов, свет на «Сейчас»).
   // Каждая достройка дня в ленте будила все три, и каждый просматривал весь экран.
   const appDomFns = [];
   let appDomMO = null;
@@ -2193,13 +2193,13 @@ window.__appStart = () => {
       }
     }
     const dMove = once(onMove), dEnd = once(onEnd), tMove = once(onMove), tEnd = once(onEnd);
-    // Пассивные касания (v1.9.3). Обработчик с правом отменить прокрутку (passive: false) заставляет браузер на каждом
+    // Пассивные касания. Обработчик с правом отменить прокрутку (passive: false) заставляет браузер на каждом
     // движении пальца ждать JS: если приложение в этот момент занято, прокрутка трогается с задержкой.
     // Отменять прокрутку нужно только горизонтальным жестам — листанию дней и свайпу уведомления (их зоны —
     // [data-pager] и .ncw, см. Gesture.zones) и свайпу «назад» от края (весь экран, только вне Telegram и только
     // когда есть куда вернуться — Gesture.edge). Всё остальное (вкладка «Преподаватели», настройки, шапка) — пассивно:
     // там прокручивает сам телефон, не дожидаясь JS.
-    // v2.0: лента дней — родная прокрутка, её касания пассивны (иначе iPhone ждал бы JS на каждом движении пальца)
+    // Лента дней — родная прокрутка, её касания пассивны (иначе iPhone ждал бы JS на каждом движении пальца)
     const ZONE = ".ncw";
     let edgeOn = false;
     const inZone = (el) => !!(el && el.closest && el.closest(ZONE));
@@ -2311,7 +2311,7 @@ window.__appStart = () => {
       const [h, m] = hm.split(":").map(Number);
       return { date, wd: weekday(date), sec: h * 3600 + m * 60, label: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` };
     }
-    // v1.9.6: форматтер создаётся один раз — samaraNow() зовут и посреди листания, а создание
+    // Форматтер создаётся один раз — samaraNow() зовут и посреди листания, а создание
     // Intl.DateTimeFormat с часовым поясом на iPhone стоит заметно дороже самого форматирования
     const parts = (samaraNow.fmt || (samaraNow.fmt = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Europe/Samara", year: "numeric", month: "2-digit", day: "2-digit",
@@ -2442,7 +2442,7 @@ window.__appStart = () => {
     const i = srcs.findIndex((x) => x.base === preferSrc);
     if (i > 0) srcs.unshift(srcs.splice(i, 1)[0]);
     const errs = [];
-    // v1.9.6: источники — не строго по очереди. Раньше следующий запрашивался, только когда предыдущий
+    // Источники — не строго по очереди. Раньше следующий запрашивался, только когда предыдущий
     // молчал все 8 секунд: если сайт (GitHub) завис, первый запуск без сохранённого расписания длился
     // 8–9 с («Медленный запуск · до 8.9 с»). Теперь, если источник не ответил за 1,5 с, параллельно
     // спрашиваем следующий и берём первый ответ; ошибка источника — сразу переходим к следующему.
@@ -2547,9 +2547,9 @@ window.__appStart = () => {
   }
   // Оформление «Стекло» — основное; ?glass=0 показывает прежний вид (только для проверки)
   function glassOn() { return !/[?&]glass=0\b/.test(location.search); }
-  // «Стекло, смелее» (v1.9.0) — основной вид: фон цветом идущей пары, крупнее заголовки и блок «Сейчас»
+  // «Стекло, смелее» — основной вид: фон цветом идущей пары, крупнее заголовки и блок «Сейчас»
   const D3 = true;
-  // v2.1: фон «Стекла» (три цветных пятна) — готовой картинкой. Раньше это были три радиальных градиента с маской
+  // Фон «Стекла» (три цветных пятна) — готовой картинкой. Раньше это были три радиальных градиента с маской
   // на весь экран (слой 31,6 МБ): на записи с iPhone он перерисовывался при каждом переходе (40+ раз за минуту), и
   // каждая такая перерисовка — заново все градиенты в разрешении экрана. Теперь пятна один раз рисуются в маленькую
   // картинку (в 2 раза меньше экрана — пятна размытые, разницы не видно) и растягиваются: перерисовка почти бесплатная.
@@ -2579,7 +2579,7 @@ window.__appStart = () => {
       const veil = probe.getBoundingClientRect().height || 0;
       probe.remove();
       const key = [W, H, A, B, C, BG, op, Math.round(veil)].join("|");
-      // v2.1.13: шапка под часами растягивает ту же картинку на ту же высоту, что и фон под ней (100vh на iPhone
+      // Шапка под часами растягивает ту же картинку на ту же высоту, что и фон под ней (100vh на iPhone
       // бывает не равна высоте окна — картинки не совпадали, и по краю шапки шла видимая граница)
       const bh = `${Math.round(innerHeight)}px`;
       if (ROOT.style.getPropertyValue("--bd-h") !== bh) ROOT.style.setProperty("--bd-h", bh);
@@ -2598,7 +2598,7 @@ window.__appStart = () => {
       spot(0.25, 1.00, 0.70, 0.45, C);
       spot(1.00, 0.38, 0.55, 0.35, B);
       spot(0.12, 0.08, 0.60, 0.40, A);
-      // v2.1.4: пятна идут до самого верха — под часами тоже фон (раньше там была чёрная полоса)
+      // Пятна идут до самого верха — под часами тоже фон (раньше там была чёрная полоса)
       const cv = document.createElement("canvas"); cv.width = cw; cv.height = ch;
       const x = cv.getContext("2d");
       x.fillStyle = `rgb(${BG[0]},${BG[1]},${BG[2]})`; x.fillRect(0, 0, cw, ch);
@@ -2656,13 +2656,13 @@ window.__appStart = () => {
   // Снимок экрана, с которого уходим вглубь: его показываем под пальцем при свайпе назад (как в iOS)
   function snapshot() {
     try {
-      // v2.0.5: копируем без остальных дней ленты (в ней все дни расписания — копировать их и тут же удалять долго)
+      // Копируем без остальных дней ленты (в ней все дни расписания — копировать их и тут же удалять долго)
       const c = app.cloneNode(false);
       for (const ch of app.childNodes) {
         if (ch.nodeType === 1 && ch.matches("[data-pager]")) {
           const pg = ch.cloneNode(false), cur = ch.querySelector(":scope > [data-cur]");
           if (cur) {
-            // v2.1.9: что ниже экрана — в копию не берём: на записи с iPhone при открытии «Уведомлений» копия всего дня
+            // Что ниже экрана — в копию не берём: на записи с iPhone при открытии «Уведомлений» копия всего дня
             // давала пересчёт стилей 24 мс прямо в нажатии. Отрезаем только снизу — выше ничего не сдвигается
             const lim = window.innerHeight + 80;
             const cut = [...cur.querySelectorAll(":scope > *, :scope > ol > li")].filter((e) => e.getBoundingClientRect().top > lim);
@@ -2681,8 +2681,8 @@ window.__appStart = () => {
       c.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
       // соседние дни не удаляем, а только прячем: дни стоят в ряд и сдвинуты на ширину экрана, и без соседа
       // текущий день съезжал за левый край — под пальцем и при «назад» лента пар пропадала, а потом появлялась рывком
-      c.querySelectorAll("[data-pager] .page.prev, [data-pager] .page.next").forEach((e) => e.remove());   // v2.0: у копии нет прокрутки — оставляем только текущий день
-      c.querySelectorAll("video, .hglow, .hstreak").forEach((e) => e.remove());   // v2.0.1: свет на карточке «Сейчас» в снимке не нужен
+      c.querySelectorAll("[data-pager] .page.prev, [data-pager] .page.next").forEach((e) => e.remove());   // У копии нет прокрутки — оставляем только текущий день
+      c.querySelectorAll("video, .hglow, .hstreak").forEach((e) => e.remove());   // Свет на карточке «Сейчас» в снимке не нужен
       return c;
     } catch (e) { return null; }
   }
@@ -2716,10 +2716,10 @@ window.__appStart = () => {
   }
   const animsDone = (anims, ms) => (anims.length ? anims[0].finished : new Promise((r) => setTimeout(r, Math.max(0, ms))));
   // кривая переходов между экранами (разгон и мягкая остановка, как у iPhone) — точной ломаной, где браузер умеет.
-  // v1.8.7: старт мягче (доля плавного разгона 0,35 → 0,6). На записи с iPhone в начале перехода один кадр замирал:
+  // Старт мягче (доля плавного разгона 0,35 → 0,6). На записи с iPhone в начале перехода один кадр замирал:
   // при резком старте это видно как «дёрнулось» (экран уже ушёл на десятки точек и встал), при мягком за этот кадр
   // он проходит в полтора раза меньше — запинку не видно. Конец движения почти тот же.
-  // v1.9.3: на записи с iPhone (открытие «Уведомлений») прежняя кривая давала «замялся — рывок»: первые 0,1 с экран
+  // На записи с iPhone (открытие «Уведомлений») прежняя кривая давала «замялся — рывок»: первые 0,1 с экран
   // полз по ~19 точек за кадр, к середине разгонялся до 34 и только потом тормозил — глазу это видно как дёрганье.
   // Теперь как у iOS: мягкий первый кадр (~15 точек — меньше прежнего, запинки на старте не видно), за 2–3 кадра
   // выход на скорость и дальше только ровное торможение, без второго разгона.
@@ -2729,12 +2729,12 @@ window.__appStart = () => {
     for (let i = 1; i <= N; i++) s.push(s[i - 1] + (v[i] + v[i - 1]) / 2);
     const f = (k) => s[Math.round(k * N)] / s[N];
     const lin = "linear(" + Array.from({ length: 25 }, (_, i) => f(i / 24).toFixed(4)).join(", ") + ")";
-    // v2.1.8: только cubic-bezier — кривую linear(…) Safari на iPhone считает не на видеокарте, а в каждом кадре
+    // Только cubic-bezier — кривую linear(…) Safari на iPhone считает не на видеокарте, а в каждом кадре
     // приложения (на записи — пересчёт стилей 3–5 мс на кадр во время перехода)
     void lin;
     return "cubic-bezier(.2, .75, .25, 1)";
   })();
-  // v2.1: подложка уезжающего экрана — его фон и тень (см. css/05: раньше это был #app::before)
+  // Подложка уезжающего экрана — его фон и тень (см. css/05: раньше это был #app::before)
   const appBg = (() => { const e = document.createElement("div"); e.id = "appbg"; e.setAttribute("aria-hidden", "true"); app.before(e); return e; })();
   function navLayers(entry) {
     perfAct("переход");
@@ -2768,7 +2768,7 @@ window.__appStart = () => {
   // а потом будто притормаживает (на записи: 0 → 70 → 75 → 102…). Так движение начинается ровно с места.
   const twoFrames = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
   function navRun(L, from, to, dur, done) {
-    // v2.0.5: новый экран, который выедет справа, сначала ставим на место почти прозрачным (1% поверх снимка —
+    // Новый экран, который выедет справа, сначала ставим на место почти прозрачным (1% поверх снимка —
     // глазу не видно). Пока он за краем экрана, телефон его не рисует и рисует уже в первых кадрах выезда —
     // на записи с iPhone старт перехода «полз, а потом прыгал». Так все его слои готовы до начала движения.
     const warm = from === 1 && !navRM();
@@ -2778,7 +2778,7 @@ window.__appStart = () => {
       if (warm) { L.set(from); app.style.opacity = appBg.style.opacity = ""; }
       watchFrames("переход между экранами", dur);
       const anims = gpuMove(L.els, () => L.set(to), dur, NAV_EASE);
-      // v2.0.6: слои перехода убираем на кадр позже — когда последний кадр движения точно показан
+      // Слои перехода убираем на кадр позже — когда последний кадр движения точно показан
       // (уборка — пересборка слоёв на 15–28 мс; в одном кадре с концом движения она давала рывок в конце)
       const fin = () => requestAnimationFrame(() => done());
       animsDone(anims, dur).then(fin, fin);
@@ -3073,7 +3073,7 @@ window.__appStart = () => {
       <div class="blbl">${I.cup}<span data-btext>Перерыв · ${esc(it.text)}</span></div></li>`;
   }
 
-  const PAGER_SPAN = 2;   // v2.0: сколько дней с каждой стороны от текущего готовы сразу (остальные — в паузах)
+  const PAGER_SPAN = 2;   // Сколько дней с каждой стороны от текущего готовы сразу (остальные — в паузах)
   // Сосед через n дней (dir = ±n): шагаем по одному, пока не кончатся недели
   function stepPos(data, p, dir) {
     let q = p;
@@ -3102,7 +3102,7 @@ window.__appStart = () => {
     }
     return html;
   }
-  // Шапка недели и полоса дней (v2.1: отдельно от ленты — при переходе на другую неделю перерисовываются только они,
+  // Шапка недели и полоса дней (отдельно от ленты — при переходе на другую неделю перерисовываются только они,
   // лента со всеми днями уже на месте)
   function barParts(data, p, isTeacher, m) {
     const week = data.weeks[p.w];
@@ -3137,7 +3137,7 @@ window.__appStart = () => {
     const m = dayModel(data, p.w, p.d, isTeacher);
     const b = barParts(data, p, isTeacher, m);
 
-    // v2.0: в ленте — все дни расписания подряд (родная прокрутка с защёлкиванием, см. 23-pager.js).
+    // В ленте — все дни расписания подряд (родная прокрутка с защёлкиванием, см. 23-pager.js).
     // Номер страницы = неделя × 7 + день. Текущий и по PAGER_SPAN соседей — готовы сразу, остальные
     // достраиваются в паузах (pagerFillLater) или по пути, если до них долистали раньше.
     const N = data.weeks.length * 7, ci = p.w * 7 + p.d;
@@ -4239,7 +4239,7 @@ window.__appStart = () => {
     if (D3) {   // фон — цветом идущей (или ближайшей) пары
       const h = app.querySelector("[data-cur] .hero");
       const rgb = h && getComputedStyle(h).getPropertyValue("--k-rgb").trim();
-      // v2.1: только если цвет поменялся — переменная у <html> заставляет пересчитать стили всей страницы
+      // Только если цвет поменялся — переменная у <html> заставляет пересчитать стили всей страницы
       // и заново нарисовать фон (на записи с iPhone — при каждой перерисовке расписания)
       if ((rgb || "") !== (ROOT.style.getPropertyValue("--amb") || "").trim()) {
         if (rgb) ROOT.style.setProperty("--amb", rgb); else ROOT.style.removeProperty("--amb");
@@ -4827,11 +4827,11 @@ window.__appStart = () => {
     if (pgAnim && pgAnim.goal && pgAnim.goal.w === np.w && pgAnim.goal.d === np.d) return;
     const k = (np.w - c.p.w) * 7 + (np.d - c.p.d);
     if (!k) return;
-    // v2.0: соседний день — родной плавной прокруткой ленты (таблетка едет за лентой, день становится
+    // Соседний день — родной плавной прокруткой ленты (таблетка едет за лентой, день становится
     // текущим, когда лента встала). Дальний день или другая неделя — сразу на место, а содержимое дня
     // мягко въезжает сбоку (как раньше): иначе лента пролетала бы через все дни по пути.
     if (Math.abs(k) === 1 && pagerGo(np)) return;
-    if (pagerJump(np, Math.sign(k))) return;   // v2.1: без перерисовки экрана
+    if (pagerJump(np, Math.sign(k))) return;   // Без перерисовки экрана
     rememberPill();
     pos[c.id] = np;
     opened.clear();
@@ -4843,7 +4843,7 @@ window.__appStart = () => {
   // ---------------- липкая шапка ----------------
   // Как «большой заголовок» в iOS: при прокрутке полоса с днями прилипает к верху на стекле,
   // а заголовок недели сжимается. Порог с запасом (56 / 8 px), чтобы не дрожало на границе.
-  // v2.1.6: сжатие — только сдвиг, масштаб и прозрачность (класс .vsmall), раскладка шапки не меняется вообще.
+  // Сжатие — только сдвиг, масштаб и прозрачность (класс .vsmall), раскладка шапки не меняется вообще.
   // Раньше на пороге менялись размеры (класс .small), и в обработчике прокрутки шли пересчёт стилей, два прохода
   // замеров и запуск анимаций — 12 мс, кадр на iPhone длился 45–49 мс (2–3 потерянных кадра при каждом
   // сжатии/разжатии). Теперь насколько сдвинуть и сжать каждую часть шапки, меряется один раз (сжатый вид
@@ -4879,17 +4879,17 @@ window.__appStart = () => {
     if (!barSmall && y > 56) barSmall = true;
     else if (barSmall && y < 8) barSmall = false;
     const fresh = bar !== barEl;
-    // v1.9.5: «прилипла» — только когда полоса и правда стоит у верхнего края. У преподавателя над ней карточка,
+    // «прилипла» — только когда полоса и правда стоит у верхнего края. У преподавателя над ней карточка,
     // и раньше фон полосы появлялся уже при y > 2 — посреди страницы, резкой линией поперёк цветной подсветки
     if (fresh) {
       barTop = parseFloat(getComputedStyle(bar).top) || 0;
-      // v2.1.12: замер сжатой шапки — заранее, в спокойный момент после отрисовки, а не в первом кадре прокрутки
+      // Замер сжатой шапки — заранее, в спокойный момент после отрисовки, а не в первом кадре прокрутки
       // (замер на iPhone: рывок в начале первого сжатия шапки)
       if (CAN_FLIP && !REDUCED) setTimeout(() => { if (bar.isConnected && !bar.__geo && !bar.classList.contains("vsmall") && !scrolling && !pagerTouch) barGeo(bar); }, 600);
     }
     const stuck = y > 2 && (bar === app.firstElementChild || bar.getBoundingClientRect().top <= barTop + 1);
     bar.classList.toggle("stuck", stuck);
-    // v2.1.14: полоса под часами темнеет вместе со стеклом шапки — иначе по верхнему краю шапки шла граница
+    // Полоса под часами темнеет вместе со стеклом шапки — иначе по верхнему краю шапки шла граница
     // (сверху — яркий фон, ниже — затемнённое стекло)
     if (veil) veil.classList.toggle("dim", stuck);
     barEl = bar;
@@ -5185,7 +5185,7 @@ window.__appStart = () => {
     const body = fresh.querySelector(".card, .cc");
     const h1 = body.getBoundingClientRect().height;
     const d = h1 - h0;   // > 0 — раскрываем, < 0 — сворачиваем
-    // v1.8.8: всё, что нужно знать о новой карточке, меряем сразу, одним проходом — до любых изменений
+    // Всё, что нужно знать о новой карточке, меряем сразу, одним проходом — до любых изменений
     // страницы. Раньше замеры шли вперемешку со вставкой слоёв, и телефон пересчитывал раскладку 4–5 раз
     // в самом начале движения (как раз там, где на записях с iPhone пропадали кадры).
     const bcs = getComputedStyle(body);
@@ -5274,7 +5274,7 @@ window.__appStart = () => {
     const glowDone = () => { if (glowFx) { glowFx.g.remove(); if (glowFx.edge) glowFx.edge.remove(); fresh.style.isolation = ""; } };
 
     // 1) пары ниже съезжают со старого места на новое
-    // v2.1.12: только те, что видны на экране (или въедут на него). Каждая едущая пара — свой слой видеокарты,
+    // Только те, что видны на экране (или въедут на него). Каждая едущая пара — свой слой видеокарты,
     // и заводились они все разом в первом кадре: замер на iPhone — 3 медленных кадра в начале почти каждого раскрытия
     const vh = window.innerHeight + 40;
     after.forEach(([el, top0], i) => {
@@ -5392,7 +5392,7 @@ window.__appStart = () => {
   const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   let scrolling = false, pagerTouch = false;
   function pagerEl() { return app.querySelector("[data-pager]"); }
-  // v2.0: в ленте лежат ВСЕ дни расписания подряд (неделя × 7 + день) — номер страницы = номер дня
+  // В ленте лежат ВСЕ дни расписания подряд (неделя × 7 + день) — номер страницы = номер дня
   function curIndex(pg) { const cur = pg && pg.querySelector(":scope > [data-cur]"); return cur ? +cur.dataset.i || 0 : 0; }
   // Текущий день — ровно в окне ленты. Сдвиг без анимации: так ставим ленту после перерисовки,
   // пока ничего не движется (на экране подмена не видна)
@@ -5408,7 +5408,7 @@ window.__appStart = () => {
   }
   // Высота ленты — как у текущего дня, но до низа экрана: соседние дни при листании видны целиком,
   // а пустого места для прокрутки под коротким днём не появляется
-  // v1.8.8: где начинается лента и отступ снизу запоминаются (меняются только при перерисовке, повороте
+  // Где начинается лента и отступ снизу запоминаются (меняются только при перерисовке, повороте
   // и сжатии шапки), высота пишется, только если изменилась, — после листания на один пересчёт раскладки меньше
   let pagerGeo = null;
   function fitPager(fresh) {
@@ -5434,7 +5434,7 @@ window.__appStart = () => {
     pagerFillLater(pg);
   }
 
-  // ---- листание дней: v2.0 — ведёт сам телефон ----
+  // ---- листание дней: ведёт сам телефон ----
   // Раньше каждый сдвиг пальца шёл через JS: лента двигалась, только когда освобождался основной поток,
   // и любая занятость приложения (перестройка дня, отрисовка) была видна рывком под пальцем.
   // Теперь дни лежат в родной горизонтальной прокрутке с защёлкиванием (scroll-snap): за пальцем ведёт
@@ -5465,11 +5465,11 @@ window.__appStart = () => {
     const step = () => {
       if (pg !== pagerEl() || !pg.isConnected) return;
       if (scrolling || pagerTouch) { fillTimer = setTimeout(step, 250); return; }   // в движении — не мешаем
-      // v2.1: ближайшие к текущему недостроенные дни — по 4 за раз и реже. Раньше по одному каждые 40 мс:
+      // Ближайшие к текущему недостроенные дни — по 4 за раз и реже. Раньше по одному каждые 40 мс:
       // на записи с iPhone после смены недели ~1 с шли 12–15 пересчётов раскладки ленты и 40–48 вызовов
       // наблюдателей за полсекунды — и если в это время листать, это было видно
       const ci = curIndex(pg), n = pg.children.length;
-      // v2.1.9: и не дольше ~6 мс за раз — у преподавателя на записи одна такая порция шла 36 мс
+      // И не дольше ~6 мс за раз — у преподавателя на записи одна такая порция шла 36 мс
       let done = 0;
       const t0 = performance.now(), over = () => done && performance.now() - t0 > 6;
       for (let k = 1; k < n && done < 4 && !over(); k++) {
@@ -5485,7 +5485,7 @@ window.__appStart = () => {
     const c = curPos();
     if (!c || !pillPos.length) return;
     const f = pg.scrollLeft / (pg.clientWidth || 1) - c.p.w * 7;
-    // v2.1.10: таблетка снова идёт за лентой, как до v2.1.7 (переезд «к ближайшему дню» смотрелся неестественно)
+    // Таблетка снова идёт за лентой, как раньше (переезд «к ближайшему дню» смотрелся неестественно)
     putPill(Math.max(0, Math.min(6, f)));
   }
   function markDay(d) {   // подсветка дня в полосе — как только понятно, куда приехали
@@ -5568,7 +5568,7 @@ window.__appStart = () => {
       if (pg !== pagerEl()) return;
       pillFromScroll(pg);
       followCatch(pg);
-      // v2.0.2: дни по пути НЕ достраиваем на ходу — любая перестройка ленты под пальцем заставляет телефон
+      // Дни по пути НЕ достраиваем на ходу — любая перестройка ленты под пальцем заставляет телефон
       // пересчитать защёлкивание, и свайп «упирается». Они и так готовы заранее (сразу ±2 дня, остальные — в паузе).
     });
     armSettle(pg, 140);
@@ -5581,7 +5581,7 @@ window.__appStart = () => {
       const W = pg.clientWidth || 1, x = pg.scrollLeft, f = x / W;
       if (pagerTouch || Math.abs(x - lastLeft) > 0.5 || Math.abs(f - Math.round(f)) > 0.02) { lastLeft = x; armSettle(pg, 100); return; }
       lastLeft = -1;
-      // v2.0.2: перекладываем ленту в начале кадра — касание, если палец уже коснулся, к этому моменту
+      // Перекладываем ленту в начале кадра — касание, если палец уже коснулся, к этому моменту
       // обработано, и мы не меняем ленту под пальцем
       requestAnimationFrame(() => {
         if (pg !== pagerEl()) return;
@@ -5611,7 +5611,7 @@ window.__appStart = () => {
     commitIndex(pg, c, i);
   }
   // Лента встала на другом дне — он становится текущим. Готовая страница уже на экране — перекладываем отметки.
-  // v2.1: и в другой неделе тоже: лента со всеми днями на месте, перерисовываются только шапка недели и полоса дней
+  // И в другой неделе тоже: лента со всеми днями на месте, перерисовываются только шапка недели и полоса дней
   // (раньше — весь экран заново: 32 мс работы и склейка ещё 36 мс ровно в момент, когда день встаёт на место).
   // anim — день «въезжает» сбоку (переход по кнопке недели, «Сегодня», нажатие на дальний день).
   function commitIndex(pg, c, i, anim) {
@@ -5635,8 +5635,8 @@ window.__appStart = () => {
       return;
     }
     const old = pg.querySelector(":scope > [data-cur]"), inc = pg.children[i], oi = curIndex(pg);
-    // v2.1.5: и соседние дни (±2) — иначе при листании без пауз дальше двух дней от начала шли пустые страницы.
-    // v2.1.9: соседей — не в этом же кадре, а каждым днём отдельной маленькой задачей сразу после: на записи с iPhone
+    // И соседние дни (±2) — иначе при листании без пауз дальше двух дней от начала шли пустые страницы.
+    // Соседей — не в этом же кадре, а каждым днём отдельной маленькой задачей сразу после: на записи с iPhone
     // остановка на дне стоила кадр в 40 мс (пересчёт стилей 13 мс + склейка 22 мс) — ровно когда день встаёт на место
     fillPage(pg, i);
     for (const k of [i + 1, i - 1, i + 2, i - 2]) setTimeout(() => { if (pg.isConnected && !pagerTouch) fillPage(pg, k); }, 0);
@@ -5649,7 +5649,7 @@ window.__appStart = () => {
     }
     const lo = Math.min(oi, i), hi = Math.max(oi, i), pages = pg.children;
     for (let k = lo; k <= hi; k++) if (pages[k]) pages[k].classList.toggle("prev", k < i), pages[k].classList.toggle("next", k > i), pages[k].classList.toggle("cur", k === i);
-    // v2.1: метка «въехать сбоку» остаётся у страницы после анимации — без этого, вернувшись листанием
+    // Метка «въехать сбоку» остаётся у страницы после анимации — без этого, вернувшись листанием
     // на такой день, его содержимое въезжало ещё раз
     if (old) old.classList.remove("from-r", "from-l");
     inc.classList.remove("from-r", "from-l");
@@ -5717,7 +5717,7 @@ window.__appStart = () => {
     armSettle(pg, 160);
     return true;
   }
-  // v2.0.4: таблетку снова двигает JS по событиям прокрутки. В v2.0.3 её вела анимация, привязанная к прокрутке
+  // Таблетку снова двигает JS по событиям прокрутки. Раньше её вела анимация, привязанная к прокрутке
   // (ScrollTimeline), но запись «Временной шкалы» с iPhone показала: Safari обновляет такие анимации на КАЖДОМ кадре,
   // даже когда ничего не движется, — 20–76 пересчётов стилей и пересборок слоёв в секунду в покое (без неё — ноль,
   // а во время свайпов пересчётов в 3–4 раза меньше). Плавнее от неё не стало, а лишней работы — заметно.
@@ -5743,7 +5743,7 @@ window.__appStart = () => {
     const el = pillEl(), r = pillAt(f);
     if (!el || !r) return;
     pillShown = f;
-    const x = snap(r.x), w = `${Math.round(r.w)}px`;   // v1.8.8: целые точки — при листании ширина не пишется каждый кадр
+    const x = snap(r.x), w = `${Math.round(r.w)}px`;   // Целые точки — при листании ширина не пишется каждый кадр
     if (el.style.width !== w) el.style.width = w;
     el.style.transform = `translate3d(${x}px,0,0)`;
     // «окно» таблетки с белыми цифрами едет вместе с ней, а строка цифр внутри — навстречу:
@@ -5755,7 +5755,7 @@ window.__appStart = () => {
       if (on.firstElementChild) on.firstElementChild.style.transform = x ? `translate3d(${-x}px,0,0)` : "none";
     }
   }
-  // v2.1.7: таблетка не ведётся за лентой кадр за кадром, а переезжает на день, к которому ближе лента.
+  // Таблетка не ведётся за лентой кадр за кадром, а переезжает на день, к которому ближе лента.
   // Положение ленты Safari присылает странице неровно (на записи с iPhone — раз в 25–50 мс), и таблетка
   // ехала рывками рядом с плавной лентой; плюс каждый такой кадр — пересчёт стилей трёх элементов (3–4 мс).
   function pillGlide(d) {
@@ -5846,7 +5846,7 @@ window.__appStart = () => {
     lensTi = i;
     if (first) { lens.style.transition = "none"; inn.style.setProperty("--ti", i); void lens.offsetWidth; lens.style.transition = ""; return; }
     inn.style.setProperty("--ti", i);
-    // v1.9.5: к крайней вкладке — без перелёта (пружина выносила линзу за край панели), к средней — с пружинкой
+    // К крайней вкладке — без перелёта (пружина выносила линзу за край панели), к средней — с пружинкой
     lens.classList.toggle("edge", i === 0 || i === tabs.length - 1);
     if (!REDUCED) { lens.classList.remove("mv"); void lens.offsetWidth; lens.classList.add("mv"); }
   }
@@ -5888,9 +5888,9 @@ window.__appStart = () => {
       const on = seg.querySelector("button.on");
       if (!on) { th.style.width = "0"; continue; }
       const to = { left: on.offsetLeft, width: on.offsetWidth };
-      // v1.8.8: ширина ставится сразу конечная, а разницу доигрывает scaleX (от центра) — только видеокарта
+      // Ширина ставится сразу конечная, а разницу доигрывает scaleX (от центра) — только видеокарта
       th.style.width = `${to.width}px`;
-      // v1.9.5: сдвиг — отдельным свойством translate (оно применяется после всех растяжений). Сжатие и «желе» тянутся
+      // Сдвиг — отдельным свойством translate (оно применяется после всех растяжений). Сжатие и «желе» тянутся
       // от края, который внутри полосы: у первого варианта — от левого, у последнего — от правого, у среднего — от центра.
       // К крайнему варианту ползунок едет без пружинного перелёта. Раньше «желе» тянуло от точки у левого края полосы
       // и у «Тёмной» выносило ползунок за край на ~30 точек.
@@ -6248,7 +6248,7 @@ window.__appStart = () => {
       load("g").catch(() => {}),
     ]).then(() => { loadedAt = Date.now(); });
   startData.then(() => {
-    window.__bootDataAt = performance.now();   // v1.9.6: для разбора медленного запуска
+    window.__bootDataAt = performance.now();   // Для разбора медленного запуска
     setTimeout(() => window.hideSplash && window.hideSplash(), 0);
     let restore = null;
     try { restore = JSON.parse(sessionStorage.getItem("verView") || "null"); sessionStorage.removeItem("verView"); } catch (e) { /* без хранилища */ }
@@ -6271,7 +6271,7 @@ window.__appStart = () => {
     setTimeout(statSend, 2000);
     setTimeout(() => diagSend(false), 4000);
     // медленный запуск: от открытия до готового экрана дольше 4 секунд.
-    // v1.9.6: не считаем запуск, пока страница была скрыта (это время телефон её не открывал, а копил),
+    // Не считаем запуск, пока страница была скрыта (это время телефон её не открывал, а копил),
     // и пишем, на что ушло больше всего времени — по этому видно, что чинить дальше
     const bootMs = performance.now();
     if (bootMs > 4000 && !window.__bootHidden) {
@@ -6419,7 +6419,7 @@ window.__appStart = () => {
       }, ms + 30);
     }
     let armed = false;
-    // v2.1.12: родная «резинка» отключена постоянно, в CSS (css/05). Включать её на время касания у верха
+    // Родная «резинка» отключена постоянно, в CSS (css/05). Включать её на время касания у верха
     // значило менять стиль <html> — замер на iPhone показал рывок в начале прокрутки и листания каждый раз
     const ptrArm = () => {};
     Gesture.add({
@@ -6427,7 +6427,7 @@ window.__appStart = () => {
       prevent: false,
       start(p) {
         if (busy || window.scrollY > 0 || ROOT.classList.contains("swiping") || document.querySelector(".sheet, .iwrap, .onb")) return null;
-        // родная «резинка» страницы сверху не мешает нашей. v2.1.7: ставится один раз, пока страница наверху,
+        // родная «резинка» страницы сверху не мешает нашей. Ставится один раз, пока страница наверху,
         // и снимается, когда ушли вниз. Раньше — при каждом касании и снова при отпускании: смена стиля у <html>
         // заставляла телефон заново рисовать фон во весь экран и шапку (на записи — по 2 раза на касание)
         ptrArm(true);
@@ -6540,7 +6540,7 @@ window.__appStart = () => {
         dx = 0; mode = 0; vx = 0;
         const pg = p.target.closest && p.target.closest("[data-pager]");
         if (pg) { lockedPager = pg; pg.style.overflowX = "hidden"; }   // у края — жест «назад», а не листание дней
-        // Слои готовим уже на касании, а не на первом сдвиге пальца (v1.8.7): снимок прошлого экрана — копия всей
+        // Слои готовим уже на касании, а не на первом сдвиге пальца: снимок прошлого экрана — копия всей
         // страницы, и вставка его в первом кадре движения на iPhone давала замерший кадр в начале свайпа.
         // Пока палец не сдвинулся, всё стоит на месте: прошлый экран закрыт текущим, видно то же, что и было.
         begin(); setP(0);
@@ -6589,7 +6589,7 @@ window.__appStart = () => {
   // Блок не виден или приложение свёрнуто — анимация на паузе; при «уменьшить движение» свет стоит.
   if (D3) {
     const calm = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
-    // v2.1.7: вариант света для проверки на iPhone («Слои» в веб-инспекторе): в консоли
+    // Вариант света для проверки на iPhone («Слои» в веб-инспекторе): в консоли
     //   localStorage.setItem("lv", "wrap")   — свет в своём обрезанном слое размером с карточку
     //   localStorage.setItem("lv", "static") — свет стоит на месте (без анимации)
     //   localStorage.removeItem("lv")        — как обычно; после — обновить страницу
@@ -6597,7 +6597,7 @@ window.__appStart = () => {
     if (LV) ROOT.dataset.lv = LV;
     const canAnim = !calm && LV !== "static" && typeof Element.prototype.animate === "function";
     const LOOP = 180;          // секунд до повтора траектории (конец гладко сходится с началом)
-    // v2.1.2: шаг 1,5 с вместо 0,2 с — 121 ключевой кадр вместо 901. На записи с iPhone с появлением блока «Сейчас»
+    // Шаг 1,5 с вместо 0,2 с — 121 ключевой кадр вместо 901. На записи с iPhone с появлением блока «Сейчас»
     // каждый кадр шёл пересчёт стилей по ~38 мс (в Chromium свет считает видеокарта, в Safari — видимо, нет).
     // Свет мягкий и размытый — изломы траектории раз в 1,5 с на глаз не видны.
     const STEP = 1.5;
@@ -6627,7 +6627,7 @@ window.__appStart = () => {
     const vis = new Set();
     function sync() {
       const run = !document.hidden && vis.size > 0;
-      // v2.1: свет убранного блока «Сейчас» (другой день, вкладка) — отменяем, а не просто забываем. Анимация на
+      // Свет убранного блока «Сейчас» (другой день, вкладка) — отменяем, а не просто забываем. Анимация на
       // элементе, которого уже нет на странице, продолжала идти: браузер обслуживал её в каждом кадре и пересчитывал
       // стили (на записи с iPhone — по 20–40 мс на кадр, пока на экране есть любой другой движущийся свет)
       for (const a of anims) if (!a.effect || !a.effect.target || !a.effect.target.isConnected) { try { a.cancel(); } catch (e) { /* уже нет */ } anims.delete(a); }
@@ -6676,7 +6676,7 @@ window.__appStart = () => {
     onAppDom(sync);
     sync();
   }
-  // ---------------- замер плавности (v2.1.11) ----------------
+  // ---------------- замер плавности ----------------
   // Пока что-то движется (касание, листание, прокрутка, переход, раскрытие карточки), приложение считает кадры:
   // сколько их было, сколько длиннее 25 и 40 мс, самый долгий и в какой части движения он был, сколько «лишних»
   // миллисекунд набежало сверх ровных кадров. Отдельно — сколько длился сам обработчик нажатия.
