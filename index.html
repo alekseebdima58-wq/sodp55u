@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="e10391547c42">
+<meta name="app-ver" content="40d5f2fcd955">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1048,6 +1048,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
 
 /* ================= «Жидкое стекло» (как в iOS 26) =================
    Плавающие элементы — нижняя панель, кнопки шапки, полоса дней, плашки — из «стекла»:
@@ -2244,7 +2245,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.9";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.10";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -5447,7 +5448,8 @@ window.__appStart = () => {
     const c = curPos();
     if (!c || !pillPos.length) return;
     const f = pg.scrollLeft / (pg.clientWidth || 1) - c.p.w * 7;
-    pillGlide(Math.round(Math.max(0, Math.min(6, f))));
+    // v2.1.10: таблетка снова идёт за лентой, как до v2.1.7 (переезд «к ближайшему дню» смотрелся неестественно)
+    putPill(Math.max(0, Math.min(6, f)));
   }
   function markDay(d) {   // подсветка дня в полосе — как только понятно, куда приехали
     const c = curPos();
@@ -5639,7 +5641,7 @@ window.__appStart = () => {
       putPill(pillFrom);
       if (pl) gpuMove([pl, on, on && on.firstElementChild], () => putPill(np.d), 380,
         typeof springEase === "function" ? springEase() : "cubic-bezier(.22, 1, .36, 1)");
-    } else if (sameWeek) pillGlide(np.d);
+    } else if (sameWeek) putPill(np.d);
     pagerScrollToCurrent(pg);
     lastX = pg.scrollLeft;
     pagerFillLater(pg);
