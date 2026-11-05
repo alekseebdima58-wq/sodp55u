@@ -994,8 +994,22 @@ button.offline span { min-width: 0; text-wrap: balance; }
    0,45 с плавно менялись max-height подписи, размер шрифта заголовка, отступы и размер кнопок — раскладка всей
    страницы на каждом кадре, а лента под шапкой ползла сама по себе (на видео с iPhone — «дёргается») */
 .sbar .eyebrow, .sbar h1.wr, .sbar .whead .top-actions { transition: none; }
-.sbar .wbtn, .sbar .icon-btn { transition-property: background-color, border-color, color, opacity, box-shadow, transform;
-  transition-duration: .2s, .2s, .2s, .2s, .2s, .5s; }
+.sbar .wbtn, .sbar .icon-btn { transition-property: background-color, border-color, color, opacity, box-shadow, transform, translate, scale;
+  transition-duration: .2s, .2s, .2s, .2s, .2s, .5s, .45s, .45s;
+  transition-timing-function: ease, ease, ease, ease, ease, var(--ease-spring), var(--ease-spring), var(--ease-spring); }
+/* v2.1.6: сжатая шапка — только сдвиг/масштаб/прозрачность (размеры шапки не меняются, см. js/20). Насколько
+   сдвинуть и сжать каждую часть, js меряет один раз и кладёт в --bx/--by/--bk/--bi/--bb */
+.sbar h1.wr, .sbar .days { transition: translate .45s var(--ease-spring), scale .45s var(--ease-spring); }
+.sbar h1.wr, .sbar .whead .top-actions > *, .sbar .days { transform-origin: 0 0; }
+.sbar .whead .eyebrow { transition: opacity .2s ease, translate .3s ease; }
+.sbar .days .day { transition: color .18s ease, opacity .18s ease, scale .45s var(--ease-spring); }
+.sbar .days-on-in { transition: scale .45s var(--ease-spring); }
+.sbar::before { transform-origin: 50% 0; transition: opacity .2s ease, box-shadow .25s ease, scale .45s var(--ease-spring); }
+.sbar.vsmall h1.wr, .sbar.vsmall .whead .top-actions > *, .sbar.vsmall .days { translate: var(--bx, 0px) var(--by, 0px); scale: var(--bk, 1 1); }
+.sbar.vsmall .days .day, .sbar.vsmall .days-on-in { scale: var(--bi, 1 1); }
+.sbar.vsmall .whead .eyebrow { opacity: 0; translate: 0 -6px; pointer-events: none; }
+.sbar.vsmall::before { scale: var(--bb, 1 1); }
+.sbar.bnoanim, .sbar.bnoanim *, .sbar.bnoanim::before { transition: none !important; }
 
 /* нажатие: элемент чуть проседает и пружинит обратно */
 .day, .btn, .wbtn, .tab, .cc, .item, .sw, .seg3 button, .tlink {
@@ -1796,7 +1810,7 @@ html.d3.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
 
 /* v1.9.5: фон липкой полосы (неделя и дни) — только когда она прилипла к верху и под неё уезжает лента.
    Пока полоса стоит на месте (у преподавателя — под его карточкой), фона нет: цветная подсветка не обрезается линией */
-.sbar::before { transition: opacity .2s ease, box-shadow .25s ease; }
+.sbar::before { transition: opacity .2s ease, box-shadow .25s ease, scale .45s var(--ease-spring); }
 .sbar:not(.stuck)::before { opacity: 0; }
 
 /* v1.9.5: линза нижней панели не выходит за её край. «Желе» растягивает линзу от края, который внутри панели
@@ -2222,7 +2236,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.5";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.6";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4791,12 +4805,34 @@ window.__appStart = () => {
   // ---------------- липкая шапка ----------------
   // Как «большой заголовок» в iOS: при прокрутке полоса с днями прилипает к верху на стекле,
   // а заголовок недели сжимается. Порог с запасом (56 / 8 px), чтобы не дрожало на границе.
-  let barSmall = false, barEl = null, barAnims = [], barTop = 0;
-  // v1.8.8: размеры шапки меняются сразу (раскладка пересчитывается один раз), а глазу движение доигрывается
-  // сдвигом и масштабом (translate/scale) — их телефон считает на видеокарте. Раньше плавно менялись
-  // font-size/width/height/margin, и 0,45 с вся страница пересчитывалась на каждом кадре прокрутки.
-  const CAN_FLIP = typeof Element.prototype.animate === "function" && !!(window.CSS && CSS.supports
-    && CSS.supports("translate", "1px 1px") && CSS.supports("scale", "1 1"));
+  // v2.1.6: сжатие — только сдвиг, масштаб и прозрачность (класс .vsmall), раскладка шапки не меняется вообще.
+  // Раньше на пороге менялись размеры (класс .small), и в обработчике прокрутки шли пересчёт стилей, два прохода
+  // замеров и запуск анимаций — 12 мс, кадр на iPhone длился 45–49 мс (2–3 потерянных кадра при каждом
+  // сжатии/разжатии). Теперь насколько сдвинуть и сжать каждую часть шапки, меряется один раз (сжатый вид
+  // по-прежнему задаёт .small — его включаем только на время замера), а на пороге лишь меняется класс:
+  // переходы transform/opacity считает видеокарта.
+  let barSmall = false, barEl = null, barTop = 0;
+  const CAN_FLIP = !!(window.CSS && CSS.supports && CSS.supports("translate", "1px 1px") && CSS.supports("scale", "1 1"));
+  function barGeo(bar) {
+    if (bar.__geo) return;
+    const wr = bar.querySelector(".whead h1.wr"), acts = [...bar.querySelectorAll(".whead .top-actions > *")], days = bar.querySelector(".days");
+    const els = [wr, ...acts, days].filter(Boolean);
+    const ext = -(parseFloat(getComputedStyle(bar, "::before").bottom) || 0);   // у «Стекла» фон ниже шапки
+    const r0 = els.map((e) => e.getBoundingClientRect()), b0 = bar.getBoundingClientRect();
+    bar.classList.add("small");
+    const r1 = els.map((e) => e.getBoundingClientRect()), b1 = bar.getBoundingClientRect();
+    bar.classList.remove("small");
+    els.forEach((e, i) => {
+      const a = r0[i], z = r1[i];
+      const ky = a.height ? z.height / a.height : 1, kx = e === days ? 1 : ky;   // текст и кнопки — без искажения
+      e.style.setProperty("--bx", `${(z.left - a.left).toFixed(2)}px`);
+      e.style.setProperty("--by", `${(z.top - b1.top - (a.top - b0.top)).toFixed(2)}px`);
+      e.style.setProperty("--bk", `${kx.toFixed(4)} ${ky.toFixed(4)}`);
+      if (e === days) days.style.setProperty("--bi", `1 ${(1 / (ky || 1)).toFixed(4)}`);   // цифры дней не сплющиваются
+    });
+    bar.style.setProperty("--bb", `1 ${((b1.height + ext) / ((b0.height + ext) || 1)).toFixed(4)}`);
+    bar.__geo = true;
+  }
   function syncBar() {
     const bar = app.querySelector(".sbar");
     if (!bar) return;
@@ -4807,80 +4843,20 @@ window.__appStart = () => {
     // v1.9.5: «прилипла» — только когда полоса и правда стоит у верхнего края. У преподавателя над ней карточка,
     // и раньше фон полосы появлялся уже при y > 2 — посреди страницы, резкой линией поперёк цветной подсветки
     if (fresh) barTop = parseFloat(getComputedStyle(bar).top) || 0;
-    bar.classList.toggle("stuck", y > 2 && (bar === app.firstElementChild || bar.getBoundingClientRect().top <= barTop + 1));   // шапка только что нарисована — ставим нужный размер без анимации
+    bar.classList.toggle("stuck", y > 2 && (bar === app.firstElementChild || bar.getBoundingClientRect().top <= barTop + 1));
     barEl = bar;
-    if (bar.classList.contains("small") === barSmall) return;
-    const small = barSmall;
-    if (fresh) { setBarSmall(bar, small); return; }
-    flipBar(bar, small);
+    if (bar.classList.contains("vsmall") === barSmall) return;
+    if (barSmall) barGeo(bar);
+    if (fresh || REDUCED || !CAN_FLIP) {   // шапка только что нарисована — сразу нужный вид, без анимации
+      bar.classList.add("bnoanim");
+      bar.classList.toggle("vsmall", barSmall);
+      void bar.offsetWidth;
+      bar.classList.remove("bnoanim");
+    } else bar.classList.toggle("vsmall", barSmall);
   }
-  // v2.1.5: шапка сжимается/разжимается, а лента под ней остаётся на месте — разницу высоты держит отступ под
-  // шапкой. Раньше всё ниже шапки сдвигалось на её разницу (~40 точек) и доезжало анимацией 0,45 с прямо во время
-  // прокрутки пальцем — на видео с iPhone это и было «дёргается, когда прокручиваешь вниз»
-  function setBarSmall(bar, small, h0) {
-    bar.style.marginBottom = "";
-    if (!small) { bar.classList.remove("small"); return; }
-    if (h0 == null) { bar.classList.remove("small"); h0 = bar.getBoundingClientRect().height; }
-    const base = parseFloat(getComputedStyle(bar).marginBottom) || 0;
-    bar.classList.add("small");
-    const d = h0 - bar.getBoundingClientRect().height;
-    if (d > 0.5) bar.style.marginBottom = `${base + d}px`;
-  }
-  function flipBar(bar, small) {
-    const days = bar.querySelector(".days"), eb = bar.querySelector(".whead .eyebrow");
-    const els = [...bar.querySelectorAll(".whead h1.wr, .whead .top-actions > *"), days].filter(Boolean);
-    // «было» — с учётом ещё не доигранного движения (если шапку дёрнули обратно на полпути)
-    const first = els.map((el) => el.getBoundingClientRect());
-    const b0 = bar.getBoundingClientRect(), e0 = eb && eb.getBoundingClientRect();
-    barAnims.forEach((a) => a.cancel());
-    barAnims = [];
-    setBarSmall(bar, small, small ? b0.height : null);
-    pagerGeo = null;
-    if (REDUCED || !CAN_FLIP) return;
-    // «стало» — все замеры одним проходом, потом только анимации (они раскладку не трогают)
-    const last = els.map((el) => el.getBoundingClientRect());
-    const b1 = bar.getBoundingClientRect();
-    const ext = -(parseFloat(getComputedStyle(bar, "::before").bottom) || 0);   // у «Стекла» фон ниже шапки на 14 px
-    const pg = pagerEl();
-    if (pg) pagerGeo = { pg, top: pg.getBoundingClientRect().top + window.scrollY, pad: parseFloat(getComputedStyle(app).paddingBottom) || 0 };
-    const opt = { duration: 450, easing: springEase() };
-    const run = (el, kf, o) => { try { const a = el.animate(kf, { ...opt, ...o }); barAnims.push(a); return a; } catch (e) { return null; } };
-    els.forEach((el, i) => {
-      const f = first[i], l = last[i];
-      const dx = f.left - l.left, dy = f.top - l.top;
-      const inBar = bar.contains(el), k = inBar && l.height ? f.height / l.height : 1;
-      const sx = inBar && el !== days ? k : 1;   // заголовок и кнопки — без искажения, полоса дней — только по высоте
-      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(k - 1) < 0.002) return;
-      run(el, [{ translate: `${dx}px ${dy}px`, scale: `${sx} ${k}`, transformOrigin: "0 0" },
-        { translate: "0px 0px", scale: "1 1", transformOrigin: "0 0" }]);
-      // цифры дней не сплющиваются: обратный масштаб (по шагам — чтобы произведение всё время было ≈ 1)
-      if (el === days && Math.abs(k - 1) >= 0.002) {
-        const inv = [];
-        for (let j = 0; j <= 10; j++) inv.push({ scale: `1 ${1 / (k + (1 - k) * j / 10)}`, offset: j / 10 });
-        days.querySelectorAll(":scope > .day, .days-on-in").forEach((c) => run(c, inv));
-      }
-    });
-    // фон шапки (слой ::before) — масштабом от верха
-    if (Math.abs(b0.height - b1.height) > 0.5) {
-      const k = (b0.height + ext) / (b1.height + ext || 1);
-      run(bar, [{ scale: `1 ${k}`, transformOrigin: "50% 0" }, { scale: "1 1", transformOrigin: "50% 0" }], { pseudoElement: "::before" });
-    }
-    // подпись над неделей: при сжатии её копия гаснет на старом месте, при разжатии подпись проявляется
-    if (eb && e0) {
-      if (small && e0.height) {
-        const g = eb.cloneNode(true);
-        g.setAttribute("aria-hidden", "true");
-        Object.assign(g.style, { position: "absolute", left: `${e0.left - b1.left}px`, top: `${e0.top - b1.top}px`, width: `${e0.width}px`,
-          maxHeight: "none", opacity: "1", margin: "0", pointerEvents: "none" });
-        eb.parentNode.appendChild(g);
-        const a = run(g, [{ opacity: 1, translate: "0px 0px" }, { opacity: 0, translate: "0px -6px" }], { duration: 200, easing: "ease-out", fill: "forwards" });
-        const rm = () => g.remove();
-        if (a) a.finished.then(rm, rm); else rm();
-      } else if (!small) {
-        run(eb, [{ opacity: 0, translate: "0px -6px" }, { opacity: 1, translate: "0px 0px" }], { duration: 260, delay: 60, easing: "ease-out", fill: "backwards" });
-      }
-    }
-  }
+  window.addEventListener("resize", () => { const bar = app.querySelector(".sbar"); if (!bar || !bar.__geo) return;
+    const was = bar.classList.contains("vsmall"); bar.classList.add("bnoanim"); bar.classList.remove("vsmall"); bar.__geo = false;
+    if (was) { barGeo(bar); bar.classList.add("vsmall"); } void bar.offsetWidth; bar.classList.remove("bnoanim"); }, { passive: true });
   window.addEventListener("scroll", syncBar, { passive: true });
 
   // ---------------- события ----------------

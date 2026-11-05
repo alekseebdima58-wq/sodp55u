@@ -93,7 +93,7 @@ for (const theme of ['dark', 'light']) {
   const p = await c.newPage(); p.on('pageerror', (e) => errs.push(String(e.message)));
   await p.route(/fonts\.g|telegram\.org|telegram-web-app\.js|ntfy/, (r) => r.abort());
   await p.goto('http://localhost:8772/?now=2026-10-22T10:00'); await p.waitForSelector('.week'); await sleep(800);
-  const at = () => p.evaluate(() => ({ y: Math.round(document.querySelector('[data-cur] .dayhead').getBoundingClientRect().top + scrollY), small: document.querySelector('.sbar').classList.contains('small') }));
+  const at = () => p.evaluate(() => ({ y: Math.round(document.querySelector('[data-cur] .dayhead').getBoundingClientRect().top + scrollY), small: document.querySelector('.sbar').classList.contains('vsmall') }));
   const a0 = await at(); const seq = [];
   for (const y of [70, 160, 30, 3, 0]) { await p.evaluate((y) => scrollTo(0, y), y); await sleep(550); seq.push(await at()); }
   ok(seq[0].small && !seq[3].small && seq.every((x) => Math.abs(x.y - a0.y) <= 1), 'шапка сжалась и разжалась — лента под ней на месте', { a0, seq });
