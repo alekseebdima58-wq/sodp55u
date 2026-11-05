@@ -1720,6 +1720,10 @@ html.glass.gpic .topveil { background: var(--g-img) 0 0 / 100% var(--bd-h, 100vh
 /* v2.1.13: у шапки снизу была тёмная растушёвка в 12 точек (из цвета фона в прозрачность) — на цветном фоне
    она рисовала заметную полосу поперёк экрана. С общим фоном растушёвка не нужна: шва нет */
 html.glass.gpic .topveil::after { display: none; }
+/* v2.1.14: когда шапка прилипла, её стекло затемняет фон (--g-bar) — полоса под часами темнеет так же и вместе с ней */
+html.glass.gpic .topveil::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--g-bar);
+  opacity: 0; transition: opacity .2s ease; }
+html.glass.gpic .topveil.dim::before { opacity: 1; }
 
 /* окно «Установка на главный экран» — непрозрачное: под ним экран расписания, текст не должен просвечивать */
 html.glass[data-theme="dark"] .isheet { background: linear-gradient(160deg, #1B1D23, #121317); border-color: transparent;
@@ -2250,7 +2254,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.13";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.14";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4844,6 +4848,7 @@ window.__appStart = () => {
   // по-прежнему задаёт .small — его включаем только на время замера), а на пороге лишь меняется класс:
   // переходы transform/opacity считает видеокарта.
   let barSmall = false, barEl = null, barTop = 0;
+  const veil = document.querySelector(".topveil");
   const CAN_FLIP = !!(window.CSS && CSS.supports && CSS.supports("translate", "1px 1px") && CSS.supports("scale", "1 1"));
   function barGeo(bar) {
     if (bar.__geo) return;
@@ -4880,7 +4885,11 @@ window.__appStart = () => {
       // (замер на iPhone: рывок в начале первого сжатия шапки)
       if (CAN_FLIP && !REDUCED) setTimeout(() => { if (bar.isConnected && !bar.__geo && !bar.classList.contains("vsmall") && !scrolling && !pagerTouch) barGeo(bar); }, 600);
     }
-    bar.classList.toggle("stuck", y > 2 && (bar === app.firstElementChild || bar.getBoundingClientRect().top <= barTop + 1));
+    const stuck = y > 2 && (bar === app.firstElementChild || bar.getBoundingClientRect().top <= barTop + 1);
+    bar.classList.toggle("stuck", stuck);
+    // v2.1.14: полоса под часами темнеет вместе со стеклом шапки — иначе по верхнему краю шапки шла граница
+    // (сверху — яркий фон, ниже — затемнённое стекло)
+    if (veil) veil.classList.toggle("dim", stuck);
     barEl = bar;
     if (bar.classList.contains("vsmall") === barSmall) return;
     if (barSmall) barGeo(bar);
