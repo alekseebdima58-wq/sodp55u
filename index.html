@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="ae4028f77323">
+<meta name="app-ver" content="ca53b10c8d53">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -1718,7 +1718,10 @@ html.glass #splash { background: var(--g-img), var(--bg); }
 html.glass.gpic body::before { background: var(--g-img) 0 0 / 100% 100% no-repeat; opacity: 1; -webkit-mask-image: none; mask-image: none; }
 html.glass.gpic :is(.under, #appbg, #splash) { background: var(--g-img) 0 0 / 100% 100% no-repeat, var(--bg); }
 /* v2.1.4: шапка под часами — тот же фон, что и под ней (раньше — сплошная чёрная полоса) */
-html.glass.gpic .topveil { background: var(--g-img) 0 0 / 100% 100vh no-repeat, var(--bg); }
+html.glass.gpic .topveil { background: var(--g-img) 0 0 / 100% var(--bd-h, 100vh) no-repeat, var(--bg); }
+/* v2.1.13: у шапки снизу была тёмная растушёвка в 12 точек (из цвета фона в прозрачность) — на цветном фоне
+   она рисовала заметную полосу поперёк экрана. С общим фоном растушёвка не нужна: шва нет */
+html.glass.gpic .topveil::after { display: none; }
 
 /* окно «Установка на главный экран» — непрозрачное: под ним экран расписания, текст не должен просвечивать */
 html.glass[data-theme="dark"] .isheet { background: linear-gradient(160deg, #1B1D23, #121317); border-color: transparent;
@@ -2249,7 +2252,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.12";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.13";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2572,6 +2575,10 @@ window.__appStart = () => {
       const veil = probe.getBoundingClientRect().height || 0;
       probe.remove();
       const key = [W, H, A, B, C, BG, op, Math.round(veil)].join("|");
+      // v2.1.13: шапка под часами растягивает ту же картинку на ту же высоту, что и фон под ней (100vh на iPhone
+      // бывает не равна высоте окна — картинки не совпадали, и по краю шапки шла видимая граница)
+      const bh = `${Math.round(innerHeight)}px`;
+      if (ROOT.style.getPropertyValue("--bd-h") !== bh) ROOT.style.setProperty("--bd-h", bh);
       if (key === bdKey) return;
       bdKey = key;
       const cw = Math.ceil(W / 2), ch = Math.ceil(H / 2);
