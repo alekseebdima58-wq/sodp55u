@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="40d5f2fcd955">
+<meta name="app-ver" content="7d8b97ea8471">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -2245,7 +2245,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.10";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.11";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2722,6 +2722,7 @@ window.__appStart = () => {
   // v2.1: подложка уезжающего экрана — его фон и тень (см. css/05: раньше это был #app::before)
   const appBg = (() => { const e = document.createElement("div"); e.id = "appbg"; e.setAttribute("aria-hidden", "true"); app.before(e); return e; })();
   function navLayers(entry) {
+    perfAct("переход");
     ROOT.classList.add("swiping", "nav-anim");
     const under = document.createElement("div");
     under.className = "under";
@@ -3419,6 +3420,7 @@ window.__appStart = () => {
     const backBtn = inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${I.left}</button>`;
     const upd = x && x.updated ? `Обновлено ${fmtAgo(x.updated)}` : "";
     let html = `<div class="top"><div style="display:flex;align-items:center;gap:10px">${backBtn}<div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Статистика</h1></div></div></div>`;
+    html += perfHTML();
     if (!x) { app.innerHTML = html + `<div class="empty"><div class="h">Сводки пока нет</div><div class="p">Бот выкладывает её раз в полчаса. Потяните экран вниз, чтобы проверить.</div></div>`; return; }
     const n = (v) => +v || 0;
     const dev = (k) => plural(k, "устройство", "устройства", "устройств");
@@ -4868,6 +4870,7 @@ window.__appStart = () => {
     barEl = bar;
     if (bar.classList.contains("vsmall") === barSmall) return;
     if (barSmall) barGeo(bar);
+    perfAct("шапка");
     if (fresh || REDUCED || !CAN_FLIP) {   // шапка только что нарисована — сразу нужный вид, без анимации
       bar.classList.add("bnoanim");
       bar.classList.toggle("vsmall", barSmall);
@@ -4920,6 +4923,10 @@ window.__appStart = () => {
     } else if (act === "srange") {
       const r = +el.dataset.v;
       if (r !== statsRange) { haptic("light"); statsRange = r; statsPick = -1; store.set("statsRange", String(r)); const y = window.scrollY; render(); window.scrollTo(0, y); }
+    } else if (act === "perfcopy") {
+      perfCopy(el);
+    } else if (act === "perfreset") {
+      PERF.reset(); haptic("light"); render();
     } else if (act === "stats") {
       haptic("light");
       statsPick = -1;
@@ -5045,6 +5052,7 @@ window.__appStart = () => {
   tabs.forEach((b) => b.addEventListener("click", () => {
     if (navBusy) return;   // пока экран едет, вкладки не переключаем
     const t = b.dataset.tab;
+    perfAct("вкладка");
     haptic("select");
     if (t === "schedule") {
       if (view === "schedule") goToday();
@@ -5114,6 +5122,7 @@ window.__appStart = () => {
   // ---------------- раскрытие карточки пары ----------------
   // Меняем только эту карточку и плавно тянем её высоту — остальной экран не перерисовываем
   function toggleCard(key) {
+    perfAct("карточка");
     opened.has(key) ? opened.delete(key) : opened.add(key);
     haptic("select");
     const isTeacher = view === "teacher";
@@ -6450,6 +6459,7 @@ window.__appStart = () => {
     const W = () => app.getBoundingClientRect().width || innerWidth;
     const unlockPager = () => { if (lockedPager) { lockedPager.style.overflowX = ""; lockedPager = null; } };
     function begin() {
+      perfAct("свайп назад");
       ROOT.classList.add("swiping");
       const e = stack[stack.length - 1];
       under = document.createElement("div");
@@ -6636,6 +6646,135 @@ window.__appStart = () => {
     const sync = () => { try { Gesture.zones(app); Gesture.edge(!inTG && stack.length > 0); } catch (e) { /* без этого — как раньше */ } };
     onAppDom(sync);
     sync();
+  }
+  // ---------------- замер плавности (v2.1.11) ----------------
+  // Пока что-то движется (касание, листание, прокрутка, переход, раскрытие карточки), приложение считает кадры:
+  // сколько их было, сколько длиннее 25 и 40 мс, самый долгий и в какой части движения он был, сколько «лишних»
+  // миллисекунд набежало сверх ровных кадров. Отдельно — сколько длился сам обработчик нажатия.
+  // Всё складывается по «экран · действие» в хранилище телефона; в «Статистике» — кнопка «Скопировать отчёт».
+  // В покое замер не работает вообще; во время движения — один requestAnimationFrame на кадр.
+  const PERF = (() => {
+    const KEY = "perf2";
+    let box = {};
+    try { box = JSON.parse(store.get(KEY) || "{}") || {}; } catch (e) { box = {}; }
+    if (!box.v) box = { v: 1, since: Date.now(), acts: {}, taps: {}, gaps: [0, 0, 0, 0, 0, 0] };
+    let saveT = 0;
+    const save = () => { if (saveT) return; saveT = setTimeout(() => { saveT = 0; store.set(KEY, JSON.stringify(box)); }, 1500); };
+    // чем выше в списке, тем точнее название: если за одно движение сработало несколько — берём самое точное
+    const RANK = ["касание", "прокрутка", "прокрутка списка", "листание дней", "шапка", "вкладка", "карточка", "переход", "свайп назад"];
+    let cur = null, raf = 0, lastTs = 0, until = 0;
+    const scr = () => (typeof view === "string" ? view : "?");
+    function act(label) {
+      if (document.hidden || !window.requestAnimationFrame) return;
+      const now = performance.now();
+      until = Math.max(until, now + 450);
+      if (cur && RANK.indexOf(label) > RANK.indexOf(cur.label)) cur.label = label;
+      if (!cur) cur = { label, scr: scr(), t0: now, frames: 0, f25: 0, f40: 0, max: 0, maxAt: 0, extra: 0, end: now,
+        hero: !!app.querySelector(".hero"), anims: 0 };
+      if (!raf) { lastTs = 0; raf = requestAnimationFrame(step); }
+    }
+    function step(ts) {
+      raf = 0;
+      if (!cur) return;
+      if (document.hidden) { cur = null; return; }   // свернули посреди движения — не в счёт
+      if (lastTs) {
+        const g = ts - lastTs;
+        cur.frames++;
+        if (g > 25) cur.f25++;
+        if (g > 40) cur.f40++;
+        if (g > cur.max) { cur.max = g; cur.maxAt = lastTs - cur.t0; }
+        if (g > 20) cur.extra += g - 16.7;
+        const b = g < 12 ? 0 : g < 20 ? 1 : g < 25 ? 2 : g < 40 ? 3 : g < 70 ? 4 : 5;
+        box.gaps[b]++;
+        cur.end = ts;
+      }
+      lastTs = ts;
+      if (cur.frames === 2) { try { cur.anims = document.getAnimations ? document.getAnimations().length : 0; } catch (e) { /* нет */ } }
+      if (ts < until) raf = requestAnimationFrame(step);
+      else flush();
+    }
+    function flush() {
+      const c = cur;
+      cur = null;
+      if (!c || c.frames < 3) return;
+      const k = `${c.scr} · ${c.label}`;
+      const a = box.acts[k] || (Object.keys(box.acts).length < 40 ? (box.acts[k] = { n: 0, fr: 0, f25: 0, f40: 0, max: 0, ex: 0, pos: [0, 0, 0], hero: 0, anims: 0 }) : null);
+      if (!a) return;
+      const span = Math.max(1, c.end - c.t0), p = c.maxAt / span;
+      a.n++; a.fr += c.frames; a.f25 += c.f25; a.f40 += c.f40; a.ex += Math.round(c.extra);
+      a.max = Math.max(a.max, Math.round(c.max));
+      if (c.max > 25) a.pos[p < 0.3 ? 0 : p > 0.75 ? 2 : 1]++;
+      if (c.hero) a.hero++;
+      a.anims = Math.max(a.anims, c.anims);
+      save();
+    }
+    // нажатия: сколько длился обработчик (от первого до последнего слушателя у окна)
+    let tapT = 0, tapName = "";
+    window.addEventListener("click", (e) => {
+      tapT = performance.now();
+      const t = e.target && e.target.closest && e.target.closest("[data-act], [data-tab]");
+      tapName = `${scr()} · ${t ? (t.dataset.act || "вкладка " + t.dataset.tab) : "—"}`;
+    }, true);
+    window.addEventListener("click", () => {
+      if (!tapT) return;
+      const d = performance.now() - tapT;
+      tapT = 0;
+      const r = box.taps[tapName] || (Object.keys(box.taps).length < 30 ? (box.taps[tapName] = [0, 0, 0]) : null);
+      if (!r) return;
+      r[0]++; r[1] += Math.round(d * 10) / 10; r[2] = Math.max(r[2], Math.round(d));
+      save();
+    });
+    // что считать движением
+    document.addEventListener("touchstart", () => act("касание"), { capture: true, passive: true });
+    document.addEventListener("touchmove", () => act("касание"), { capture: true, passive: true });
+    document.addEventListener("scroll", (e) => {
+      const t = e.target;
+      act(t === document || t === document.documentElement ? "прокрутка" : t && t.matches && t.matches("[data-pager]") ? "листание дней" : "прокрутка списка");
+    }, { capture: true, passive: true });
+    function report() {
+      const lines = [];
+      const ua = navigator.userAgent, ios = (ua.match(/OS (\d+)_(\d+)/) || []).slice(1).join(".") || "?";
+      const g = box.gaps, all = g.reduce((s, x) => s + x, 0) || 1;
+      const hz = g[0] > g[1] ? "120 Гц" : "60 Гц";
+      const d = (t) => { const x = new Date(t); return `${String(x.getDate()).padStart(2, "0")}.${String(x.getMonth() + 1).padStart(2, "0")} ${String(x.getHours()).padStart(2, "0")}:${String(x.getMinutes()).padStart(2, "0")}`; };
+      lines.push(`Отчёт плавности · ${typeof APP_LABEL === "string" ? APP_LABEL : "?"} · iOS ${ios} · ${screen.width}×${screen.height}@${window.devicePixelRatio || 1} · ${hz} · ${STANDALONE ? "ярлык" : inTG ? "Telegram" : "браузер"} · ${d(box.since)} – ${d(Date.now())}`);
+      lines.push(`кадры: <12 мс ${g[0]} · 12–20 ${g[1]} · 20–25 ${g[2]} · 25–40 ${g[3]} · 40–70 ${g[4]} · >70 ${g[5]} (длиннее 25 мс — ${Math.round((g[3] + g[4] + g[5]) / all * 1000) / 10}%)`);
+      lines.push("");
+      lines.push("экран · действие | раз | кадров | >25 мс | >40 мс | макс | где макс н/с/к | лишних мс | с «Сейчас» | анимаций");
+      const acts = Object.entries(box.acts).sort((a, b) => b[1].ex - a[1].ex);
+      for (const [k, a] of acts) lines.push(`${k} | ${a.n} | ${a.fr} | ${a.f25} | ${a.f40} | ${a.max} | ${a.pos.join("/")} | ${a.ex} | ${a.hero} | ${a.anims}`);
+      lines.push("");
+      lines.push("нажатие (экран · кнопка) | раз | среднее мс | макс мс");
+      const taps = Object.entries(box.taps).sort((a, b) => b[1][2] - a[1][2]);
+      for (const [k, r] of taps) lines.push(`${k} | ${r[0]} | ${Math.round(r[1] / r[0] * 10) / 10} | ${r[2]}`);
+      return lines.join("\n");
+    }
+    function reset() { box = { v: 1, since: Date.now(), acts: {}, taps: {}, gaps: [0, 0, 0, 0, 0, 0] }; store.set(KEY, JSON.stringify(box)); }
+    return { act, report, reset, count: () => Object.values(box.acts).reduce((s, a) => s + a.n, 0) };
+  })();
+  window.perfReport = () => PERF.report();   // для проверки
+  function perfAct(label) { try { PERF.act(label); } catch (e) { /* замер не должен ничего ломать */ } }
+  function perfHTML() {
+    const n = PERF.count();
+    return `<div class="list" style="margin:14px 0 6px"><div class="srow"><div class="body"><span class="nm">Замер плавности</span>
+      <span class="sub">${n ? `Записано движений: ${n}` : "Пока ничего не записано — просто пользуйтесь приложением"}</span></div></div>
+      <button class="item" data-act="perfcopy"><span class="body"><span class="nm">Скопировать отчёт</span></span></button>
+      <button class="item" data-act="perfreset"><span class="body"><span class="nm">Начать замер заново</span></span></button></div>`;
+  }
+  async function perfCopy(btn) {
+    const text = PERF.report();
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (e) { /* ниже — запасной способ */ }
+    if (!ok) {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;left:0;top:0;opacity:0;";
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      ta.remove();
+    }
+    const nm = btn && btn.querySelector(".nm");
+    if (nm) { nm.textContent = ok ? "Скопировано — вставьте в чат" : "Не удалось скопировать"; setTimeout(() => { nm.textContent = "Скопировать отчёт"; }, 2500); }
+    haptic(ok ? "light" : "heavy");
   }
 };
 window.__boot();
