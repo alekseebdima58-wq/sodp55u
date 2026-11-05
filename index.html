@@ -1047,6 +1047,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
+
 /* ================= «Жидкое стекло» (как в iOS 26) =================
    Плавающие элементы — нижняя панель, кнопки шапки, полоса дней, плашки — из «стекла»:
    просвечивают и размывают то, что под ними, сверху блик, по краю — светлая кромка. */
@@ -2242,7 +2243,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.9";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.10";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -5445,7 +5446,8 @@ window.__appStart = () => {
     const c = curPos();
     if (!c || !pillPos.length) return;
     const f = pg.scrollLeft / (pg.clientWidth || 1) - c.p.w * 7;
-    pillGlide(Math.round(Math.max(0, Math.min(6, f))));
+    // v2.1.10: таблетка снова идёт за лентой, как до v2.1.7 (переезд «к ближайшему дню» смотрелся неестественно)
+    putPill(Math.max(0, Math.min(6, f)));
   }
   function markDay(d) {   // подсветка дня в полосе — как только понятно, куда приехали
     const c = curPos();
@@ -5637,7 +5639,7 @@ window.__appStart = () => {
       putPill(pillFrom);
       if (pl) gpuMove([pl, on, on && on.firstElementChild], () => putPill(np.d), 380,
         typeof springEase === "function" ? springEase() : "cubic-bezier(.22, 1, .36, 1)");
-    } else if (sameWeek) pillGlide(np.d);
+    } else if (sameWeek) putPill(np.d);
     pagerScrollToCurrent(pg);
     lastX = pg.scrollLeft;
     pagerFillLater(pg);
