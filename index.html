@@ -505,6 +505,10 @@ html, body { overflow-x: clip; }
 
 /* слои перехода — сразу на видеокарте, ещё до начала движения */
 .under, .under-dim { will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+
+/* v2.1.12: родная «резинка» страницы по вертикали выключена всегда — сверху её заменяет «потяни — обновится».
+   Раньше её выключали только на время касания у верха, а смена стиля <html> перерисовывала весь экран */
+html { overscroll-behavior-y: none; }
 /* ---------- настройки ---------- */
 .pad { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 .lbl15 { font-size: calc(15px * var(--fs, 1)); font-weight: 500; }
@@ -2243,7 +2247,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.11";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.12";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -4863,7 +4867,12 @@ window.__appStart = () => {
     const fresh = bar !== barEl;
     // v1.9.5: «прилипла» — только когда полоса и правда стоит у верхнего края. У преподавателя над ней карточка,
     // и раньше фон полосы появлялся уже при y > 2 — посреди страницы, резкой линией поперёк цветной подсветки
-    if (fresh) barTop = parseFloat(getComputedStyle(bar).top) || 0;
+    if (fresh) {
+      barTop = parseFloat(getComputedStyle(bar).top) || 0;
+      // v2.1.12: замер сжатой шапки — заранее, в спокойный момент после отрисовки, а не в первом кадре прокрутки
+      // (замер на iPhone: рывок в начале первого сжатия шапки)
+      if (CAN_FLIP && !REDUCED) setTimeout(() => { if (bar.isConnected && !bar.__geo && !bar.classList.contains("vsmall") && !scrolling && !pagerTouch) barGeo(bar); }, 600);
+    }
     bar.classList.toggle("stuck", y > 2 && (bar === app.firstElementChild || bar.getBoundingClientRect().top <= barTop + 1));
     barEl = bar;
     if (bar.classList.contains("vsmall") === barSmall) return;
@@ -5247,9 +5256,12 @@ window.__appStart = () => {
     const glowDone = () => { if (glowFx) { glowFx.g.remove(); if (glowFx.edge) glowFx.edge.remove(); fresh.style.isolation = ""; } };
 
     // 1) пары ниже съезжают со старого места на новое
+    // v2.1.12: только те, что видны на экране (или въедут на него). Каждая едущая пара — свой слой видеокарты,
+    // и заводились они все разом в первом кадре: замер на iPhone — 3 медленных кадра в начале почти каждого раскрытия
+    const vh = window.innerHeight + 40;
     after.forEach(([el, top0], i) => {
       const dy = top0 - afterTop[i];
-      if (Math.abs(dy) > 0.5) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], opt);
+      if (Math.abs(dy) > 0.5 && Math.min(top0, afterTop[i]) < vh) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], opt);
     });
     // 2) линия слева растёт/укорачивается вместе с карточкой, кружок на конце остаётся круглым
     if (seg && s0) {
@@ -6389,8 +6401,9 @@ window.__appStart = () => {
       }, ms + 30);
     }
     let armed = false;
-    const ptrArm = (on) => { if (on === armed) return; armed = on; ROOT.style.overscrollBehaviorY = on ? "none" : ""; };
-    window.addEventListener("scroll", () => { if (armed && !busy && !active && window.scrollY > 60) ptrArm(false); }, { passive: true });
+    // v2.1.12: родная «резинка» отключена постоянно, в CSS (css/05). Включать её на время касания у верха
+    // значило менять стиль <html> — замер на iPhone показал рывок в начале прокрутки и листания каждый раз
+    const ptrArm = () => {};
     Gesture.add({
       name: "потяни — обновится",
       prevent: false,
@@ -6655,7 +6668,8 @@ window.__appStart = () => {
     const KEY = "perf2";
     let box = {};
     try { box = JSON.parse(store.get(KEY) || "{}") || {}; } catch (e) { box = {}; }
-    if (!box.v) box = { v: 1, since: Date.now(), acts: {}, taps: {}, gaps: [0, 0, 0, 0, 0, 0] };
+    // новая версия — замер с нуля, чтобы в отчёте не смешивались версии
+    if (!box.v || box.ver !== APP_LABEL) box = { v: 1, ver: APP_LABEL, since: Date.now(), acts: {}, taps: {}, gaps: [0, 0, 0, 0, 0, 0] };
     let saveT = 0;
     const save = () => { if (saveT) return; saveT = setTimeout(() => { saveT = 0; store.set(KEY, JSON.stringify(box)); }, 1500); };
     // чем выше в списке, тем точнее название: если за одно движение сработало несколько — берём самое точное
@@ -6747,7 +6761,7 @@ window.__appStart = () => {
       for (const [k, r] of taps) lines.push(`${k} | ${r[0]} | ${Math.round(r[1] / r[0] * 10) / 10} | ${r[2]}`);
       return lines.join("\n");
     }
-    function reset() { box = { v: 1, since: Date.now(), acts: {}, taps: {}, gaps: [0, 0, 0, 0, 0, 0] }; store.set(KEY, JSON.stringify(box)); }
+    function reset() { box = { v: 1, ver: APP_LABEL, since: Date.now(), acts: {}, taps: {}, gaps: [0, 0, 0, 0, 0, 0] }; store.set(KEY, JSON.stringify(box)); }
     return { act, report, reset, count: () => Object.values(box.acts).reduce((s, a) => s + a.n, 0) };
   })();
   window.perfReport = () => PERF.report();   // для проверки
