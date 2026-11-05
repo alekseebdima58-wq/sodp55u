@@ -1790,13 +1790,13 @@ html.d3.glass[data-theme="light"] .hero { background: linear-gradient(150deg, rg
    .hglow — большое размытое свечение, .hstreak — вытянутый блик-отражение. Оба плывут без остановок по своей
    гладкой случайной траектории; анимацию считает видеокарта (Web Animations: только transform и opacity).
    Острых краёв нет: радиальные градиенты гаснут внутри своего слоя. Здесь — положение «в покое» (без анимации) */
-html.d3 .hero > .hglow, html.d3 .hero > .hstreak { position: absolute; z-index: -1; left: 50%; top: 50%; pointer-events: none; will-change: transform, opacity; }
-html.d3 .hero > .hglow { width: 380px; height: 380px; margin: -190px 0 0 -190px; transform: translate(-20%, -15%); opacity: .8;
+html.d3 .hero .hglow, html.d3 .hero .hstreak { position: absolute; z-index: -1; left: 50%; top: 50%; pointer-events: none; will-change: transform, opacity; }
+html.d3 .hero .hglow { width: 380px; height: 380px; margin: -190px 0 0 -190px; transform: translate(-20%, -15%); opacity: .8;
   background: radial-gradient(circle closest-side, rgba(255, 255, 255, .15), rgba(255, 255, 255, .07) 38%, rgba(255, 255, 255, .02) 68%, transparent); }
-html.d3 .hero > .hstreak { width: 420px; height: 420px; margin: -210px 0 0 -210px; transform: translate(20%, 0) rotate(35deg); opacity: .8;
+html.d3 .hero .hstreak { width: 420px; height: 420px; margin: -210px 0 0 -210px; transform: translate(20%, 0) rotate(35deg); opacity: .8;
   background: radial-gradient(ellipse 15% 46% at 50% 50%, rgba(255, 255, 255, .22), rgba(255, 255, 255, .08) 42%, rgba(255, 255, 255, .02) 72%, transparent); }
-html.d3[data-theme="light"] .hero > .hglow { background: radial-gradient(circle closest-side, rgba(255, 255, 255, .55), rgba(255, 255, 255, .22) 40%, transparent); }
-html.d3[data-theme="light"] .hero > .hstreak { background: radial-gradient(ellipse 15% 46% at 50% 50%, rgba(255, 255, 255, .7), rgba(255, 255, 255, .25) 42%, transparent); }
+html.d3[data-theme="light"] .hero .hglow { background: radial-gradient(circle closest-side, rgba(255, 255, 255, .55), rgba(255, 255, 255, .22) 40%, transparent); }
+html.d3[data-theme="light"] .hero .hstreak { background: radial-gradient(ellipse 15% 46% at 50% 50%, rgba(255, 255, 255, .7), rgba(255, 255, 255, .25) 42%, transparent); }
 
 /* лента: время крупнее, карточки подкрашены цветом типа пары */
 html.d3 .time .st { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
@@ -1821,6 +1821,11 @@ html.d3.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
 .tabs .lens { transform-origin: calc(var(--ti, 0) * 150%) 50%; }
 .tabs .lens.edge { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
 .seg3 .thumb.go.edge { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
+
+/* v2.1.7: вариант «wrap» (см. js/33) — свет в своём слое размером ровно с карточку */
+html.d3 .hero > .hlights { position: absolute; inset: 0; z-index: -1; overflow: hidden; border-radius: inherit; pointer-events: none; will-change: transform; }
+/* вариант «static» — свет нарисован прямо в карточке, без своего слоя */
+html.d3[data-lv="static"] .hero .hglow, html.d3[data-lv="static"] .hero .hstreak { will-change: auto; }
 </style>
 </head>
 <body>
@@ -2236,7 +2241,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.6";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.7";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -5425,7 +5430,7 @@ window.__appStart = () => {
     const c = curPos();
     if (!c || !pillPos.length) return;
     const f = pg.scrollLeft / (pg.clientWidth || 1) - c.p.w * 7;
-    putPill(Math.max(0, Math.min(6, f)));
+    pillGlide(Math.round(Math.max(0, Math.min(6, f))));
   }
   function markDay(d) {   // подсветка дня в полосе — как только понятно, куда приехали
     const c = curPos();
@@ -5614,7 +5619,7 @@ window.__appStart = () => {
       putPill(pillFrom);
       if (pl) gpuMove([pl, on, on && on.firstElementChild], () => putPill(np.d), 380,
         typeof springEase === "function" ? springEase() : "cubic-bezier(.22, 1, .36, 1)");
-    } else if (sameWeek) putPill(np.d);
+    } else if (sameWeek) pillGlide(np.d);
     pagerScrollToCurrent(pg);
     lastX = pg.scrollLeft;
     pagerFillLater(pg);
@@ -5674,9 +5679,11 @@ window.__appStart = () => {
   // Цифры «выбранного» цвета — отдельным слоем поверх, вырезанным точно по форме таблетки:
   // часть цифры над таблеткой — светлая, вне её — обычная (как в переключателях iOS)
   let pillW = 0;
+  let pillShown = -1, pillAnims = [];
   function putPill(f) {
     const el = pillEl(), r = pillAt(f);
     if (!el || !r) return;
+    pillShown = f;
     const x = snap(r.x), w = `${Math.round(r.w)}px`;   // v1.8.8: целые точки — при листании ширина не пишется каждый кадр
     if (el.style.width !== w) el.style.width = w;
     el.style.transform = `translate3d(${x}px,0,0)`;
@@ -5688,6 +5695,27 @@ window.__appStart = () => {
       on.style.transform = `translate3d(${x}px,0,0)`;
       if (on.firstElementChild) on.firstElementChild.style.transform = x ? `translate3d(${-x}px,0,0)` : "none";
     }
+  }
+  // v2.1.7: таблетка не ведётся за лентой кадр за кадром, а переезжает на день, к которому ближе лента.
+  // Положение ленты Safari присылает странице неровно (на записи с iPhone — раз в 25–50 мс), и таблетка
+  // ехала рывками рядом с плавной лентой; плюс каждый такой кадр — пересчёт стилей трёх элементов (3–4 мс).
+  function pillGlide(d) {
+    if (d === pillShown) return;
+    const el = pillEl();
+    if (!el) return;
+    const on = el.parentNode.querySelector(".days-on");
+    const els = [el, on, on && on.firstElementChild].filter(Boolean);
+    const from = els.map((e) => getComputedStyle(e).transform);   // с учётом ещё идущего переезда
+    pillAnims.forEach((a) => a.cancel());
+    pillAnims = [];
+    putPill(d);
+    if (REDUCED) return;
+    const ease = typeof springEase === "function" ? springEase() : "cubic-bezier(.22, 1, .36, 1)";
+    els.forEach((e, i) => {
+      const to = e.style.transform || "none";
+      if (from[i] === to) return;
+      try { pillAnims.push(e.animate([{ transform: from[i] }, { transform: to }], { duration: 320, easing: ease })); } catch (x) { /* сразу на месте */ }
+    });
   }
   function setupPill() {
     const el = pillEl(), c = curPos();
@@ -6328,15 +6356,21 @@ window.__appStart = () => {
       setTimeout(() => {
         app.style.transition = ""; ptr.style.transition = ""; app.style.transform = "";
         ptr.classList.remove("spin"); svgEl.style.transform = ""; busy = false;
-        ROOT.style.overscrollBehaviorY = ""; ROOT.classList.remove("ptr-busy");
+        ROOT.classList.remove("ptr-busy");
       }, ms + 30);
     }
+    let armed = false;
+    const ptrArm = (on) => { if (on === armed) return; armed = on; ROOT.style.overscrollBehaviorY = on ? "none" : ""; };
+    window.addEventListener("scroll", () => { if (armed && !busy && !active && window.scrollY > 60) ptrArm(false); }, { passive: true });
     Gesture.add({
       name: "потяни — обновится",
       prevent: false,
       start(p) {
         if (busy || window.scrollY > 0 || ROOT.classList.contains("swiping") || document.querySelector(".sheet, .iwrap, .onb")) return null;
-        ROOT.style.overscrollBehaviorY = "none";   // родная «резинка» страницы сверху не мешает нашей
+        // родная «резинка» страницы сверху не мешает нашей. v2.1.7: ставится один раз, пока страница наверху,
+        // и снимается, когда ушли вниз. Раньше — при каждом касании и снова при отпускании: смена стиля у <html>
+        // заставляла телефон заново рисовать фон во весь экран и шапку (на записи — по 2 раза на касание)
+        ptrArm(true);
         return {};
       },
       decide(st, dx, dy) {
@@ -6357,13 +6391,13 @@ window.__appStart = () => {
         if ((prog >= 1) !== ready) { ready = prog >= 1; haptic("light"); }
       },
       end(st, info) {
-        if (!info.claimed) { ROOT.style.overscrollBehaviorY = ""; return; }
+        if (!info.claimed) return;
         if (info.cancelled) ready = false;
         end();
       },
     });
     const end = async () => {
-      if (!active) { ROOT.style.overscrollBehaviorY = ""; return; }
+      if (!active) return;
       active = false;
       busy = true;
       ROOT.classList.add("ptr-busy");   // пока экран не вернулся — свайп «назад» не начинаем
@@ -6494,7 +6528,13 @@ window.__appStart = () => {
   // Блок не виден или приложение свёрнуто — анимация на паузе; при «уменьшить движение» свет стоит.
   if (D3) {
     const calm = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
-    const canAnim = !calm && typeof Element.prototype.animate === "function";
+    // v2.1.7: вариант света для проверки на iPhone («Слои» в веб-инспекторе): в консоли
+    //   localStorage.setItem("lv", "wrap")   — свет в своём обрезанном слое размером с карточку
+    //   localStorage.setItem("lv", "static") — свет стоит на месте (без анимации)
+    //   localStorage.removeItem("lv")        — как обычно; после — обновить страницу
+    const LV = (() => { try { return store.get("lv") || ""; } catch (e) { return ""; } })();
+    if (LV) ROOT.dataset.lv = LV;
+    const canAnim = !calm && LV !== "static" && typeof Element.prototype.animate === "function";
     const LOOP = 180;          // секунд до повтора траектории (конец гладко сходится с началом)
     // v2.1.2: шаг 1,5 с вместо 0,2 с — 121 ключевой кадр вместо 901. На записи с iPhone с появлением блока «Сейчас»
     // каждый кадр шёл пересчёт стилей по ~38 мс (в Chromium свет считает видеокарта, в Safari — видимо, нет).
@@ -6536,10 +6576,12 @@ window.__appStart = () => {
       for (const a of anims) { try { a.currentTime = p; if (run) a.play(); else a.pause(); } catch (e) { /* старый браузер */ } }
     }
     function light(hero) {
+      let box = hero;
+      if (LV === "wrap") { box = document.createElement("i"); box.className = "hlights"; box.setAttribute("aria-hidden", "true"); hero.prepend(box); }
       for (const L of LIGHTS) {
         const el = document.createElement("i");
         el.className = L.cls; el.setAttribute("aria-hidden", "true");
-        hero.prepend(el);
+        box.prepend(el);
         if (!canAnim) continue;
         try {
           const a = el.animate(L.frames, { duration: LOOP * 1000, iterations: Infinity, easing: "linear" });
