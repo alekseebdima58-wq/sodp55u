@@ -30,7 +30,8 @@ for (const theme of ['dark', 'light']) {
     x.drawImage(ia, 0, 0); const da = x.getImageData(0, 0, cv.width, cv.height).data;
     x.drawImage(ig, 0, 0); const dg = x.getImageData(0, 0, cv.width, cv.height).data;
     let big = 0, sum = 0, n = 0;
-    for (let i = 0; i < da.length; i += 4) { let m = 0; for (let k = 0; k < 3; k++) { const d = Math.abs(da[i + k] - dg[i + k]); if (d > m) m = d; sum += d; } if (m > 12) big++; n++; }
+    // v2.1.4: верх (под часами) намеренно другой — пятна теперь идут до самого верха; сравниваем ниже 200 точек
+    for (let i = cv.width * 4 * Math.round(200 * cv.width / 390); i < da.length; i += 4) { let m = 0; for (let k = 0; k < 3; k++) { const d = Math.abs(da[i + k] - dg[i + k]); if (d > m) m = d; sum += d; } if (m > 12) big++; n++; }
     return { bigShare: +(big / n * 100).toFixed(3), avg: +(sum / n / 3).toFixed(2) };
   }, [a.toString('base64'), g.toString('base64')]);
   ok(diff.bigShare <= 0.2 && diff.avg <= 1.5, `${theme}: картинка совпадает с прежним фоном (разница цвета в точке)`, diff);
@@ -84,6 +85,28 @@ for (const theme of ['dark', 'light']) {
   await p.tap('.tab[data-tab="teachers"]'); await sleep(800); await p.tap('#app .item >> nth=1'); await sleep(1500);
   const r = await p.evaluate(() => ({ all: window.__all.length, stale: window.__all.filter((a) => a.effect && a.effect.target && !a.effect.target.isConnected && a.playState !== 'idle').length }));
   ok(r.all >= 4 && r.stale === 0, 'свет убранных блоков «Сейчас» остановлен', r);
+  await c.close();
+}
+{
+  // v2.1.5: шапка сжимается/разжимается — лента под ней не сдвигается
+  const c = await b.newContext({ viewport: { width: 390, height: 420 }, hasTouch: true, isMobile: true });
+  const p = await c.newPage(); p.on('pageerror', (e) => errs.push(String(e.message)));
+  await p.route(/fonts\.g|telegram\.org|telegram-web-app\.js|ntfy/, (r) => r.abort());
+  await p.goto('http://localhost:8772/?now=2026-10-22T10:00'); await p.waitForSelector('.week'); await sleep(800);
+  const at = () => p.evaluate(() => ({ y: Math.round(document.querySelector('[data-cur] .dayhead').getBoundingClientRect().top + scrollY), small: document.querySelector('.sbar').classList.contains('small') }));
+  const a0 = await at(); const seq = [];
+  for (const y of [70, 160, 30, 3, 0]) { await p.evaluate((y) => scrollTo(0, y), y); await sleep(550); seq.push(await at()); }
+  ok(seq[0].small && !seq[3].small && seq.every((x) => Math.abs(x.y - a0.y) <= 1), 'шапка сжалась и разжалась — лента под ней на месте', { a0, seq });
+  // v2.1.5: после остановки на дне его соседи (±2) уже достроены
+  await p.evaluate(() => scrollTo(0, 0)); await sleep(300);
+  const r = await p.evaluate(async () => {
+    const pg = document.querySelector('[data-pager]'), w = pg.clientWidth, s = (ms) => new Promise((r) => setTimeout(r, ms));
+    clearTimeout(0); const out = [];
+    for (let k = 1; k <= 4; k++) { pg.scrollLeft = (3 + k) * w; await s(260);
+      const ci = +pg.querySelector(':scope > [data-cur]').dataset.i;
+      out.push({ ci, lazy: [ci - 2, ci - 1, ci + 1, ci + 2].filter((i) => pg.children[i] && pg.children[i].hasAttribute('data-lazy')).length }); }
+    return out; });
+  ok(r.length === 4 && r[3].ci === 7 && r.every((x) => x.lazy === 0), 'листание без пауз: у каждого дня соседи уже готовы', r);
   await c.close();
 }
 ok(!errs.length, 'без ошибок скрипта', errs.slice(0, 3));

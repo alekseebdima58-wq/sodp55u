@@ -989,7 +989,13 @@ button.offline span { min-width: 0; text-wrap: balance; }
 
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
 .ring .arc, .seg .fill, .mark, .nowlbl, .bmark, .bnow { transition-timing-function: var(--ease-spring); }
-.sbar .eyebrow, .sbar h1.wr, .sbar .wbtn, .sbar .icon-btn, .sbar .day, .sbar .whead .top-actions { transition-timing-function: var(--ease-spring); transition-duration: .45s; }
+/* v2.1.5: в шапке недели размеры НЕ анимируются переходами — сжатие/разжатие доигрывает FLIP (js/20) сдвигом
+   и масштабом. Здесь стояли только длительность и кривая без списка свойств — то есть «всё»: при прокрутке вниз
+   0,45 с плавно менялись max-height подписи, размер шрифта заголовка, отступы и размер кнопок — раскладка всей
+   страницы на каждом кадре, а лента под шапкой ползла сама по себе (на видео с iPhone — «дёргается») */
+.sbar .eyebrow, .sbar h1.wr, .sbar .whead .top-actions { transition: none; }
+.sbar .wbtn, .sbar .icon-btn { transition-property: background-color, border-color, color, opacity, box-shadow, transform;
+  transition-duration: .2s, .2s, .2s, .2s, .2s, .5s; }
 
 /* нажатие: элемент чуть проседает и пружинит обратно */
 .day, .btn, .wbtn, .tab, .cc, .item, .sw, .seg3 button, .tlink {
@@ -1689,6 +1695,8 @@ html.glass #splash { background: var(--g-img), var(--bg); }
    перерисовка такого слоя почти бесплатная (три градиента с маской на весь экран — дорого) */
 html.glass.gpic body::before { background: var(--g-img) 0 0 / 100% 100% no-repeat; opacity: 1; -webkit-mask-image: none; mask-image: none; }
 html.glass.gpic :is(.under, #appbg, #splash) { background: var(--g-img) 0 0 / 100% 100% no-repeat, var(--bg); }
+/* v2.1.4: шапка под часами — тот же фон, что и под ней (раньше — сплошная чёрная полоса) */
+html.glass.gpic .topveil { background: var(--g-img) 0 0 / 100% 100vh no-repeat, var(--bg); }
 
 /* окно «Установка на главный экран» — непрозрачное: под ним экран расписания, текст не должен просвечивать */
 html.glass[data-theme="dark"] .isheet { background: linear-gradient(160deg, #1B1D23, #121317); border-color: transparent;
@@ -1799,9 +1807,6 @@ html.d3.glass[data-theme="dark"] .tab.on { color: #FFFFFF; }
 .tabs .lens { transform-origin: calc(var(--ti, 0) * 150%) 50%; }
 .tabs .lens.edge { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
 .seg3 .thumb.go.edge { transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
-
-/* v2.1.2: свет на «Сейчас» выключен в настройках */
-html.nolight .hero > .hglow, html.nolight .hero > .hstreak { display: none; }
 </style>
 </head>
 <body>
@@ -2217,7 +2222,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.1.2";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.1.5";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2555,11 +2560,7 @@ window.__appStart = () => {
       spot(0.25, 1.00, 0.70, 0.45, C);
       spot(1.00, 0.38, 0.55, 0.35, B);
       spot(0.12, 0.08, 0.60, 0.40, A);
-      // под часами пятна плавно сходят на нет (как маска у прежнего фона)
-      o.globalCompositeOperation = "destination-in";
-      const m = o.createLinearGradient(0, (veil + 8) / 2, 0, (veil + 160) / 2);
-      m.addColorStop(0, "rgba(0,0,0,0)"); m.addColorStop(1, "rgba(0,0,0,1)");
-      o.fillStyle = m; o.fillRect(0, 0, cw, ch);
+      // v2.1.4: пятна идут до самого верха — под часами тоже фон (раньше там была чёрная полоса)
       const cv = document.createElement("canvas"); cv.width = cw; cv.height = ch;
       const x = cv.getContext("2d");
       x.fillStyle = `rgb(${BG[0]},${BG[1]},${BG[2]})`; x.fillRect(0, 0, cw, ch);
@@ -4593,9 +4594,6 @@ window.__appStart = () => {
         <div class="seg3" role="group" aria-label="Тема">${opts.map(([v, l]) =>
           `<button data-act="theme" data-v="${v}" aria-pressed="${pref === v}" class="${pref === v ? "on" : ""}">${l}</button>`).join("")}</div></div>
       ${textSizeHTML()}
-      ${D3 ? `<div class="list" style="margin-top:10px"><div class="srow"><div class="body"><span class="nm">Свет на «Сейчас»</span>
-        <span class="sub">Плавающий блик на блоке текущей пары</span></div>
-        <button class="sw" role="switch" data-act="light" aria-checked="${typeof lightOn === "function" ? lightOn() : true}" aria-label="Свет на «Сейчас»"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
       ${fsSupported() ? `<div class="list" style="margin-top:10px"><div class="srow"><div class="body"><span class="nm">Во весь экран</span>
         <span class="sub">Без шапки Telegram, больше места для пар</span></div>
         <button class="sw" role="switch" data-act="fs" aria-checked="${!!tg.isFullscreen}" aria-label="Во весь экран"><span class="tr"><span class="kn"></span></span></button></div></div>` : ""}
@@ -4813,19 +4811,30 @@ window.__appStart = () => {
     barEl = bar;
     if (bar.classList.contains("small") === barSmall) return;
     const small = barSmall;
-    if (fresh) { bar.classList.toggle("small", small); return; }
+    if (fresh) { setBarSmall(bar, small); return; }
     flipBar(bar, small);
+  }
+  // v2.1.5: шапка сжимается/разжимается, а лента под ней остаётся на месте — разницу высоты держит отступ под
+  // шапкой. Раньше всё ниже шапки сдвигалось на её разницу (~40 точек) и доезжало анимацией 0,45 с прямо во время
+  // прокрутки пальцем — на видео с iPhone это и было «дёргается, когда прокручиваешь вниз»
+  function setBarSmall(bar, small, h0) {
+    bar.style.marginBottom = "";
+    if (!small) { bar.classList.remove("small"); return; }
+    if (h0 == null) { bar.classList.remove("small"); h0 = bar.getBoundingClientRect().height; }
+    const base = parseFloat(getComputedStyle(bar).marginBottom) || 0;
+    bar.classList.add("small");
+    const d = h0 - bar.getBoundingClientRect().height;
+    if (d > 0.5) bar.style.marginBottom = `${base + d}px`;
   }
   function flipBar(bar, small) {
     const days = bar.querySelector(".days"), eb = bar.querySelector(".whead .eyebrow");
     const els = [...bar.querySelectorAll(".whead h1.wr, .whead .top-actions > *"), days].filter(Boolean);
-    for (let s = bar.nextElementSibling; s; s = s.nextElementSibling) els.push(s);   // всё ниже шапки съезжает вместе с ней
     // «было» — с учётом ещё не доигранного движения (если шапку дёрнули обратно на полпути)
     const first = els.map((el) => el.getBoundingClientRect());
     const b0 = bar.getBoundingClientRect(), e0 = eb && eb.getBoundingClientRect();
     barAnims.forEach((a) => a.cancel());
     barAnims = [];
-    bar.classList.toggle("small", small);
+    setBarSmall(bar, small, small ? b0.height : null);
     pagerGeo = null;
     if (REDUCED || !CAN_FLIP) return;
     // «стало» — все замеры одним проходом, потом только анимации (они раскладку не трогают)
@@ -4908,11 +4917,6 @@ window.__appStart = () => {
     } else if (act === "notif") {
       haptic("light");
       go("notif", null, true);
-    } else if (act === "light") {
-      haptic("select");
-      const on = !(typeof lightOn === "function" ? lightOn() : true);
-      if (typeof setLight === "function") setLight(on);
-      el.setAttribute("aria-checked", String(on));
     } else if (act === "fs") {
       haptic("select");
       setFullscreen(!tg.isFullscreen);
@@ -5594,7 +5598,8 @@ window.__appStart = () => {
       return;
     }
     const old = pg.querySelector(":scope > [data-cur]"), inc = pg.children[i], oi = curIndex(pg);
-    fillPage(pg, i);
+    // v2.1.5: сразу и соседние дни (±2) — иначе при листании без пауз дальше двух дней от начала шли пустые страницы
+    fillAround(pg, i);
     if (old) {
       old.removeAttribute("data-cur");
       // раскрытые карточки ушедшего дня — свёрнутыми (страница за краем, подмену не видно)
@@ -6543,12 +6548,8 @@ window.__appStart = () => {
     const phase = () => ((pausedAt != null ? pausedAt : performance.now()) - t0) % (LOOP * 1000);
     const anims = new Set();
     const vis = new Set();
-    // v2.1.2: свет можно выключить в «Настройках» (Оформление → «Свет на „Сейчас“»)
-    window.lightOn = () => store.get("light") !== "0";
-    ROOT.classList.toggle("nolight", !lightOn());
-    window.setLight = (on) => { store.set("light", on ? "1" : "0"); ROOT.classList.toggle("nolight", !on); sync(); };
     function sync() {
-      const run = !document.hidden && vis.size > 0 && lightOn();
+      const run = !document.hidden && vis.size > 0;
       // v2.1: свет убранного блока «Сейчас» (другой день, вкладка) — отменяем, а не просто забываем. Анимация на
       // элементе, которого уже нет на странице, продолжала идти: браузер обслуживал её в каждом кадре и пересчитывал
       // стили (на записи с iPhone — по 20–40 мс на кадр, пока на экране есть любой другой движущийся свет)
