@@ -1,9 +1,10 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="066c757e70ae">
+<meta name="app-ver" content="07a45f4324b8">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
@@ -146,7 +147,6 @@ html[data-theme="light"] .day.today:not(.on) :is(.n, .s) { color: #0059DB; }
 .k-prac { --k-fg: var(--prac-fg); --k-bar: var(--prac-bar); --k-rgb: var(--prac-rgb); }
 .k-lab  { --k-fg: var(--lab-fg);  --k-bar: var(--lab-bar);  --k-rgb: var(--lab-rgb); }
 .k-oth  { --k-fg: var(--oth-fg);  --k-bar: var(--oth-bar);  --k-rgb: var(--oth-rgb); }
-
 /* ---------- основа ---------- */
 * { box-sizing: border-box; }
 :root { --side: 20px; }   /* поля по бокам экрана */
@@ -217,7 +217,6 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
 .dayhead h2 { margin: 0;   }
 .tag { font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 3px 9px; border-radius: 999px;   }
 .summary { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
-
 /* ---------- лента пар ---------- */
 .tl { list-style: none; margin: 0; padding: 0; }
 .row, .brk { display: grid; grid-template-columns: 48px 14px minmax(0, 1fr); column-gap: 12px; }
@@ -398,7 +397,6 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
 }
 .tcard .nm { margin: 0; font-size: calc(17px * var(--fs, 1)); font-weight: 600; line-height: 1.3; }
 .tcard .sub { margin-top: 4px; font-size: calc(13px * var(--fs, 1)); color: var(--muted); line-height: 1.4; }
-
 /* ---------- уведомления ---------- */
 .bell { position: relative; }
 .bell .badge {
@@ -569,7 +567,6 @@ html[data-theme="light"] .toast { box-shadow: 0 6px 18px rgba(20, 30, 60, .18); 
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
 }
 .tab.on { color: var(--accent); font-weight: 600; }
-
 /* ================= Оформление 2.0 =================
    Меньше рамок: блоки отделяются тоном фона и мягкой тенью. Крупнее заголовки и номер аудитории,
    дни недели — единой «дорожкой», нижняя панель — плавающая полупрозрачная, как в iOS. */
@@ -669,7 +666,6 @@ h1.wr { font-size: clamp(18px, 5.6vw, 22px); font-weight: 700; letter-spacing: -
 .cc .ln .bar { width: 6px; height: 6px; border-radius: 50%; }
 .cc .rm { font-weight: 600; color: var(--text); }
 .row.past .cc .rm, .row.past .meta > span:first-child { color: var(--past-title); }
-
 /* ================= Стиль «Глубокий чёрный» =================
    Тёмная тема: чистый чёрный фон (на OLED-экране iPhone чёрные точки не светятся), неоновые цвета пар и свечение.
    Светлая — зеркально: чистый белый фон, насыщенные цвета, вместо свечения цветная тень. */
@@ -716,7 +712,6 @@ html[data-theme="light"] .day.today:not(.on) .n, html[data-theme="light"] .day.t
 @media (prefers-reduced-motion: reduce) {
 
 }
-
 /* ================= Современный вид 2026 ================= */
 
 /* --- цвета типов пар (из макета): полоска — насыщенный цвет, подложка — светлая заливка --- */
@@ -984,7 +979,6 @@ button.offline span { min-width: 0; text-wrap: balance; }
 .icpick button.on { border-color: var(--accent); color: var(--text); background: rgba(var(--acc-rgb), .1); }
 .icnote { margin: 10px 2px 0; font-size: calc(13px * var(--fs, 1)); line-height: 1.4; color: var(--muted); }
 @supports (corner-shape: squircle) { .icpick button { corner-shape: squircle; border-radius: 24px; } .icpick button img { corner-shape: squircle; border-radius: 18px; } }
-
 /* ================= Пружины и сквиркл ================= */
 
 /* --- пружинные кривые: рассчитаны из затухающей пружины (перелёт ~4% и ~16%) --- */
@@ -1052,8 +1046,6 @@ button.offline span { min-width: 0; text-wrap: balance; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
-
-
 /* ================= «Жидкое стекло» (как в iOS 26) =================
    Плавающие элементы — нижняя панель, кнопки шапки, полоса дней, плашки — из «стекла»:
    просвечивают и размывают то, что под ними, сверху блик, по краю — светлая кромка. */
@@ -1111,7 +1103,6 @@ html[data-theme="light"] .ibar { background: linear-gradient(180deg, rgba(255, 2
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .tabs, .ibar { background: var(--glass); }
 }
-
 /* ---- экран «Уведомления»: карточки изменений как уведомления iPhone ---- */
 .nsum { margin: 6px 2px 0; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
 .nsum b { color: var(--accent); font-weight: 700; }
@@ -1916,7 +1907,6 @@ window.__appStart = () => {
 
   // Для проверки можно открыть страницу с ?now=2026-10-12T10:52 — время «застынет» на этом моменте
   const NOW_OVERRIDE = new URLSearchParams(location.search).get("now");
-
   // ---------------- формы контроля в сессию ----------------
   // Зимняя сессия 2026/27 — из личного кабинета («Индивидуальная образовательная траектория»).
   // Показываются только у пар группы до конца семестра; к весеннему семестру список нужно заменить.
@@ -1950,7 +1940,6 @@ window.__appStart = () => {
     if (!forms) return null;
     return { exam: forms.includes("exam"), text: "Сессия: " + forms.map((x) => CTL_TEXT[x]).join(", "), short: forms.map((x) => CTL_SHORT[x]).join(" · ") };
   }
-
   // ---------------- иконки ----------------
   const svg = (d, s = 16, w = 2) =>
     `<svg aria-hidden="true" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -1980,7 +1969,6 @@ window.__appStart = () => {
     x: svg('<path d="M18 6 6 18M6 6l12 12"/>', 18),
     swap: svg('<path d="M7 4 3 8l4 4"/><path d="M3 8h13a4 4 0 0 1 4 4"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8a4 4 0 0 1-4-4"/>', 20),
   };
-
   // ---------------- утилиты ----------------
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
     { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -2254,7 +2242,7 @@ window.__appStart = () => {
   function flingAt(k, a) { const u = 1 - k; return 3 * u * u * k * (a / 3) + 3 * u * k * k + k * k * k; }
   // ---------------- настройки уведомлений ----------------
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
-  // ts — когда настройки менялись, k — личный ключ для подписи изменений из приложения.
+  // Личный ключ получается через проверенный initData или подтверждение в чате.
   const QS = new URLSearchParams(location.search);
   const APP_LABEL = "v2.5";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
@@ -2268,8 +2256,12 @@ window.__appStart = () => {
   }
   const nCode = (s) => `${s.on ? s.min : 0}.${+s.morning}.${+s.evening}.${+s.changes}`;
   let nkey = (() => {
-    const k = QS.get("k");
-    if (k && /^[0-9a-f]{32}$/.test(k)) { store.set("nkey", JSON.stringify({ k, u: TG_USER })); return k; }
+    // Old links may still contain a key. Do not trust/import it; remove it from the URL.
+    if (QS.has("k")) {
+      QS.delete("k");
+      const url = new URL(location.href); url.searchParams.delete("k");
+      try { history.replaceState(null, "", url.pathname + url.search + url.hash); } catch (e) {}
+    }
     try {
       const s = JSON.parse(store.get("nkey") || "null");
       if (s && /^[0-9a-f]{32}$/.test(s.k) && (!TG_USER || !s.u || s.u === TG_USER)) return s.k;
@@ -2397,7 +2389,6 @@ window.__appStart = () => {
     if (!m) return "";
     return `${+m[3]} ${MSHORT[+m[2] - 1]} в ${m[4]}:${m[5]}`;
   }
-
   // ---------------- данные ----------------
   const mem = {};
   let index = null;
@@ -2536,7 +2527,6 @@ window.__appStart = () => {
     }
     return res;
   }
-
   // ---------------- тема ----------------
   function themePref() { const p = store.get("theme"); return p === "light" || p === "dark" ? p : "auto"; }
   function effectiveTheme() {
@@ -2630,7 +2620,6 @@ window.__appStart = () => {
       try { tg.setBackgroundColor(bg); } catch (e) { /* старый клиент */ }
     }
   }
-
   // ---------------- состояние и навигация ----------------
   let view = "schedule";      // schedule | teachers | teacher | settings | notif
   let target = "g";           // файл данных: g — группа, tN — преподаватель
@@ -2854,7 +2843,6 @@ window.__appStart = () => {
     const day = week.days.find((x) => x.idx === d);
     return day ? day.lessons : [];
   }
-
   // ---------------- модель дня ----------------
   function dayModel(data, w, d, isTeacher) {
     const week = data.weeks[w];
@@ -3004,7 +2992,6 @@ window.__appStart = () => {
       ? `${a.getUTCDate()} – ${b.getUTCDate()} ${MONTHS[b.getUTCMonth()]}`
       : `${a.getUTCDate()} ${MSHORT[a.getUTCMonth()]} – ${b.getUTCDate()} ${MSHORT[b.getUTCMonth()]}`;
   }
-
   // ---------------- разметка ----------------
   function skeletonHTML() {
     return `<div class="top"><div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Расписание</h1></div></div>
@@ -3164,7 +3151,6 @@ window.__appStart = () => {
     if (view === "stats") return renderStats();
     return renderSchedule(token);
   }
-
   // ---------------- уведомления ----------------
   function changeItems() { return changes && Array.isArray(changes.items) ? changes.items : []; }
   // Лента «Уведомлений»: изменения расписания от бота + то, что приходит на телефон по расписанию —
@@ -3289,14 +3275,25 @@ window.__appStart = () => {
       <span class="nc-subj">${subj}</span>
       <span class="nc-diff">${diff}</span></button>`;
   }
-
   // ---------------- статистика (видна только владельцу) ----------------
   // Раз в день приложение сообщает боту случайный номер этого устройства (не имя и не Telegram),
   // как открыто и какой телефон. Бот считает только числа и выкладывает сводку зашифрованной
   // личным ключом владельца — расшифровать её может только его приложение.
   let adminStats = null;
-  function statSend() {
-    if (!index || !index.relay || !window.crypto || !crypto.getRandomValues) return;
+  async function sendTelemetry(req, beacon = false) {
+    if (!nkey || !index || !index.relay || !window.crypto || !crypto.subtle) return false;
+    try {
+      const kb = Uint8Array.from(nkey.match(/../g).map((h) => parseInt(h, 16)));
+      const u = hex(await sha(kb)).slice(0, 16), t = Date.now(), p = JSON.stringify(req);
+      const h = await hmacRaw(kb, utf8(`telemetry|${t}|${u}|${p}`));
+      const body = JSON.stringify({ q: "telemetry", u, t, p, h });
+      if (beacon && navigator.sendBeacon && navigator.sendBeacon(index.relay, body)) return true;
+      const r = await fetch(index.relay, { method: "POST", body, keepalive: true });
+      return r.ok;
+    } catch (e) { return false; }
+  }
+  async function statSend() {
+    if (!nkey || !index || !index.relay || !window.crypto || !crypto.subtle) return;
     const today = samaraNow().date;
     if (store.get("statDay") === today) return;
     let sid = store.get("sid");
@@ -3305,10 +3302,9 @@ window.__appStart = () => {
       store.set("sid", sid);
       if (store.get("sid") !== sid) return;   // хранилище недоступно — не считаем, иначе каждый запуск — «новое» устройство
     }
-    store.set("statDay", today);
-    const body = JSON.stringify({ q: "stat", d: sid, m: inTG ? "tg" : STANDALONE ? "pwa" : "web",
-      p: IOS ? "ios" : ANDROID ? "android" : "desktop", v: APP_LABEL });
-    fetch(index.relay, { method: "POST", body }).catch(() => fetch(index.relay, { method: "POST", body, mode: "no-cors" }).catch(() => {}));
+    const req = { q: "stat", d: sid, m: inTG ? "tg" : STANDALONE ? "pwa" : "web",
+      p: IOS ? "ios" : ANDROID ? "android" : "desktop", v: APP_LABEL };
+    if (await sendTelemetry(req)) store.set("statDay", today);
   }
   async function openStats(j) {
     const kb = Uint8Array.from(nkey.match(/../g).map((h) => parseInt(h, 16)));
@@ -3316,17 +3312,16 @@ window.__appStart = () => {
     if ((await hmacRaw(kb, cat(utf8(`stats|${n}|`), c))) !== j.h) return null;   // не ваша сводка
     return JSON.parse(new TextDecoder().decode(await streamXor(await sha(cat(kb, utf8(n))), c)));
   }
-  function diagSend(beacon) {
-    if (!DIAG.size() || !index || !index.relay) return;
+  async function diagSend(beacon) {
+    if (!nkey || !DIAG.size() || !index || !index.relay) return;
     const sid = store.get("sid");
     if (!/^[0-9a-f]{16}$/.test(sid || "")) return;
     const lastAt = +(store.get("diagAt") || 0);
     if (!beacon && Date.now() - lastAt < 10 * 60 * 1000) return;   // не чаще раза в 10 минут
     store.set("diagAt", String(Date.now()));
-    const body = JSON.stringify({ q: "diag", d: sid, v: APP_LABEL, m: inTG ? "tg" : STANDALONE ? "pwa" : "web",
-      p: IOS ? "ios" : ANDROID ? "android" : "desktop", e: DIAG.take() });
-    try { if (beacon && navigator.sendBeacon && navigator.sendBeacon(index.relay, body)) return; } catch (e) { /* ниже — обычный запрос */ }
-    fetch(index.relay, { method: "POST", body, keepalive: true }).catch(() => fetch(index.relay, { method: "POST", body, mode: "no-cors" }).catch(() => {}));
+    const req = { q: "diag", d: sid, v: APP_LABEL, m: inTG ? "tg" : STANDALONE ? "pwa" : "web",
+      p: IOS ? "ios" : ANDROID ? "android" : "desktop", e: DIAG.take() };
+    await sendTelemetry(req, beacon);
   }
   document.addEventListener("visibilitychange", () => { if (document.hidden) try { diagSend(true); } catch (e) { /* ещё не готово */ } });
   async function sendInst() {
@@ -3861,7 +3856,6 @@ window.__appStart = () => {
     el.textContent = nSummary();
     el.classList.toggle("off", !nstate || el.textContent === "Все выключены");
   }
-
   // ---------- подключение приложения к боту ----------
   // Нужно, когда приложение открыто без личного ключа в адресе: из профиля бота, общей кнопкой меню
   // или ярлыком на рабочем столе. Пара ключей P-256 (ECDH) + открытый ключ бота из index.json дают
@@ -3962,6 +3956,8 @@ window.__appStart = () => {
     store.set("nlocal", JSON.stringify({ code: res.n, min: nstate.min, t: res.ts * 1000, u: TG_USER }));
     store.set("nlinkPending", "");
     if (tg && tg.HapticFeedback && tgAtLeast("6.1")) { try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) { /* старый клиент */ } }
+    statSend();
+    loadAdminStats(true).then(() => { if (QS.get("open") === "stats" && adminStats && view !== "stats") { go("settings"); go("stats", null, true); } });
     toast("Уведомления подключены ✓");
     if (view === "settings") { nOpen = true; renderSettings(); }
   }
@@ -4046,7 +4042,6 @@ window.__appStart = () => {
       linkWait(await linkSecret(priv), p.t + 10 * 60000);
     } catch (e) { store.set("nlinkPending", ""); }
   }
-
   // ---------- push-уведомления на этот телефон (ярлык на экране «Домой») ----------
   // Бот шифрует и подписывает их сам (VAPID + aes128gcm), здесь — только подписка. Подписку передаём боту
   // через тот же канал, зашифрованной и подписанной личным ключом, как и настройки.
@@ -4169,18 +4164,15 @@ window.__appStart = () => {
       setNStatus(`Не удалось сохранить — нет связи. <button class="flink" data-act="notify-settings">Изменить в чате</button>`, "err");
     }
   }
-
   // ---------------- экраны «Расписание» и «Преподаватели» ----------------
   // Бот обновляет расписание преподавателя часто, только пока его кто-то смотрит; остальных — раз в сутки.
   // Отсюда бот не видит, что открыли в приложении, — поэтому коротко сообщаем в канал (без данных о человеке),
   // не чаще раза в 6 часов на преподавателя.
-  function noteTeacherSeen(id) {
-    if (!/^t\d{1,3}$/.test(id) || !index || !index.relay) return;
+  async function noteTeacherSeen(id) {
+    if (!nkey || !/^t\d{1,3}$/.test(id) || !index || !index.relay) return;
     const k = "seen_" + id, now = Date.now();
     if (now - (+store.get(k) || 0) < 6 * 3600e3) return;
-    store.set(k, String(now));
-    const body = JSON.stringify({ q: "seen", t: id });
-    fetch(index.relay, { method: "POST", body }).catch(() => fetch(index.relay, { method: "POST", body, mode: "no-cors" }).catch(() => {}));
+    if (await sendTelemetry({ q: "seen", t: id })) store.set(k, String(now));
   }
   function groupHeadHTML(s) {
     const bell = `<button class="btn icon-btn bell" data-act="notif" aria-label="Изменения в расписании${hasUnseen() ? ", есть новые" : ""}">${I.bell}${hasUnseen() ? `<span class="badge"></span>` : ""}</button>`;
@@ -4715,7 +4707,6 @@ window.__appStart = () => {
     hideAnim = () => el.animate([{ transform: shown, opacity: 1 }, { transform: up, opacity: 0 }], { duration: 220, easing: "ease-in", fill: "forwards" });
     setTimeout(hide, action ? 4000 : 2000);
   }
-
   // ---------------- живое обновление ----------------
   // Подпись «сейчас» у линии идущей пары видна с первой минуты. В начале пары она стоит
   // сразу под временем начала (на месте времени конца) — время конца в это время прячется,
@@ -4807,7 +4798,6 @@ window.__appStart = () => {
       if (unit) unit.textContent = t.unit;
     }
   }
-
   // ---------------- пружины и переходы ----------------
   let springCache = null;
   // Пружинная кривая из CSS (--ease-spring); если linear() не поддерживается — обычная плавная
@@ -4907,7 +4897,6 @@ window.__appStart = () => {
     const was = bar.classList.contains("vsmall"); bar.classList.add("bnoanim"); bar.classList.remove("vsmall"); bar.__geo = false;
     if (was) { barGeo(bar); bar.classList.add("vsmall"); } void bar.offsetWidth; bar.classList.remove("bnoanim"); }, { passive: true });
   window.addEventListener("scroll", syncBar, { passive: true });
-
   // ---------------- события ----------------
   app.addEventListener("click", async (ev) => {
     const el = ev.target.closest("[data-act]");
@@ -5143,7 +5132,6 @@ window.__appStart = () => {
       reloading = false;
     }
   }
-
   // ---------------- раскрытие карточки пары ----------------
   // Меняем только эту карточку и плавно тянем её высоту — остальной экран не перерисовываем
   function toggleCard(key) {
@@ -5385,7 +5373,6 @@ window.__appStart = () => {
     }
     if (d >= 0) fitPager(); else setTimeout(fitPager, 360);
   }
-
   // ---------------- листание дней ----------------
   // Вчера | сегодня | завтра лежат в горизонтальной прокрутке с защёлкиванием. Листает сам телефон,
   // а когда лента остановилась на соседнем дне, делаем его текущим и незаметно перерисовываем ленту.
@@ -5721,7 +5708,6 @@ window.__appStart = () => {
   // (ScrollTimeline), но запись «Временной шкалы» с iPhone показала: Safari обновляет такие анимации на КАЖДОМ кадре,
   // даже когда ничего не движется, — 20–76 пересчётов стилей и пересборок слоёв в секунду в покое (без неё — ноль,
   // а во время свайпов пересчётов в 3–4 раза меньше). Плавнее от неё не стало, а лишней работы — заметно.
-
   // ---- таблетка выбранного дня: плавно едет за листанием и к нажатому дню ----
   let pillPos = [];
   function pillEl() { return app.querySelector(".days .pill"); }
@@ -5830,7 +5816,6 @@ window.__appStart = () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => { if ((view === "schedule" || view === "teacher") && !scrolling) render(); }, 150);
   });
-
   // ---------------- ещё больше iOS 26: линза вкладок, сжимающийся заголовок, ползунок темы ----------------
   // (оформление — в css/13-ios26.css)
 
@@ -6191,7 +6176,6 @@ window.__appStart = () => {
     if (!fsSupported()) return;
     try { on ? tg.requestFullscreen() : tg.exitFullscreen(); } catch (e) { /* старый клиент */ }
   }
-
   // ---------------- запуск ----------------
   if (tg && tgAtLeast("8.0")) {
     for (const ev of ["safeAreaChanged", "contentSafeAreaChanged"]) {
@@ -6298,6 +6282,7 @@ window.__appStart = () => {
     setTimeout(prefetchTeachers, 3000);
     setTimeout(() => checkAppVersion(true), 2500);
     resumeLink();
+    if (!nkey && !linkBusy && inTG && tg && tg.initData && canLinkNotify()) linkStart();
     // боту — что установку уже открывали (или приложение уже стоит на экране): кнопку «Установить»
     // под расписанием он больше не покажет
     // из беседы кнопка открывает главное приложение бота со ссылкой ?startapp=install
@@ -6322,7 +6307,6 @@ window.__appStart = () => {
 
   setInterval(tick, 15000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { tick(); reloadIfStale(); } });
-
   // ================= ярлык на экране «Домой» =================
   // --- своя заставка: держим не меньше полсекунды (иначе мелькает), убираем плавно ---
   window.hideSplash = () => {
@@ -6573,7 +6557,6 @@ window.__appStart = () => {
       });
     } catch (e) { /* старый браузер */ }
   }
-
   // ---------------- PWA: офлайн и установка ----------------
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
     window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
