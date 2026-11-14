@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="1589f47f81cb">
+<meta name="app-ver" content="2490d109fd8b">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -2256,7 +2256,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // Личный ключ получается через проверенный initData или подтверждение в чате.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.5";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v2.5.1";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2724,17 +2724,7 @@ window.__appStart = () => {
   // полз по ~19 точек за кадр, к середине разгонялся до 34 и только потом тормозил — глазу это видно как дёрганье.
   // Теперь как у iOS: мягкий первый кадр (~15 точек — меньше прежнего, запинки на старте не видно), за 2–3 кадра
   // выход на скорость и дальше только ровное торможение, без второго разгона.
-  const NAV_EASE = (() => {
-    const N = 400, v = [], s = [0];
-    for (let i = 0; i <= N; i++) v.push((1 - Math.exp(-(i / N) / 0.07)) * Math.pow(1 - i / N, 2.2));
-    for (let i = 1; i <= N; i++) s.push(s[i - 1] + (v[i] + v[i - 1]) / 2);
-    const f = (k) => s[Math.round(k * N)] / s[N];
-    const lin = "linear(" + Array.from({ length: 25 }, (_, i) => f(i / 24).toFixed(4)).join(", ") + ")";
-    // Только cubic-bezier — кривую linear(…) Safari на iPhone считает не на видеокарте, а в каждом кадре
-    // приложения (на записи — пересчёт стилей 3–5 мс на кадр во время перехода)
-    void lin;
-    return "cubic-bezier(.2, .75, .25, 1)";
-  })();
+  const NAV_EASE = "cubic-bezier(.2, .75, .25, 1)";
   // Подложка уезжающего экрана — его фон и тень (см. css/05: раньше это был #app::before)
   const appBg = (() => { const e = document.createElement("div"); e.id = "appbg"; e.setAttribute("aria-hidden", "true"); app.before(e); return e; })();
   function navLayers(entry) {
@@ -5468,20 +5458,18 @@ window.__appStart = () => {
     const step = () => {
       if (pg !== pagerEl() || !pg.isConnected) return;
       if (scrolling || pagerTouch) { fillTimer = setTimeout(step, 250); return; }   // в движении — не мешаем
-      // Ближайшие к текущему недостроенные дни — по 4 за раз и реже. Раньше по одному каждые 40 мс:
-      // на записи с iPhone после смены недели ~1 с шли 12–15 пересчётов раскладки ленты и 40–48 вызовов
-      // наблюдателей за полсекунды — и если в это время листать, это было видно
+      if (document.hidden || navBusy) { fillTimer = setTimeout(step, 250); return; }
+      // One DOM insertion per task. JS timing excludes later style/paint cost,
+      // so the previous 6 ms budget could still insert four expensive pages.
       const ci = curIndex(pg), n = pg.children.length;
-      // И не дольше ~6 мс за раз — у преподавателя на записи одна такая порция шла 36 мс
-      let done = 0;
-      const t0 = performance.now(), over = () => done && performance.now() - t0 > 6;
-      for (let k = 1; k < n && done < 4 && !over(); k++) {
-        if (fillPage(pg, ci + k)) done++;
-        if (done < 4 && !over() && fillPage(pg, ci - k)) done++;
+      for (let k = 1; k < n; k++) {
+        if (fillPage(pg, ci + k) || fillPage(pg, ci - k)) {
+          fillTimer = setTimeout(step, 80);
+          return;
+        }
       }
-      if (done) fillTimer = setTimeout(step, 180);
     };
-    fillTimer = setTimeout(step, 300);
+    fillTimer = setTimeout(step, 120);
   }
   // Таблетка — за лентой: дробный номер дня в текущей неделе (в чужой неделе стоит у края)
   function pillFromScroll(pg) {
@@ -5642,7 +5630,7 @@ window.__appStart = () => {
     // Соседей — не в этом же кадре, а каждым днём отдельной маленькой задачей сразу после: на записи с iPhone
     // остановка на дне стоила кадр в 40 мс (пересчёт стилей 13 мс + склейка 22 мс) — ровно когда день встаёт на место
     fillPage(pg, i);
-    for (const k of [i + 1, i - 1, i + 2, i - 2]) setTimeout(() => { if (pg.isConnected && !pagerTouch) fillPage(pg, k); }, 0);
+    // Neighbours are prepared by pagerFillLater after the active frame, one at a time.
     if (old) {
       old.removeAttribute("data-cur");
       // раскрытые карточки ушедшего дня — свёрнутыми (страница за краем, подмену не видно)
@@ -5814,7 +5802,7 @@ window.__appStart = () => {
 
   // Линза выбранной вкладки едет к новой вкладке и чуть растягивается в пути.
   // syncTabs() зовёт её при каждой смене экрана.
-  let lensTi = -1;
+  let lensTi = -1, lensAnimation = null;
   function syncLens() {
     const inn = document.querySelector(".tabs .in"), lens = inn && inn.querySelector(".lens");
     if (!lens) return;
@@ -5822,11 +5810,24 @@ window.__appStart = () => {
     if (i < 0 || i === lensTi) return;
     const first = lensTi < 0;
     lensTi = i;
-    if (first) { lens.style.transition = "none"; inn.style.setProperty("--ti", i); void lens.offsetWidth; lens.style.transition = ""; return; }
+    if (first) {
+      lens.style.transition = "none";
+      inn.style.setProperty("--ti", i);
+      requestAnimationFrame(() => { lens.style.transition = ""; });
+      return;
+    }
+    lens.style.transition = "";
     inn.style.setProperty("--ti", i);
-    // К крайней вкладке — без перелёта (пружина выносила линзу за край панели), к средней — с пружинкой
     lens.classList.toggle("edge", i === 0 || i === tabs.length - 1);
-    if (!REDUCED) { lens.classList.remove("mv"); void lens.offsetWidth; lens.classList.add("mv"); }
+    // Restart the scale effect without offsetWidth: tabs must not force layout in a click.
+    if (lensAnimation) { lensAnimation.cancel(); lensAnimation = null; }
+    if (!REDUCED && lens.animate) {
+      try {
+        lensAnimation = lens.animate([
+          { scale: "1 1" }, { scale: "1.16 .9", offset: 0.35 }, { scale: "1 1" },
+        ], { duration: 500, easing: "cubic-bezier(.3, .7, .4, 1)" });
+      } catch (e) { /* The transform transition still moves the lens on older browsers. */ }
+    }
   }
 
   // Крупный заголовок → маленький по центру стеклянной плашки, когда он уходит под верх экрана.
@@ -6665,7 +6666,15 @@ window.__appStart = () => {
     // новая версия — замер с нуля, чтобы в отчёте не смешивались версии
     if (!box.v || box.ver !== APP_LABEL) box = { v: 1, ver: APP_LABEL, since: Date.now(), acts: {}, taps: {}, gaps: [0, 0, 0, 0, 0, 0] };
     let saveT = 0;
-    const save = () => { if (saveT) return; saveT = setTimeout(() => { saveT = 0; store.set(KEY, JSON.stringify(box)); }, 1500); };
+    const persist = () => {
+      saveT = 0;
+      if (!document.hidden && cur) { saveT = setTimeout(persist, 500); return; }
+      store.set(KEY, JSON.stringify(box));
+    };
+    const save = () => { if (!saveT) saveT = setTimeout(persist, 1500); };
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) { clearTimeout(saveT); saveT = 0; store.set(KEY, JSON.stringify(box)); }
+    });
     // чем выше в списке, тем точнее название: если за одно движение сработало несколько — берём самое точное
     const RANK = ["касание", "прокрутка", "прокрутка списка", "листание дней", "шапка", "вкладка", "карточка", "переход", "свайп назад"];
     let cur = null, raf = 0, lastTs = 0, until = 0;
