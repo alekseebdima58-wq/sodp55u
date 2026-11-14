@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="07a45f4324b8">
+<meta name="app-ver" content="1589f47f81cb">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -1992,7 +1992,19 @@ window.__appStart = () => {
       r[2] += 1; r[3] = Math.max(r[3], Math.round(x || 0));
       save();
     }
-    return { add, take() { const v = Object.values(box); box = {}; save(); return v; }, size: () => Object.keys(box).length };
+    return {
+      add,
+      take() { const v = Object.values(box); box = {}; save(); return v; },
+      restore(items) {
+        for (const r of items) {
+          const key = r[0] + "|" + r[1], current = box[key];
+          if (current) { current[2] += r[2]; current[3] = Math.max(current[3], r[3]); }
+          else if (Object.keys(box).length < 20) box[key] = r;
+        }
+        save();
+      },
+      size: () => Object.keys(box).length,
+    };
   })();
   window.addEventListener("error", (e) => {
     if (!e) return;
@@ -3312,16 +3324,21 @@ window.__appStart = () => {
     if ((await hmacRaw(kb, cat(utf8(`stats|${n}|`), c))) !== j.h) return null;   // не ваша сводка
     return JSON.parse(new TextDecoder().decode(await streamXor(await sha(cat(kb, utf8(n))), c)));
   }
+  let diagSending = false;
   async function diagSend(beacon) {
-    if (!nkey || !DIAG.size() || !index || !index.relay) return;
+    if (diagSending || !nkey || !DIAG.size() || !index || !index.relay) return;
     const sid = store.get("sid");
     if (!/^[0-9a-f]{16}$/.test(sid || "")) return;
     const lastAt = +(store.get("diagAt") || 0);
-    if (!beacon && Date.now() - lastAt < 10 * 60 * 1000) return;   // не чаще раза в 10 минут
-    store.set("diagAt", String(Date.now()));
-    const req = { q: "diag", d: sid, v: APP_LABEL, m: inTG ? "tg" : STANDALONE ? "pwa" : "web",
-      p: IOS ? "ios" : ANDROID ? "android" : "desktop", e: DIAG.take() };
-    await sendTelemetry(req, beacon);
+    if (!beacon && Date.now() - lastAt < 10 * 60 * 1000) return;
+    diagSending = true;
+    const items = DIAG.take();
+    try {
+      const req = { q: "diag", d: sid, v: APP_LABEL, m: inTG ? "tg" : STANDALONE ? "pwa" : "web",
+        p: IOS ? "ios" : ANDROID ? "android" : "desktop", e: items };
+      if (await sendTelemetry(req, beacon)) store.set("diagAt", String(Date.now()));
+      else DIAG.restore(items);
+    } finally { diagSending = false; }
   }
   document.addEventListener("visibilitychange", () => { if (document.hidden) try { diagSend(true); } catch (e) { /* ещё не готово */ } });
   async function sendInst() {
@@ -4308,7 +4325,6 @@ window.__appStart = () => {
     showInstallBar();
   });
   window.addEventListener("appinstalled", () => { installEvt = null; store.set("installDone", "1"); hideInstallBar(true); if (view === "settings") renderSettings(); });
-  function installHTML() { return installRowHTML(); }
   // Установка в Настройках — один блок-«мастер»: ① иконка → ② установка (видео + шаги в такт)
   function installWizardHTML() {
     if (store.get("installDone") === "1") {
@@ -5724,11 +5740,9 @@ window.__appStart = () => {
   // Цифры «выбранного» цвета — отдельным слоем поверх, вырезанным точно по форме таблетки:
   // часть цифры над таблеткой — светлая, вне её — обычная (как в переключателях iOS)
   let pillW = 0;
-  let pillShown = -1, pillAnims = [];
   function putPill(f) {
     const el = pillEl(), r = pillAt(f);
     if (!el || !r) return;
-    pillShown = f;
     const x = snap(r.x), w = `${Math.round(r.w)}px`;   // Целые точки — при листании ширина не пишется каждый кадр
     if (el.style.width !== w) el.style.width = w;
     el.style.transform = `translate3d(${x}px,0,0)`;
@@ -5740,27 +5754,6 @@ window.__appStart = () => {
       on.style.transform = `translate3d(${x}px,0,0)`;
       if (on.firstElementChild) on.firstElementChild.style.transform = x ? `translate3d(${-x}px,0,0)` : "none";
     }
-  }
-  // Таблетка не ведётся за лентой кадр за кадром, а переезжает на день, к которому ближе лента.
-  // Положение ленты Safari присылает странице неровно (на записи с iPhone — раз в 25–50 мс), и таблетка
-  // ехала рывками рядом с плавной лентой; плюс каждый такой кадр — пересчёт стилей трёх элементов (3–4 мс).
-  function pillGlide(d) {
-    if (d === pillShown) return;
-    const el = pillEl();
-    if (!el) return;
-    const on = el.parentNode.querySelector(".days-on");
-    const els = [el, on, on && on.firstElementChild].filter(Boolean);
-    const from = els.map((e) => getComputedStyle(e).transform);   // с учётом ещё идущего переезда
-    pillAnims.forEach((a) => a.cancel());
-    pillAnims = [];
-    putPill(d);
-    if (REDUCED) return;
-    const ease = typeof springEase === "function" ? springEase() : "cubic-bezier(.22, 1, .36, 1)";
-    els.forEach((e, i) => {
-      const to = e.style.transform || "none";
-      if (from[i] === to) return;
-      try { pillAnims.push(e.animate([{ transform: from[i] }, { transform: to }], { duration: 320, easing: ease })); } catch (x) { /* сразу на месте */ }
-    });
   }
   function setupPill() {
     const el = pillEl(), c = curPos();
