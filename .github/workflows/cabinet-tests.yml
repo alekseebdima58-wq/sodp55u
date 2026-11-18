@@ -22,3 +22,11 @@ jobs:
       - uses: actions/checkout@v4
       - run: npm ci --no-audit --no-fund
       - run: npm test
+        env:
+          CABINET_MOCKUP_DIR: mockup
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cabinet-mockup
+          path: cabinet-server/mockup/*.png
+          if-no-files-found: error
+          retention-days: 14

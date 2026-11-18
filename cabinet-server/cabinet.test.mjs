@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve, sep } from 'node:path';
@@ -71,6 +71,46 @@ function staticApp(directory) {
       response.writeHead(200, { 'Content-Type': types[extname(file)] || 'application/octet-stream' }).end(contents);
     } catch (error) { response.writeHead(404).end(); }
   });
+}
+
+async function saveMockup(browser, appUrl, directory) {
+  await mkdir(directory, { recursive: true });
+  const columns = ['Дисциплина', 'Форма контроля', 'Дата', 'Результат'];
+  const snapshot = {
+    version: 1, status: 'ready', syncedAt: '2026-11-19T05:42:00Z',
+    sections: { grades: [
+      { title: '3 семестр', columns, rows: [
+        ['Рельсовые цепи', 'Экзамен', '18.11.2026', 'Отлично'],
+        ['Электрические машины', 'Экзамен', '16.11.2026', 'Хорошо'],
+        ['Теория передачи сигналов', 'Зачёт', '14.11.2026', 'Зачтено'],
+      ] },
+      { title: '2 семестр', columns, rows: [
+        ['Электротехника', 'Экзамен', '25.06.2026', 'Отлично'],
+        ['Математика', 'Экзамен', '20.06.2026', 'Хорошо'],
+      ] },
+    ] },
+  };
+  for (const colorScheme of ['dark', 'light']) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme });
+    try {
+      await context.route('**/*', route => {
+        const url = new URL(route.request().url());
+        if (url.origin !== appUrl) return route.abort();
+        if (url.pathname === '/cabinet/v1/snapshot') return route.fulfill({ json: snapshot });
+        return route.continue();
+      });
+      await context.addInitScript(address => {
+        const key = `sc_00000000-0000-0000-0000-000000000000.${'a'.repeat(43)}`;
+        localStorage.setItem('student-cabinet-connection', JSON.stringify({ address, key }));
+      }, appUrl);
+      const page = await context.newPage();
+      await page.goto(`${appUrl}/?now=2026-11-19T09:42`);
+      await page.getByRole('button', { name: 'Личный кабинет', exact: true }).click();
+      await page.getByText('Рельсовые цепи', { exact: true }).waitFor();
+      await page.evaluate(() => document.fonts.ready.then(() => true));
+      await page.screenshot({ path: join(directory, `cabinet-${colorScheme}.png`), animations: 'disabled' });
+    } finally { await context.close(); }
+  }
 }
 
 test('синхронизация по таймеру, два отдельных кабинета и вход в PWA', { timeout: 60000 }, async t => {
@@ -146,6 +186,7 @@ test('синхронизация по таймеру, два отдельных 
   const first = await openPwa(alice.key);
   const second = await openPwa(bob.key);
   await first.getByText('Дисциплина А 2', { exact: true }).waitFor();
+  assert.deepEqual((await first.locator('.tabs .tab').allTextContents()).map(label => label.trim()), ['Расписание', 'Преподаватели', 'Личный кабинет', 'Настройки']);
   await second.getByText('Дисциплина Б 2', { exact: true }).waitFor();
   assert.equal(await first.getByText('Дисциплина Б 2', { exact: true }).count(), 0);
   for (const [section, expected] of [
@@ -184,4 +225,5 @@ test('синхронизация по таймеру, два отдельных 
   await store.disable(alice.id);
   assert.equal((await read(alice.key)).status, 401);
   assert.equal((await read(bob.key)).status, 200);
+  if (process.env.CABINET_MOCKUP_DIR) await saveMockup(browser, appUrl, process.env.CABINET_MOCKUP_DIR);
 });

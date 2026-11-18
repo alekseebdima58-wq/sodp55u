@@ -61,7 +61,7 @@
   }
 
   function connectionForm() {
-    const form = element("form", "cabinet-card cabinet-form");
+    const form = element("form", "list cabinet-form");
     form.append(element("h2", "", "Подключить кабинет"));
     form.append(element("p", "cabinet-muted", "Введи адрес сервера и свой ключ подключения."));
     const address = element("input");
@@ -135,45 +135,71 @@
     return `${stamp}.`;
   }
 
-  function sectionTable(section) {
-    const wrapper = element("div", "cabinet-card cabinet-table");
+  function sectionList(section, id) {
     if (!section.columns.length || !section.rows.length) return element("p", "cabinet-muted", "Нет данных для отображения.");
-    const table = element("table");
-    if (section.title) table.append(element("caption", "", section.title));
-    const header = element("tr");
-    for (const column of section.columns) {
-      const cell = element("th", "", column);
-      cell.scope = "col";
-      header.append(cell);
-    }
-    table.createTHead().append(header);
-    const body = table.createTBody();
+    const wrapper = element("div", "cabinet-semester");
+    if (section.title) wrapper.append(element("h3", "sec", section.title));
+    const list = element("ul", "list cabinet-list");
+    const leadFields = { grades: "Дисциплина", orders: "Название", plan: "Дисциплина", trajectory: "Дисциплина", profile: "Поле", group: "ФИО" };
+    const lead = Math.max(0, section.columns.indexOf(leadFields[id]));
+    const result = id === "grades" ? section.columns.indexOf("Результат") : -1;
     for (const row of section.rows) {
-      const line = element("tr");
-      for (const cell of row) line.append(element("td", "", cell));
-      body.append(line);
+      const item = element("li", "srow cabinet-row");
+      const body = element("div", "body");
+      const heading = element("div", "cabinet-row-heading");
+      heading.append(element("span", "nm", row[lead] || "—"));
+      if (row[result]) {
+        const positive = /^(отлично|хорошо|зачтено|[45])$/i.test(row[result]);
+        heading.append(element("span", `cabinet-result${positive ? " good" : ""}`, row[result]));
+      }
+      body.append(heading);
+      const fields = element("dl", "cabinet-fields");
+      for (const [index, label] of section.columns.entries()) {
+        if (index === lead || index === result || !row[index]) continue;
+        const field = element("div");
+        field.append(element("dt", "", label), element("dd", "", row[index]));
+        fields.append(field);
+      }
+      if (fields.childElementCount) body.append(fields);
+      item.append(body);
+      list.append(item);
     }
-    wrapper.append(table);
+    wrapper.append(list);
     return wrapper;
+  }
+
+  function refreshIcon() {
+    const namespace = "http://www.w3.org/2000/svg";
+    const icon = document.createElementNS(namespace, "svg");
+    for (const [key, value] of Object.entries({ width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" })) icon.setAttribute(key, value);
+    const path = document.createElementNS(namespace, "path");
+    path.setAttribute("d", "M20 11a8 8 0 1 0-2 6M20 4v7h-7");
+    icon.append(path);
+    return icon;
   }
 
   function draw() {
     if (!root?.isConnected) return;
     const top = element("header", "top");
-    top.append(element("h1", "", "Личный кабинет"));
+    const title = element("div");
+    title.append(element("div", "eyebrow", "ПривГУПС"), element("h1", "", "Личный кабинет"));
+    top.append(title);
     root.replaceChildren(top);
     if (!connection) { root.append(connectionForm()); return; }
 
     const status = element("p", "cabinet-muted", syncStatus());
     status.setAttribute("role", "status");
     status.dataset.cabinetStatus = "";
-    const actions = element("div", "cabinet-actions");
-    const refresh = element("button", "btn", "Проверить обновление");
+    const actions = element("div", "cabinet-sync");
+    const refresh = element("button", "btn icon-btn");
+    refresh.setAttribute("aria-label", "Проверить обновление");
+    refresh.title = "Проверить обновление";
+    refresh.append(refreshIcon());
     refresh.addEventListener("click", () => load());
-    const disconnect = element("button", "btn", "Отключить на этом устройстве");
+    const disconnect = element("button", "cabinet-source flink", "Отключить на этом устройстве");
     disconnect.addEventListener("click", () => { setConnection(null); draw(); });
-    actions.append(refresh, disconnect);
-    root.append(status, actions);
+    actions.append(status, refresh);
+    root.append(actions);
 
     const nav = element("div", "cabinet-pages");
     nav.setAttribute("role", "group");
@@ -187,10 +213,12 @@
       const tables = data?.sections?.[selected];
       if (data?.unavailable?.includes(selected)) section.append(element("p", "cabinet-muted", "Раздел пока не обновился."));
       if (Array.isArray(tables)) {
-        for (const table of tables) section.append(sectionTable(table));
+        for (const table of tables) section.append(sectionList(table, selected));
         if (!tables.length) section.append(element("p", "cabinet-muted", "В разделе пока нет записей."));
       } else if (data) section.append(element("p", "cabinet-muted", "Данные этого раздела пока недоступны."));
-      section.append(sourceLink("Открыть раздел на сайте вуза", path));
+      const footer = element("div", "cabinet-footer");
+      footer.append(sourceLink("Открыть на сайте вуза", path), disconnect);
+      section.append(footer);
     }
     for (const [id, label] of pages) {
       const button = element("button", "btn", label);
