@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="2490d109fd8b">
+<meta name="app-ver" content="cd371fa9dbf7">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -380,6 +380,7 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
   border: 0;  background: transparent; color: var(--text); text-align: left;
 }
 .list > .item:first-child { border-top: 0; }
+a.item { text-decoration: none; }
 .item .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .item .nm { font-size: calc(15px * var(--fs, 1)); font-weight: 600; }
 .item .sub { font-size: calc(12px * var(--fs, 1)); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -4639,6 +4640,11 @@ window.__appStart = () => {
     const opts = [["auto", inTG ? "Как в Telegram" : "Как в системе"], ["light", "Светлая"], ["dark", "Тёмная"]];
     const upd = meta && meta.updated ? fmtUpdated(meta.updated) : "";
     app.innerHTML = `<div class="top"><div><div class="eyebrow">${esc((index && index.group) || "СОДП-55у")}</div><h1>Настройки</h1></div></div>
+      <h2 class="sec">Университет</h2>
+      <div class="list"><a class="item" data-act="student-portal" href="https://newlk.samgups.ru/login" target="_blank" rel="noopener noreferrer">
+        <span class="sic sic-blue" aria-hidden="true">${svg('<path d="m2 9 10-5 10 5-10 5-10-5ZM6 11v5c3.5 3 8.5 3 12 0v-5m4-2v7"/>', 18)}</span>
+        <span class="body"><span class="nm">Личный кабинет студента</span><span class="sub">Открыть на сайте вуза</span></span>
+        <span class="chev" aria-hidden="true">${svg('<path d="M7 17 17 7M7 7h10v10"/>', 18)}</span></a></div>
       <h2 class="sec">Оформление</h2>
       <div class="list pad"><span class="lbl15">Тема</span>
         <div class="seg3" role="group" aria-label="Тема">${opts.map(([v, l]) =>
@@ -5035,6 +5041,11 @@ window.__appStart = () => {
       applyTheme();
       haptic("select");
       renderSettings();
+    } else if (act === "student-portal" && inTG && tg.openLink && !ev.ctrlKey && !ev.metaKey && !ev.shiftKey && !ev.altKey) {
+      try {
+        tg.openLink(el.href, { try_instant_view: false });
+        ev.preventDefault();
+      } catch (e) { /* обычная ссылка при ошибке Telegram */ }
     } else if (act === "site") {
       const g = mem.g;
       const w = g && pos.g ? g.weeks[pos.g.w] : g && g.weeks[0];
