@@ -205,6 +205,10 @@ test('вход по паролю, повторный вход и синхрон�
   const testStudents = { alice: 'А', bob: 'Б' };
   const loginForm = `<form action="${portalOrigin}/login" method="post"><input name="login"><input name="password" type="password"><button type="submit">Войти</button></form>`;
   const portalVisits = [];
+  // A real browser navigation stays inside the Playwright fixture after form submission.
+  const transition = (route, path) => route.fulfill({
+    contentType: 'text/html; charset=utf-8', body: `<script>location.replace(${JSON.stringify(path)})</script>`,
+  });
 
   const prepare = context => context.route(`${portalOrigin}/**`, async route => {
     const path = new URL(route.request().url()).pathname;
@@ -213,11 +217,11 @@ test('вход по паролю, повторный вход и синхрон�
       if (route.request().method() === 'POST') {
         const fields = new URLSearchParams(route.request().postData());
         const login = fields.get('login');
-        if (login === 'verification') return route.fulfill({ status: 302, headers: { Location: `${portalOrigin}/verification` } });
+        if (login === 'verification') return transition(route, '/verification');
         if (testStudents[login] && fields.get('password') === `fictional-${login}`) {
           identities[login] = testStudents[login];
           await context.addCookies([{ name: 'student-test', value: login, url: portalOrigin, httpOnly: true, secure: true, sameSite: 'Lax' }]);
-          return route.fulfill({ status: 302, headers: { Location: `${portalOrigin}/dashboard` } });
+          return transition(route, '/dashboard');
         }
       }
       return route.fulfill({ contentType: 'text/html; charset=utf-8', body: loginForm });
@@ -225,7 +229,7 @@ test('вход по паролю, повторный вход и синхрон�
     if (path === '/verification') return route.fulfill({ contentType: 'text/html; charset=utf-8', body: '<h1>Дополнительная проверка</h1>' });
     const cookie = (await context.cookies(portalOrigin)).find(item => item.name === 'student-test');
     const student = identities[cookie?.value];
-    if (!student) { await route.fulfill({ status: 302, headers: { Location: `${portalOrigin}/login` } }); return; }
+    if (!student) return route.fulfill({ status: 401, body: 'Сессия истекла' });
     await route.fulfill({ contentType: 'text/html; charset=utf-8', body: `<!doctype html><html lang="ru"><body>${mockPortal(path, student, marks)}</body></html>` });
   });
   const connected = [];

@@ -34,6 +34,11 @@ export async function signInToPortal(browser, { login, password }, prepareContex
       submit.click(),
     ]);
     if (result?.status() === 429) throw new SignInFailed('rate_limited');
+    // A portal can briefly render a transition page at the form URL before navigating.
+    if (page.url() === loginUrl && result?.ok() && !await form.first().isVisible() && !await challenge.first().isVisible()) {
+      try { await page.waitForURL(url => url.href !== loginUrl, { waitUntil: 'domcontentloaded', timeout: 4000 }); }
+      catch { throw new SignInFailed('interaction_required'); }
+    }
     const destination = new URL(page.url());
     if (destination.origin !== portalOrigin) throw new SignInFailed('interaction_required');
     if (destination.pathname === '/login') {
