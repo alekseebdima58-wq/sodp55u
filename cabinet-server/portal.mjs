@@ -34,8 +34,11 @@ function tableFromPage({ expected, columns, semester }) {
 }
 
 async function tables(page, expected, columns, semester = false) {
-  await page.locator('table').filter({ has: page.getByText(expected[0], { exact: true }) }).first().waitFor({ state: 'attached' });
+  const target = page.locator('table').filter({ has: page.getByText(expected[0], { exact: true }) }).first();
+  const empty = page.getByText(/^Нет (данных(?: для отображения)?|приказов|записей|результатов)\.?$/i).first();
+  await target.or(empty).first().waitFor({ state: 'attached' });
   const sections = await page.evaluate(tableFromPage, { expected, columns, semester });
+  if (!sections.length && await empty.isVisible()) return [];
   if (!sections.length) throw new Error(`Не найдена таблица с полем «${expected[0]}»`);
   return sections;
 }
@@ -164,17 +167,28 @@ export async function getBookIdentity(page) {
 export async function collectCabinet(page, identity) {
   await open(page, '/student/book/list');
   if (await bookIdentity(page) !== identity) throw new Error('Зачётная книжка принадлежит другой учётной записи');
-  const grades = await readGrades(page);
-  await open(page, '/student/orders');
-  const orders = await tables(page, ['Номер приказа', 'Содержание']);
-  await open(page, '/student/curriculum');
-  const plan = await readPlan(page);
-  await open(page, '/student/trajectory');
-  const trajectory = await readTrajectory(page);
-  await open(page, '/user/profile');
-  const profile = await readProfile(page);
-  await open(page, '/dashboard');
-  await page.getByRole('link', { name: 'Моя группа', exact: true }).click();
-  const group = await tables(page, ['ФИО'], ['ФИО']);
-  return { grades, orders, plan, trajectory, profile, group };
+  const views = [
+    ['grades', null, () => readGrades(page)],
+    ['orders', '/student/orders', () => tables(page, ['Номер приказа', 'Содержание'])],
+    ['plan', '/student/curriculum', () => readPlan(page)],
+    ['trajectory', '/student/trajectory', () => readTrajectory(page)],
+    ['profile', '/user/profile', () => readProfile(page)],
+    ['group', '/dashboard', async () => {
+      await page.getByRole('link', { name: 'Моя группа', exact: true }).click();
+      return tables(page, ['ФИО'], ['ФИО']);
+    }],
+  ];
+  const sections = {};
+  const unavailable = [];
+  for (const [key, path, read] of views) {
+    try {
+      if (path) await open(page, path);
+      sections[key] = await read();
+    } catch (error) {
+      if (error instanceof SessionExpired) throw error;
+      unavailable.push(key);
+    }
+  }
+  if (unavailable.length === views.length) throw new Error('Не удалось прочитать разделы кабинета');
+  return { sections, unavailable };
 }

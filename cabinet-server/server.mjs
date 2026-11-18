@@ -44,16 +44,20 @@ export async function syncAll(store, browser, prepareContext = async () => {}) {
   for (const account of await store.accounts()) {
     const { browserState, snapshot } = await store.session(account);
     if (!browserState || snapshot.status === 'expired') continue;
-    const context = await browser.newContext({ storageState: browserState, viewport: { width: 1440, height: 900 } });
+    let context;
     try {
+      context = await browser.newContext({ storageState: browserState, viewport: { width: 1440, height: 900 } });
       await prepareContext(context);
       const page = await context.newPage();
       page.setDefaultTimeout(12000);
-      const sections = await collectCabinet(page, account.identity);
+      const { sections, unavailable } = await collectCabinet(page, account.identity);
       const updatedState = safeSession(await context.storageState());
       await store.saveSession(account, {
         browserState: updatedState,
-        snapshot: { version: 1, status: 'ready', syncedAt: new Date().toISOString(), sections },
+        snapshot: {
+          version: 1, status: unavailable.length ? 'partial' : 'ready', syncedAt: new Date().toISOString(),
+          sections: { ...snapshot.sections, ...sections }, unavailable,
+        },
       });
     } catch (error) {
       const expired = error instanceof SessionExpired;
@@ -63,7 +67,7 @@ export async function syncAll(store, browser, prepareContext = async () => {}) {
       });
       if (!expired) console.error('Не удалось обновить один из кабинетов. Последняя версия данных сохранена.');
     } finally {
-      await context.close();
+      await context?.close();
     }
   }
 }

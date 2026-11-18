@@ -131,6 +131,7 @@
     const stamp = Number.isFinite(date) ? `Обновлено ${dateFormat.format(date)}` : "Обновлений пока нет";
     if (data.status === "expired") return `Войди в кабинет вуза повторно. ${stamp}.`;
     if (data.status === "error") return `Синхронизация временно недоступна. ${stamp}.`;
+    if (data.status === "partial") return `Некоторые разделы пока не обновились. ${stamp}.`;
     return `${stamp}.`;
   }
 
@@ -184,8 +185,10 @@
       const [, label, path] = pages.find(([id]) => id === selected);
       section.replaceChildren(element("h2", "", label));
       const tables = data?.sections?.[selected];
-      if (Array.isArray(tables) && tables.length) {
+      if (data?.unavailable?.includes(selected)) section.append(element("p", "cabinet-muted", "Раздел пока не обновился."));
+      if (Array.isArray(tables)) {
         for (const table of tables) section.append(sectionTable(table));
+        if (!tables.length) section.append(element("p", "cabinet-muted", "В разделе пока нет записей."));
       } else if (data) section.append(element("p", "cabinet-muted", "Данные этого раздела пока недоступны."));
       section.append(sourceLink("Открыть раздел на сайте вуза", path));
     }

@@ -25,7 +25,7 @@ function mockPortal(path, name, results) {
       <nav><a onclick="course(1)">1 курс</a> <a onclick="course(2)">2 курс</a></nav>
       <div id="book">${term(2, name, results[name])}${term(1, name, results[name])}</div>
       <script>function course(n) { document.getElementById('book').innerHTML = n === 1 ? ${JSON.stringify(term(2, name, results[name]) + term(1, name, results[name]))} : ${JSON.stringify(term(3, name, results[name]))}; }</script>`;
-    case '/student/orders': return table(['Дата', 'Номер приказа', 'Название', 'Содержание'], [['01.11.2026', `ТЕСТ-${name}`, 'Приказ', 'Содержание']]);
+    case '/student/orders': return name === 'Б' ? '<p>Нет данных для отображения</p>' : table(['Дата', 'Номер приказа', 'Название', 'Содержание'], [['01.11.2026', `ТЕСТ-${name}`, 'Приказ', 'Содержание']]);
     case '/student/curriculum': return `<div>Название дисциплины</div><div class="xl:block"><div class="flex items-center">
       <div>Б1.О.1</div><div>План ${name}</div><div></div><div>72</div><div>1</div><div>Зачёт</div></div></div>`;
     case '/student/trajectory': return `<div class="scroll-tandem-trajectory" id="terms"></div><div id="panel"></div>
@@ -120,6 +120,7 @@ test('синхронизация по таймеру, два отдельных 
   assert.deepEqual(a.sections.grades.map(entry => entry.title), ['2 семестр', '1 семестр', '3 семестр']);
   assert.equal(a.sections.grades[0].rows[0][2], 'Отлично');
   assert.equal(b.sections.grades[0].rows[0][2], 'Хорошо');
+  assert.deepEqual(b.sections.orders, []);
   assert.equal(a.sections.trajectory.length, 2);
   assert.equal(a.sections.trajectory[1].rows[0][0], 'Предмет А 1');
   assert.deepEqual(a.sections.group[0], { columns: ['ФИО'], title: '', rows: [['Участник А']] });
@@ -134,7 +135,7 @@ test('синхронизация по таймеру, два отдельных 
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     await context.route('**/*', route => [appUrl, apiUrl].includes(new URL(route.request().url()).origin) ? route.continue() : route.abort());
     const page = await context.newPage();
-    await page.goto(appUrl);
+    await page.goto(`${appUrl}/?now=2026-11-19T09:00`);
     await page.getByRole('button', { name: 'Личный кабинет', exact: true }).click();
     await page.getByLabel('Адрес сервера').fill(apiUrl);
     await page.getByLabel('Ключ подключения').fill(key);
