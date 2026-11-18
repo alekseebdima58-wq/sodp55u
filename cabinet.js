@@ -5,17 +5,17 @@
   const officialSite = "https://newlk.samgups.ru/";
   const keyPattern = /^sc_[\da-f-]{36}\.[\w-]{43}$/;
   const pages = [
-    ["grades", "Зачётка", "student/book/list", "M5 4h14v16H5a2 2 0 0 1 0-4h14M5 4a2 2 0 0 0-2 2v12M8 10l2 2 4-4"],
-    ["orders", "Приказы", "student/orders", "M6 3h8l4 4v14H6zM14 3v5h4M9 12h6m-6 4h6"],
-    ["plan", "Учебный план", "student/curriculum", "M8 4h12M8 9h12M8 14h12M8 19h12M4 4h.01M4 9h.01M4 14h.01M4 19h.01"],
-    ["trajectory", "Траектория", "student/trajectory", "M4 18l6-6 4 4 6-9m-5 0h5v5"],
     ["profile", "Профиль", "user/profile", "M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"],
+    ["grades", "Зачётка", "student/book/list", "M5 4h14v16H5a2 2 0 0 1 0-4h14M5 4a2 2 0 0 0-2 2v12M8 10l2 2 4-4"],
+    ["plan", "Учебный план", "student/curriculum", "M8 4h12M8 9h12M8 14h12M8 19h12M4 4h.01M4 9h.01M4 14h.01M4 19h.01"],
     ["group", "Моя группа", "dashboard", "M14 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM3 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2m0-17a4 4 0 0 1 0 8m2 3a4 4 0 0 1 3 4v2"],
+    ["orders", "Приказы", "student/orders", "M6 3h8l4 4v14H6zM14 3v5h4M9 12h6m-6 4h6"],
+    ["trajectory", "Траектория", "student/trajectory", "M4 18l6-6 4 4 6-9m-5 0h5v5"],
   ];
   const shortFields = { grades: ["Форма контроля", "Дата"], orders: ["Содержание"], trajectory: ["Контроль, нагрузка и статус"], profile: ["Значение"] };
   const dateFormat = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Samara" });
   let root, request;
-  let selected = pages[0][0];
+  let selected = "grades";
   let connection = readConnection();
   let data = null;
   let reauthenticating = false;

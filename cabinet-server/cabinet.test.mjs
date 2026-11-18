@@ -313,6 +313,9 @@ test('вход по паролю, повторный вход и синхрон�
 
   await first.getByText('Дисциплина А 2', { exact: true }).waitFor();
   assert.deepEqual((await first.locator('.tabs .tab').allTextContents()).map(label => label.trim()), ['Расписание', 'Преподаватели', 'Личный кабинет', 'Настройки']);
+  const cabinetPages = first.getByRole('group', { name: 'Разделы кабинета' });
+  assert.deepEqual(await cabinetPages.getByRole('button').allTextContents(), ['Профиль', 'Зачётка', 'Учебный план', 'Моя группа', 'Приказы', 'Траектория']);
+  assert.equal(await cabinetPages.getByRole('button', { name: 'Зачётка', exact: true }).getAttribute('aria-pressed'), 'true');
   await second.getByText('Дисциплина Б 2', { exact: true }).waitFor();
   assert.equal(await first.getByText('Дисциплина Б 2', { exact: true }).count(), 0);
   for (const [section, expected] of [
