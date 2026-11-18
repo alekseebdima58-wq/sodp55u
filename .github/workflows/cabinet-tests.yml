@@ -1,0 +1,24 @@
+name: Проверка личного кабинета
+on:
+  push:
+    branches: [feature/student-cabinet, main]
+    paths: ['cabinet-server/**', 'cabinet.js', 'cabinet.css', 'index.html', 'sw.js', '.github/workflows/cabinet-tests.yml']
+  pull_request:
+    paths: ['cabinet-server/**', 'cabinet.js', 'cabinet.css', 'index.html', 'sw.js', '.github/workflows/cabinet-tests.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cabinet:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.0-noble
+      options: --ipc=host
+    defaults:
+      run:
+        working-directory: cabinet-server
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci --no-audit --no-fund
+      - run: npm test

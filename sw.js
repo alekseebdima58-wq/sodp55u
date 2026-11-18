@@ -1,11 +1,13 @@
 // Service worker расписания: приложение открывается с главного экрана даже без сети.
 // Страницу отдаём сразу из сохранённой копии и тихо обновляем её из сети. Иконки и шрифты — из кэша
 // с тихим обновлением. Расписание (data/*.json) не трогаем: офлайн-копию держит сама страница.
-const CACHE = "shell-v49";
+const CACHE = "shell-v50";
 const ICONS = ["icon-192", "icon-512", "maskable-512", "apple-touch-icon", "favicon-64"];
 const SHELL = [
   "./",
   "fonts/fonts.css",
+  "cabinet.css",
+  "cabinet.js",
   "telegram-web-app.js",   // копия скрипта Telegram (v1.8.6): запуск в Telegram не ждёт telegram.org
   "icons/badge-96.png",
   ...["", "-light", "-dark"].flatMap((s) => [`manifest${s}.webmanifest`, ...ICONS.map((n) => `icons/${n}${s}.png`)]),
@@ -32,6 +34,7 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;   // telegram.org, Google Fonts — напрямую
+  if (req.headers.has("Authorization") || url.pathname.endsWith("/cabinet/v1/snapshot")) return;
   if (url.pathname.includes("/data/")) return;        // расписание — без кэша service worker
   if (url.pathname.includes("/media/")) return;       // видео — напрямую (iPhone качает его кусками)
   if (url.pathname.endsWith("/version.json")) return; // версия приложения — всегда из сети
