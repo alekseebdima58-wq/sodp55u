@@ -108,6 +108,9 @@ async function saveMockup(browser, appUrl, directory) {
       await page.getByRole('button', { name: 'Личный кабинет', exact: true }).click();
       await page.getByText('Рельсовые цепи', { exact: true }).waitFor();
       await page.evaluate(() => document.fonts.ready.then(() => true));
+      const footer = await page.locator('.cabinet-footer').boundingBox();
+      const navigation = await page.getByRole('navigation', { name: 'Разделы', exact: true }).boundingBox();
+      assert(footer.y + footer.height <= navigation.y, 'Нижняя панель перекрывает действия кабинета');
       await page.screenshot({ path: join(directory, `cabinet-${colorScheme}.png`), animations: 'disabled' });
     } finally { await context.close(); }
   }

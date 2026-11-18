@@ -196,7 +196,8 @@
     refresh.title = "Проверить обновление";
     refresh.append(refreshIcon());
     refresh.addEventListener("click", () => load());
-    const disconnect = element("button", "cabinet-source flink", "Отключить на этом устройстве");
+    const disconnect = element("button", "cabinet-source flink", "Отключить");
+    disconnect.setAttribute("aria-label", "Отключить на этом устройстве");
     disconnect.addEventListener("click", () => { setConnection(null); draw(); });
     actions.append(status, refresh);
     root.append(actions);
