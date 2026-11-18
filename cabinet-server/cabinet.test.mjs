@@ -174,7 +174,11 @@ async function saveMockup(browser, appUrl, directory) {
 async function enterCredentials(page, login, password) {
   await page.getByLabel('Логин ПривГУПС').fill(login);
   await page.getByLabel('Пароль ПривГУПС').fill(password);
-  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  const [reply] = await Promise.all([
+    page.waitForResponse(response => new URL(response.url()).pathname === '/cabinet/v1/login' && response.request().method() === 'POST'),
+    page.getByRole('button', { name: 'Войти', exact: true }).click(),
+  ]);
+  return reply;
 }
 
 async function savedKey(page) {
@@ -200,9 +204,11 @@ test('вход по паролю, повторный вход и синхрон�
   const identities = {};
   const testStudents = { alice: 'А', bob: 'Б' };
   const loginForm = `<form action="${portalOrigin}/login" method="post"><input name="login"><input name="password" type="password"><button type="submit">Войти</button></form>`;
+  const portalVisits = [];
 
   const prepare = context => context.route(`${portalOrigin}/**`, async route => {
     const path = new URL(route.request().url()).pathname;
+    portalVisits.push(`${route.request().method()} ${path}`);
     if (path === '/login') {
       if (route.request().method() === 'POST') {
         const fields = new URLSearchParams(route.request().postData());
@@ -210,7 +216,8 @@ test('вход по паролю, повторный вход и синхрон�
         if (login === 'verification') return route.fulfill({ status: 302, headers: { Location: `${portalOrigin}/verification` } });
         if (testStudents[login] && fields.get('password') === `fictional-${login}`) {
           identities[login] = testStudents[login];
-          return route.fulfill({ status: 302, headers: { Location: `${portalOrigin}/dashboard`, 'Set-Cookie': `student-test=${login}; Path=/; HttpOnly; Secure` } });
+          await context.addCookies([{ name: 'student-test', value: login, url: portalOrigin, httpOnly: true, secure: true, sameSite: 'Lax' }]);
+          return route.fulfill({ status: 302, headers: { Location: `${portalOrigin}/dashboard` } });
         }
       }
       return route.fulfill({ contentType: 'text/html; charset=utf-8', body: loginForm });
@@ -253,6 +260,15 @@ test('вход по паролю, повторный вход и синхрон�
     return page;
   }
 
+  async function successfulLogin(page, login) {
+    const from = portalVisits.length;
+    const reply = await enterCredentials(page, login, `fictional-${login}`);
+    if (!reply.ok()) {
+      const code = (await reply.json().catch(() => ({}))).error;
+      assert.fail(`Вход ответил ${reply.status()} (${code}): ${portalVisits.slice(from).join(', ')}`);
+    }
+  }
+
   const first = await openPwa();
   await enterCredentials(first, 'alice', 'неверный');
   await first.getByText('Проверь логин и пароль ПривГУПС.', { exact: true }).waitFor();
@@ -261,11 +277,11 @@ test('вход по паролю, повторный вход и синхрон�
   await enterCredentials(first, 'verification', 'fictional');
   await first.getByText(/Вуз запросил дополнительную проверку/).waitFor();
   assert.equal((await store.accounts()).length, 0);
-  await enterCredentials(first, 'alice', 'fictional-alice');
+  await successfulLogin(first, 'alice');
   const aliceKey = await savedKey(first);
   const alice = { key: aliceKey, id: (await store.findByKey(aliceKey)).id };
   const second = await openPwa();
-  await enterCredentials(second, 'bob', 'fictional-bob');
+  await successfulLogin(second, 'bob');
   const bobKey = await savedKey(second);
   const bob = { key: bobKey, id: (await store.findByKey(bobKey)).id };
   assert.deepEqual(connected, [alice.id, bob.id]);
@@ -328,7 +344,7 @@ test('вход по паролю, повторный вход и синхрон�
   await first.getByRole('button', { name: 'Войти снова' }).click();
   await enterCredentials(first, 'bob', 'fictional-bob');
   await first.getByText(/Введи данные того же аккаунта ПривГУПС/).waitFor();
-  await enterCredentials(first, 'alice', 'fictional-alice');
+  await successfulLogin(first, 'alice');
   await first.getByRole('heading', { name: 'Войти повторно' }).waitFor({ state: 'hidden' });
   assert.equal(await savedKey(first), alice.key);
   assert.equal((await waitFor(() => ready(alice.key))).sections.grades[0].rows[0][2], 'Удовлетворительно');
