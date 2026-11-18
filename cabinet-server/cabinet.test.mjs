@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -8,12 +7,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { launchBrowser, makeApi, scheduleSync, syncAll } from './server.mjs';
-import { portalOrigin } from './portal.mjs';
+import { portalOrigin, signInToPortal } from './portal.mjs';
 import { openStore } from './state.mjs';
 
 const book = name => `TEST-${name}`;
-const identity = name => createHash('sha256').update(book(name)).digest('hex');
-const auth = value => ({ cookies: [{ name: 'student-test', value, domain: 'newlk.samgups.ru', path: '/', expires: -1, httpOnly: true, secure: true, sameSite: 'Lax' }], origins: [] });
 const row = values => `<tr>${values.map(value => `<td>${value}</td>`).join('')}</tr>`;
 const table = (columns, values) => `<table><thead><tr>${columns.map(value => `<th>${value}</th>`).join('')}</tr></thead><tbody>${values.map(row).join('')}</tbody></table>`;
 const term = (num, name, result) => `<section><div>${num} семестр</div><div>${table(['Дисциплина', 'Форма контроля', 'Результат'], [[`Дисциплина ${name} ${num}`, 'Экзамен', result]])}</div></section>`;
@@ -127,6 +124,11 @@ async function saveMockup(browser, appUrl, directory) {
       await context.route('**/*', route => {
         const url = new URL(route.request().url());
         if (url.origin !== appUrl) return route.abort();
+        if (url.pathname === '/cabinet-config.json') return route.fulfill({ json: { server: appUrl } });
+        if (url.pathname === '/cabinet/v1/login') {
+          const key = `sc_00000000-0000-0000-0000-000000000000.${'a'.repeat(43)}`;
+          return route.fulfill({ json: { key, snapshot } });
+        }
         if (url.pathname === '/cabinet/v1/snapshot') {
           return route.fulfill({ json: expired ? { ...snapshot, status: 'expired' } : snapshot });
         }
@@ -137,11 +139,9 @@ async function saveMockup(browser, appUrl, directory) {
       await page.goto(`${appUrl}/?now=2026-11-19T09:42`);
       await page.getByRole('button', { name: 'Личный кабинет', exact: true }).click();
       await page.evaluate(() => document.fonts.ready.then(() => true));
-      await page.getByRole('heading', { name: 'Подключить кабинет', exact: true }).waitFor();
+      await page.getByRole('heading', { name: 'Войти в кабинет', exact: true }).waitFor();
       if (colorScheme === 'dark') await capture('cabinet-connect');
-      await page.getByLabel('Адрес сервера').fill(appUrl);
-      await page.getByLabel('Ключ подключения').fill(`sc_00000000-0000-0000-0000-000000000000.${'a'.repeat(43)}`);
-      await page.getByRole('button', { name: 'Подключить', exact: true }).click();
+      await enterCredentials(page, 'demo', 'fictional-password');
       await page.getByText('Рельсовые цепи', { exact: true }).waitFor();
       const footer = await page.locator('.cabinet-footer').boundingBox();
       const navigation = await page.getByRole('navigation', { name: 'Разделы', exact: true }).boundingBox();
@@ -164,12 +164,25 @@ async function saveMockup(browser, appUrl, directory) {
         await page.getByRole('button', { name: 'Проверить обновление' }).click();
         await page.getByText(/Войди в кабинет вуза повторно/).waitFor();
         await capture('cabinet-expired');
+        await page.getByRole('button', { name: 'Войти снова' }).click();
+        await capture('cabinet-reauth');
       }
     } finally { await context.close(); }
   }
 }
 
-test('синхронизация по таймеру, два отдельных кабинета и вход в PWA', { timeout: 60000 }, async t => {
+async function enterCredentials(page, login, password) {
+  await page.getByLabel('Логин ПривГУПС').fill(login);
+  await page.getByLabel('Пароль ПривГУПС').fill(password);
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+}
+
+async function savedKey(page) {
+  await page.waitForFunction(() => !!localStorage.getItem('student-cabinet-connection'));
+  return page.evaluate(() => JSON.parse(localStorage.getItem('student-cabinet-connection')).key);
+}
+
+test('вход по паролю, повторный вход и синхронизация двух кабинетов', { timeout: 80000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'sodp55u-cabinet-'));
   let browser, app, api, activeCycle, stop;
   t.after(async () => {
@@ -181,24 +194,40 @@ test('синхронизация по таймеру, два отдельных 
   });
   browser = await launchBrowser();
   const store = await openStore(dir);
-  const alice = await store.create(identity('А'), auth('alice'));
-  const bob = await store.create(identity('Б'), auth('bob'));
   app = staticApp(resolve(indexFile));
   const appUrl = await address(app);
-  api = makeApi(store, new Set([appUrl]));
-  const apiUrl = await address(api);
-  const apiPath = `${apiUrl}/cabinet/v1/snapshot`;
   const marks = { А: 'Отлично', Б: 'Хорошо' };
-  const identities = { alice: 'А', bob: 'Б' };
-  const read = key => fetch(apiPath, { headers: { Authorization: `Bearer ${key}`, Origin: appUrl } });
+  const identities = {};
+  const testStudents = { alice: 'А', bob: 'Б' };
+  const loginForm = `<form action="${portalOrigin}/login" method="post"><input name="login"><input name="password" type="password"><button type="submit">Войти</button></form>`;
 
   const prepare = context => context.route(`${portalOrigin}/**`, async route => {
     const path = new URL(route.request().url()).pathname;
+    if (path === '/login') {
+      if (route.request().method() === 'POST') {
+        const fields = new URLSearchParams(route.request().postData());
+        const login = fields.get('login');
+        if (login === 'verification') return route.fulfill({ status: 302, headers: { Location: `${portalOrigin}/verification` } });
+        if (testStudents[login] && fields.get('password') === `fictional-${login}`) {
+          identities[login] = testStudents[login];
+          return route.fulfill({ status: 302, headers: { Location: `${portalOrigin}/dashboard`, 'Set-Cookie': `student-test=${login}; Path=/; HttpOnly; Secure` } });
+        }
+      }
+      return route.fulfill({ contentType: 'text/html; charset=utf-8', body: loginForm });
+    }
+    if (path === '/verification') return route.fulfill({ contentType: 'text/html; charset=utf-8', body: '<h1>Дополнительная проверка</h1>' });
     const cookie = (await context.cookies(portalOrigin)).find(item => item.name === 'student-test');
     const student = identities[cookie?.value];
-    if (!student && path !== '/login') { await route.fulfill({ status: 302, headers: { Location: `${portalOrigin}/login` } }); return; }
+    if (!student) { await route.fulfill({ status: 302, headers: { Location: `${portalOrigin}/login` } }); return; }
     await route.fulfill({ contentType: 'text/html; charset=utf-8', body: `<!doctype html><html lang="ru"><body>${mockPortal(path, student, marks)}</body></html>` });
   });
+  const connected = [];
+  api = makeApi(store, new Set([appUrl]), {
+    signIn: credentials => signInToPortal(browser, credentials, prepare), onConnected: id => connected.push(id),
+  });
+  const apiUrl = await address(api);
+  const apiPath = `${apiUrl}/cabinet/v1/snapshot`;
+  const read = key => fetch(apiPath, { headers: { Authorization: `Bearer ${key}`, Origin: appUrl } });
   let cycles = 0;
   stop = scheduleSync(async () => {
     activeCycle = syncAll(store, browser, prepare);
@@ -210,6 +239,39 @@ test('синхронизация по таймеру, два отдельных 
     const value = await (await read(key)).json();
     return value.status === 'ready' ? value : false;
   };
+  async function openPwa() {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+    await context.route('**/*', route => {
+      const url = new URL(route.request().url());
+      if (![appUrl, apiUrl].includes(url.origin)) return route.abort();
+      if (url.origin === appUrl && url.pathname === '/cabinet-config.json') return route.fulfill({ json: { server: apiUrl } });
+      return route.continue();
+    });
+    const page = await context.newPage();
+    await page.goto(`${appUrl}/?now=2026-11-19T09:00`);
+    await page.getByRole('button', { name: 'Личный кабинет', exact: true }).click();
+    return page;
+  }
+
+  const first = await openPwa();
+  await enterCredentials(first, 'alice', 'неверный');
+  await first.getByText('Проверь логин и пароль ПривГУПС.', { exact: true }).waitFor();
+  assert.equal(await first.getByLabel('Пароль ПривГУПС').inputValue(), '');
+  assert.equal((await store.accounts()).length, 0);
+  await enterCredentials(first, 'verification', 'fictional');
+  await first.getByText(/Вуз запросил дополнительную проверку/).waitFor();
+  assert.equal((await store.accounts()).length, 0);
+  await enterCredentials(first, 'alice', 'fictional-alice');
+  const aliceKey = await savedKey(first);
+  const alice = { key: aliceKey, id: (await store.findByKey(aliceKey)).id };
+  const second = await openPwa();
+  await enterCredentials(second, 'bob', 'fictional-bob');
+  const bobKey = await savedKey(second);
+  const bob = { key: bobKey, id: (await store.findByKey(bobKey)).id };
+  assert.deepEqual(connected, [alice.id, bob.id]);
+  assert.equal((await first.evaluate(() => localStorage.getItem('student-cabinet-connection'))).includes('fictional-alice'), false);
+  const savedSession = await store.session(await store.findByKey(aliceKey));
+  assert.equal(JSON.stringify(savedSession).includes('fictional-alice'), false);
   const a = await waitFor(() => ready(alice.key));
   const b = await waitFor(() => ready(bob.key));
   assert.deepEqual(Object.keys(a.sections), ['grades', 'orders', 'plan', 'trajectory', 'profile', 'group']);
@@ -227,20 +289,6 @@ test('синхронизация по таймеру, два отдельных 
   assert(!JSON.stringify(a).includes('Участник Б'));
   assert(!JSON.stringify(b).includes('Участник А'));
 
-  async function openPwa(key) {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    await context.route('**/*', route => [appUrl, apiUrl].includes(new URL(route.request().url()).origin) ? route.continue() : route.abort());
-    const page = await context.newPage();
-    await page.goto(`${appUrl}/?now=2026-11-19T09:00`);
-    await page.getByRole('button', { name: 'Личный кабинет', exact: true }).click();
-    await page.getByLabel('Адрес сервера').fill(apiUrl);
-    await page.getByLabel('Ключ подключения').fill(key);
-    await page.getByRole('button', { name: 'Подключить', exact: true }).click();
-    return page;
-  }
-
-  const first = await openPwa(alice.key);
-  const second = await openPwa(bob.key);
   await first.getByText('Дисциплина А 2', { exact: true }).waitFor();
   assert.deepEqual((await first.locator('.tabs .tab').allTextContents()).map(label => label.trim()), ['Расписание', 'Преподаватели', 'Личный кабинет', 'Настройки']);
   await second.getByText('Дисциплина Б 2', { exact: true }).waitFor();
@@ -277,7 +325,13 @@ test('синхронизация по таймеру, два отдельных 
   assert.equal(expired.sections.grades[0].rows[0][2], 'Удовлетворительно');
   await first.getByRole('button', { name: 'Проверить обновление' }).click();
   await first.getByRole('status').getByText(/Войди в кабинет вуза повторно/).waitFor();
-  await assert.rejects(store.reconnect(alice.id, identity('Б'), auth('bob')), /другая учётная запись/);
+  await first.getByRole('button', { name: 'Войти снова' }).click();
+  await enterCredentials(first, 'bob', 'fictional-bob');
+  await first.getByText(/Введи данные того же аккаунта ПривГУПС/).waitFor();
+  await enterCredentials(first, 'alice', 'fictional-alice');
+  await first.getByRole('heading', { name: 'Войти повторно' }).waitFor({ state: 'hidden' });
+  assert.equal(await savedKey(first), alice.key);
+  assert.equal((await waitFor(() => ready(alice.key))).sections.grades[0].rows[0][2], 'Удовлетворительно');
   await store.disable(alice.id);
   assert.equal((await read(alice.key)).status, 401);
   assert.equal((await read(bob.key)).status, 200);

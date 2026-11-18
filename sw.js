@@ -1,7 +1,7 @@
 // Service worker расписания: приложение открывается с главного экрана даже без сети.
 // Страницу отдаём сразу из сохранённой копии и тихо обновляем её из сети. Иконки и шрифты — из кэша
 // с тихим обновлением. Расписание (data/*.json) не трогаем: офлайн-копию держит сама страница.
-const CACHE = "shell-v50";
+const CACHE = "shell-v51";
 const ICONS = ["icon-192", "icon-512", "maskable-512", "apple-touch-icon", "favicon-64"];
 const SHELL = [
   "./",
@@ -35,6 +35,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;   // telegram.org, Google Fonts — напрямую
   if (req.headers.has("Authorization") || url.pathname.endsWith("/cabinet/v1/snapshot")) return;
+  if (url.pathname.endsWith("/cabinet-config.json")) return;
   if (url.pathname.includes("/data/")) return;        // расписание — без кэша service worker
   if (url.pathname.includes("/media/")) return;       // видео — напрямую (iPhone качает его кусками)
   if (url.pathname.endsWith("/version.json")) return; // версия приложения — всегда из сети

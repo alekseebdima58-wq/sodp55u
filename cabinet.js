@@ -3,6 +3,7 @@
 
   const connectionKey = "student-cabinet-connection";
   const officialSite = "https://newlk.samgups.ru/";
+  const keyPattern = /^sc_[\da-f-]{36}\.[\w-]{43}$/;
   const pages = [
     ["grades", "Зачётка", "student/book/list"],
     ["orders", "Приказы", "student/orders"],
@@ -16,6 +17,7 @@
   let selected = pages[0][0];
   let connection = readConnection();
   let data = null;
+  let reauthenticating = false;
 
   function element(tag, className, content) {
     const node = document.createElement(tag);
@@ -24,13 +26,24 @@
     return node;
   }
 
-  function endpoint(address) {
+  function endpoint(address, method = "snapshot") {
     const url = new URL(address);
     const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
     if ((url.protocol !== "https:" && !(local && url.protocol === "http:")) || url.username || url.password || url.search || url.hash) {
       throw new Error("Укажи HTTPS-адрес сервера подключения.");
     }
-    return new URL(`${url.pathname.replace(/\/$/, "")}/cabinet/v1/snapshot`, url.origin).href;
+    return new URL(`${url.pathname.replace(/\/$/, "")}/cabinet/v1/${method}`, url.origin).href;
+  }
+
+  async function configuredServer() {
+    const config = await fetch(new URL("cabinet-config.json", document.baseURI), {
+      cache: "no-store", credentials: "omit", redirect: "error", signal: AbortSignal.timeout(6000),
+    });
+    if (!config.ok) throw new Error();
+    const { server } = await config.json();
+    if (!server) throw new Error();
+    endpoint(server, "login");
+    return server;
   }
 
   function readConnection() {
@@ -46,6 +59,7 @@
     request = null;
     data = null;
     connection = value;
+    reauthenticating = false;
     try {
       if (value) localStorage.setItem(connectionKey, JSON.stringify({ address: value.address, key: value.key }));
       else localStorage.removeItem(connectionKey);
@@ -60,51 +74,87 @@
     return link;
   }
 
-  function connectionForm() {
+  function connectionForm(previous = null) {
     const form = element("form", "list cabinet-form");
-    form.append(element("h2", "", "Подключить кабинет"));
-    form.append(element("p", "cabinet-muted", "Введи адрес сервера и свой ключ подключения."));
-    const address = element("input");
-    address.type = "url";
-    address.placeholder = "https://";
-    address.required = true;
-    address.autocapitalize = "none";
-    const key = element("input");
-    key.type = "password";
-    key.required = true;
-    key.autocomplete = "off";
-    for (const [caption, input] of [["Адрес сервера", address], ["Ключ подключения", key]]) {
+    form.append(element("h2", "", previous ? "Войти повторно" : "Войти в кабинет"));
+    const notice = element("p", "cabinet-muted", "Логин и пароль передаются серверу приложения для входа на сайт ПривГУПС.");
+    form.append(notice);
+    const login = element("input");
+    login.type = "text";
+    login.required = true;
+    login.maxLength = 256;
+    login.autocomplete = "username";
+    login.autocapitalize = "none";
+    login.spellcheck = false;
+    const password = element("input");
+    password.type = "password";
+    password.required = true;
+    password.maxLength = 1024;
+    password.autocomplete = "current-password";
+    for (const [caption, input] of [["Логин ПривГУПС", login], ["Пароль ПривГУПС", password]]) {
       const label = element("label", "", caption);
       label.append(input);
       form.append(label);
     }
-    const submit = element("button", "btn", "Подключить");
+    const submit = element("button", "btn", "Войти");
     submit.type = "submit";
+    submit.disabled = true;
     const error = element("p", "cabinet-muted");
     error.setAttribute("role", "alert");
     form.append(submit, error, sourceLink("Открыть на сайте вуза", "login"));
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      let url;
-      try { url = endpoint(address.value.trim()); }
-      catch { error.textContent = "Укажи HTTPS-адрес сервера подключения."; return; }
-      const next = { address: address.value.trim(), key: key.value.trim(), url };
-      if (!/^sc_[\da-f-]{36}\.[\w-]{43}$/i.test(next.key)) {
-        error.textContent = "Проверь ключ подключения.";
+    if (previous) {
+      const cancel = element("button", "btn", "Отмена");
+      cancel.type = "button";
+      cancel.addEventListener("click", () => { reauthenticating = false; draw(); });
+      form.append(cancel);
+    }
+    let address;
+    configuredServer().then(server => {
+      if (previous && endpoint(server) !== previous.url) {
+        error.textContent = "Это подключение относится к другому серверу. Отключи его и войди снова.";
         return;
       }
+      address = server;
+      notice.textContent = `Сервер ${new URL(server).host} получит логин и пароль для входа на сайт ПривГУПС.`;
+      submit.disabled = false;
+    }).catch(() => { error.textContent = "Вход пока недоступен. Сервер подключения не настроен или нет сети."; });
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!address || submit.disabled) return;
       error.textContent = "";
       submit.disabled = true;
+      submit.textContent = "Входим…";
       try {
-        const response = await getSnapshot(next, AbortSignal.timeout(12000));
-        if (!form.isConnected) return;
-        setConnection(next);
-        data = response;
+        const body = JSON.stringify({ login: login.value.trim(), password: password.value });
+        password.value = "";
+        const headers = { "Content-Type": "application/json" };
+        if (previous) headers.Authorization = `Bearer ${previous.key}`;
+        const response = await fetch(endpoint(address, "login"), {
+          method: "POST", headers, body, cache: "no-store", credentials: "omit", redirect: "error",
+          referrerPolicy: "no-referrer", signal: AbortSignal.timeout(35000),
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !keyPattern.test(result?.key || "") || result?.snapshot?.version !== 1) {
+          const messages = {
+            invalid_credentials: "Проверь логин и пароль ПривГУПС.",
+            interaction_required: "Вуз запросил дополнительную проверку. Проверь вход на официальном сайте.",
+            rate_limited: "Слишком много попыток. Подожди несколько минут.",
+            different_account: "Введи данные того же аккаунта ПривГУПС. Для другого аккаунта отключи текущее подключение.",
+            invalid_key: "Текущее подключение отозвано. Отключи его и войди снова.",
+            bad_request: "Введи логин и пароль ПривГУПС.",
+          };
+          error.textContent = messages[result?.error] || "Сейчас не удалось войти в кабинет вуза.";
+          return;
+        }
+        if (!form.isConnected || connection !== previous) return;
+        setConnection({ address, key: result.key, url: endpoint(address) });
+        data = result.snapshot;
         draw();
-      } catch (failure) {
-        error.textContent = failure.message;
+      } catch {
+        error.textContent = "Не удалось связаться с сервером входа. Попробуй позже.";
       } finally {
         submit.disabled = false;
+        submit.textContent = "Войти";
       }
     });
     return form;
@@ -129,6 +179,7 @@
     if (!data) return "Загрузка кабинета…";
     const date = Date.parse(data.syncedAt);
     const stamp = Number.isFinite(date) ? `Обновлено ${dateFormat.format(date)}` : "Обновлений пока нет";
+    if (data.status === "pending") return "Первое обновление кабинета…";
     if (data.status === "expired") return `Войди в кабинет вуза повторно. ${stamp}.`;
     if (data.status === "error") return `Синхронизация временно недоступна. ${stamp}.`;
     if (data.status === "partial") return `Некоторые разделы пока не обновились. ${stamp}.`;
@@ -191,16 +242,21 @@
     status.setAttribute("role", "status");
     status.dataset.cabinetStatus = "";
     const actions = element("div", "cabinet-sync");
-    const refresh = element("button", "btn icon-btn");
-    refresh.setAttribute("aria-label", "Проверить обновление");
-    refresh.title = "Проверить обновление";
-    refresh.append(refreshIcon());
-    refresh.addEventListener("click", () => load());
+    const expired = data?.status === "expired";
+    const refresh = element("button", expired ? "btn" : "btn icon-btn", expired ? "Войти снова" : undefined);
+    if (expired) refresh.addEventListener("click", () => { reauthenticating = true; draw(); });
+    else {
+      refresh.setAttribute("aria-label", "Проверить обновление");
+      refresh.title = "Проверить обновление";
+      refresh.append(refreshIcon());
+      refresh.addEventListener("click", () => load());
+    }
     const disconnect = element("button", "cabinet-source flink", "Отключить");
     disconnect.setAttribute("aria-label", "Отключить на этом устройстве");
     disconnect.addEventListener("click", () => { setConnection(null); draw(); });
     actions.append(status, refresh);
     root.append(actions);
+    if (expired && reauthenticating) root.append(connectionForm(connection));
 
     const nav = element("div", "cabinet-pages");
     nav.setAttribute("role", "group");
@@ -232,7 +288,7 @@
   }
 
   async function load() {
-    if (!connection || !root?.isConnected || request) return;
+    if (!connection || !root?.isConnected || request || reauthenticating) return;
     const controller = new AbortController();
     const thisConnection = connection;
     request = controller;
@@ -266,9 +322,11 @@
     request = null;
     connection = next;
     data = null;
+    reauthenticating = false;
     draw();
     load();
   });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
   setInterval(() => { if (!document.hidden) load(); }, 60000);
+  setInterval(() => { if (!document.hidden && data?.status === "pending") load(); }, 4000);
 })();

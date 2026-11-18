@@ -2,6 +2,57 @@ import { createHash } from 'node:crypto';
 
 export const portalOrigin = 'https://newlk.samgups.ru';
 export class SessionExpired extends Error {}
+export class SignInFailed extends Error {
+  constructor(code) {
+    super(code);
+    this.code = code;
+  }
+}
+
+export async function signInToPortal(browser, { login, password }, prepareContext = async () => {}) {
+  const context = await browser.newContext({ serviceWorkers: 'block' });
+  try {
+    await context.route('**/*', route => new URL(route.request().url()).origin === portalOrigin ? route.fallback() : route.abort());
+    await prepareContext(context);
+    const page = await context.newPage();
+    page.setDefaultTimeout(10000);
+    const loginUrl = `${portalOrigin}/login`;
+    const reply = await page.goto(loginUrl, { waitUntil: 'domcontentloaded' });
+    if (reply?.status() === 429) throw new SignInFailed('rate_limited');
+    if (!reply?.ok() || page.url() !== loginUrl) throw new SignInFailed('portal_unavailable');
+    const form = page.locator('form').filter({ has: page.locator('input[name="login"]') }).filter({ visible: true });
+    const approvedForm = node => node.action === `${location.origin}/login` && node.method.toLowerCase() === 'post';
+    const challenge = page.locator('input[name*="captcha" i], input[name="otp" i], iframe[src*="captcha" i]');
+    const submit = form.locator('button[type="submit"]:not([formaction]):not([formmethod])');
+    if (await form.count() !== 1 || await challenge.first().isVisible() || !await form.evaluate(approvedForm) || await submit.count() !== 1) {
+      throw new SignInFailed('interaction_required');
+    }
+    await form.locator('input[name="login"]').fill(login);
+    await form.locator('input[type="password"][name="password"]').fill(password);
+    const [result] = await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
+      submit.click(),
+    ]);
+    if (result?.status() === 429) throw new SignInFailed('rate_limited');
+    const destination = new URL(page.url());
+    if (destination.origin !== portalOrigin) throw new SignInFailed('interaction_required');
+    if (destination.pathname === '/login') {
+      if (await challenge.first().isVisible()) throw new SignInFailed('interaction_required');
+      if (result?.ok() || result?.status() === 422 || result?.status() === 401) throw new SignInFailed('invalid_credentials');
+      throw new SignInFailed('portal_unavailable');
+    }
+    if (destination.pathname !== '/dashboard') throw new SignInFailed('interaction_required');
+    const identity = await getBookIdentity(page);
+    const { cookies } = safeSession(await context.storageState());
+    if (!cookies.length) throw new SignInFailed('portal_unavailable');
+    return { identity, browserState: { cookies, origins: [] } };
+  } catch (error) {
+    if (error instanceof SignInFailed) throw error;
+    throw new SignInFailed('portal_unavailable');
+  } finally {
+    await context.close();
+  }
+}
 
 async function open(page, path) {
   const response = await page.goto(portalOrigin + path, { waitUntil: 'domcontentloaded' });

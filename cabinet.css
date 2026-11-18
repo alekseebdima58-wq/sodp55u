@@ -13,6 +13,7 @@
 .cabinet-form input { width: 100%; min-height: 44px; padding: 8px 12px; background: var(--surface2); border: 1px solid var(--strong); border-radius: 12px; color: var(--text); font: inherit; font-size: 16px; }
 .cabinet-sync { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .cabinet-sync .btn { flex: none; }
+.cabinet-sync + .cabinet-form { margin-top: 12px; }
 .cabinet-pages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 12px 0 22px; }
 .cabinet-pages .btn { min-width: 0; min-height: 44px; height: auto; padding: 8px 4px; font-size: calc(13px * var(--fs, 1)); white-space: normal; text-wrap: balance; }
 .cabinet-pages [aria-pressed="true"] { background: var(--acc-soft); color: var(--accent); border-color: var(--accent); }

@@ -2,9 +2,9 @@ name: Проверка личного кабинета
 on:
   push:
     branches: [feature/student-cabinet, main]
-    paths: ['cabinet-server/**', 'cabinet.js', 'cabinet.css', 'index.html', 'sw.js', '.github/workflows/cabinet-tests.yml']
+    paths: ['cabinet-server/**', 'cabinet.js', 'cabinet.css', 'cabinet-config.json', 'index.html', 'sw.js', '.github/workflows/cabinet-tests.yml']
   pull_request:
-    paths: ['cabinet-server/**', 'cabinet.js', 'cabinet.css', 'index.html', 'sw.js', '.github/workflows/cabinet-tests.yml']
+    paths: ['cabinet-server/**', 'cabinet.js', 'cabinet.css', 'cabinet-config.json', 'index.html', 'sw.js', '.github/workflows/cabinet-tests.yml']
   workflow_dispatch:
 permissions:
   contents: read
