@@ -88,30 +88,83 @@ async function saveMockup(browser, appUrl, directory) {
         ['Электротехника', 'Экзамен', '25.06.2026', 'Отлично'],
         ['Математика', 'Экзамен', '20.06.2026', 'Хорошо'],
       ] },
-    ] },
+    ],
+    orders: [{ columns: ['Дата', 'Номер приказа', 'Название', 'Содержание'], rows: [
+      ['03.09.2026', '104-У', 'О переводе на следующий курс', 'Перевод на второй курс с 1 сентября.'],
+      ['21.08.2025', '182-У', 'О зачислении', 'Зачисление на очную форму обучения.'],
+    ] }],
+    plan: [{ columns: ['Индекс', 'Дисциплина', 'Часы', 'Период', 'Вид контроля'], rows: [
+      ['Б1.О.12', 'Рельсовые цепи', '108', '3 семестр', 'Экзамен'],
+      ['Б1.О.13', 'Электрические машины', '144', '3 семестр', 'Экзамен'],
+      ['Б1.В.04', 'Теория передачи сигналов', '72', '3 семестр', 'Зачёт'],
+      ['Б1.О.15', 'Метрология и стандартизация', '72', '4 семестр', 'Зачёт'],
+    ] }],
+    trajectory: [
+      { title: '2026/2027 (зимний)', columns: ['Дисциплина', 'Контроль, нагрузка и статус'], rows: [
+        ['Рельсовые цепи', 'Экзамен · 108 ч. · 3 з. е.'],
+        ['Теория передачи сигналов', 'Зачёт · 72 ч. · 2 з. е.'],
+        ['Статус семестра', 'Обучение продолжается'],
+      ] },
+      { title: '2025/2026 (летний)', columns: ['Дисциплина', 'Контроль, нагрузка и статус'], rows: [
+        ['Электротехника', 'Экзамен · 108 ч. · 3 з. е.'],
+        ['Статус семестра', 'Курс полностью пройден'],
+      ] },
+    ],
+    profile: [{ columns: ['Поле', 'Значение'], rows: [
+      ['Имя', 'Иван Соколов'], ['Группа', 'СОДП-00у'], ['Курс', '2'],
+      ['Направление подготовки', 'Системы обеспечения движения поездов'], ['Форма обучения', 'Очная'],
+    ] }],
+    group: [{ columns: ['ФИО'], rows: [
+      ['Алексеева Анна Игоревна'], ['Белов Максим Олегович'], ['Данилова Софья Павловна'],
+      ['Ковалёв Артём Денисович'], ['Соколов Иван Сергеевич'], ['Федорова Полина Андреевна'],
+    ] }],
+    },
   };
   for (const colorScheme of ['dark', 'light']) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme });
     try {
+      let expired = false;
       await context.route('**/*', route => {
         const url = new URL(route.request().url());
         if (url.origin !== appUrl) return route.abort();
-        if (url.pathname === '/cabinet/v1/snapshot') return route.fulfill({ json: snapshot });
+        if (url.pathname === '/cabinet/v1/snapshot') {
+          return route.fulfill({ json: expired ? { ...snapshot, status: 'expired' } : snapshot });
+        }
         return route.continue();
       });
-      await context.addInitScript(address => {
-        const key = `sc_00000000-0000-0000-0000-000000000000.${'a'.repeat(43)}`;
-        localStorage.setItem('student-cabinet-connection', JSON.stringify({ address, key }));
-      }, appUrl);
       const page = await context.newPage();
+      const capture = filename => page.screenshot({ path: join(directory, `${filename}.png`), animations: 'disabled' });
       await page.goto(`${appUrl}/?now=2026-11-19T09:42`);
       await page.getByRole('button', { name: 'Личный кабинет', exact: true }).click();
-      await page.getByText('Рельсовые цепи', { exact: true }).waitFor();
       await page.evaluate(() => document.fonts.ready.then(() => true));
+      await page.getByRole('heading', { name: 'Подключить кабинет', exact: true }).waitFor();
+      if (colorScheme === 'dark') await capture('cabinet-connect');
+      await page.getByLabel('Адрес сервера').fill(appUrl);
+      await page.getByLabel('Ключ подключения').fill(`sc_00000000-0000-0000-0000-000000000000.${'a'.repeat(43)}`);
+      await page.getByRole('button', { name: 'Подключить', exact: true }).click();
+      await page.getByText('Рельсовые цепи', { exact: true }).waitFor();
       const footer = await page.locator('.cabinet-footer').boundingBox();
       const navigation = await page.getByRole('navigation', { name: 'Разделы', exact: true }).boundingBox();
       assert(footer.y + footer.height <= navigation.y, 'Нижняя панель перекрывает действия кабинета');
-      await page.screenshot({ path: join(directory, `cabinet-${colorScheme}.png`), animations: 'disabled' });
+      await capture(`cabinet-${colorScheme}`);
+      if (colorScheme === 'dark') {
+        for (const [tab, filename, sample] of [
+          ['Приказы', 'cabinet-orders', 'О переводе на следующий курс'],
+          ['Учебный план', 'cabinet-plan', 'Метрология и стандартизация'],
+          ['Траектория', 'cabinet-trajectory', 'Обучение продолжается'],
+          ['Профиль', 'cabinet-profile', 'Иван Соколов'],
+          ['Моя группа', 'cabinet-group', 'Данилова Софья Павловна'],
+        ]) {
+          await page.getByRole('button', { name: tab, exact: true }).click();
+          await page.getByText(sample, { exact: true }).waitFor();
+          await capture(filename);
+        }
+        await page.getByRole('button', { name: 'Зачётка', exact: true }).click();
+        expired = true;
+        await page.getByRole('button', { name: 'Проверить обновление' }).click();
+        await page.getByText(/Войди в кабинет вуза повторно/).waitFor();
+        await capture('cabinet-expired');
+      }
     } finally { await context.close(); }
   }
 }
