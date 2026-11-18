@@ -127,12 +127,12 @@ export async function dueAccounts(store, accounts, now = Date.now()) {
   return due;
 }
 
-export async function syncAll(store, browser, prepareContext = async () => {}, accounts) {
+export async function syncAll(store, browser, prepareContext = async () => {}, accounts, now = Date.now) {
   for (const account of accounts ?? await store.accounts()) {
     const session = await store.session(account);
     const { browserState, snapshot } = session;
     if (!browserState || snapshot.status === 'expired') continue;
-    const lastAttemptAt = new Date().toISOString();
+    const lastAttemptAt = new Date(now()).toISOString();
     if (!await store.saveSession(account, { ...session, lastAttemptAt })) continue;
     let context;
     try {

@@ -270,11 +270,13 @@ test('вход по паролю, повторный вход и синхрон�
   const apiUrl = await address(api);
   const apiPath = `${apiUrl}/cabinet/v1/snapshot`;
   const read = key => fetch(apiPath, { headers: { Authorization: `Bearer ${key}`, Origin: appUrl } });
-  let cycles = 0;
+  const interval = 21 * 24 * 60 * 60 * 1000;
+  let scheduleTime = Date.now(), checkedAt;
   stop = scheduleSync(async () => {
-    activeCycle = syncAll(store, browser, prepare);
+    const now = scheduleTime;
+    activeCycle = dueAccounts(store, undefined, now).then(due => syncAll(store, browser, prepare, due, () => now));
     await activeCycle;
-    cycles++;
+    checkedAt = now;
   }, 150);
 
   const ready = async key => {
@@ -360,11 +362,14 @@ test('вход по паролю, повторный вход и синхрон�
   await first.getByRole('button', { name: 'Личный кабинет', exact: true }).click();
   await first.getByText('Участник А', { exact: true }).waitFor();
 
-  const baseline = cycles;
   marks.А = 'Удовлетворительно';
+  scheduleTime += interval - 1;
+  await waitFor(() => checkedAt === scheduleTime);
+  assert.equal((await ready(alice.key)).sections.grades[0].rows[0][2], 'Отлично');
+  scheduleTime++;
   await waitFor(async () => {
     const value = await ready(alice.key);
-    return cycles > baseline && value?.sections?.grades?.[0].rows[0][2] === 'Удовлетворительно';
+    return checkedAt === scheduleTime && value?.sections?.grades?.[0].rows[0][2] === 'Удовлетворительно';
   });
   await first.getByRole('button', { name: 'Зачётка', exact: true }).click();
   await first.getByRole('button', { name: 'Проверить обновление' }).click();
@@ -372,6 +377,7 @@ test('вход по паролю, повторный вход и синхрон�
   assert.equal((await ready(bob.key)).sections.grades[0].rows[0][2], 'Хорошо');
 
   delete identities.alice;
+  scheduleTime += interval;
   const expired = await waitFor(async () => {
     const value = await (await read(alice.key)).json();
     return value.status === 'expired' ? value : false;
