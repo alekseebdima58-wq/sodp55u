@@ -5,13 +5,14 @@
   const officialSite = "https://newlk.samgups.ru/";
   const keyPattern = /^sc_[\da-f-]{36}\.[\w-]{43}$/;
   const pages = [
-    ["grades", "Зачётка", "student/book/list"],
-    ["orders", "Приказы", "student/orders"],
-    ["plan", "Учебный план", "student/curriculum"],
-    ["trajectory", "Траектория", "student/trajectory"],
-    ["profile", "Профиль", "user/profile"],
-    ["group", "Моя группа", "dashboard"],
+    ["grades", "Зачётка", "student/book/list", "M5 4h14v16H5a2 2 0 0 1 0-4h14M5 4a2 2 0 0 0-2 2v12M8 10l2 2 4-4"],
+    ["orders", "Приказы", "student/orders", "M6 3h8l4 4v14H6zM14 3v5h4M9 12h6m-6 4h6"],
+    ["plan", "Учебный план", "student/curriculum", "M8 4h12M8 9h12M8 14h12M8 19h12M4 4h.01M4 9h.01M4 14h.01M4 19h.01"],
+    ["trajectory", "Траектория", "student/trajectory", "M4 18l6-6 4 4 6-9m-5 0h5v5"],
+    ["profile", "Профиль", "user/profile", "M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"],
+    ["group", "Моя группа", "dashboard", "M14 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM3 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2m0-17a4 4 0 0 1 0 8m2 3a4 4 0 0 1 3 4v2"],
   ];
+  const shortFields = { grades: ["Форма контроля", "Дата"], orders: ["Содержание"], trajectory: ["Контроль, нагрузка и статус"], profile: ["Значение"] };
   const dateFormat = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Samara" });
   let root, request;
   let selected = pages[0][0];
@@ -205,13 +206,19 @@
       }
       body.append(heading);
       const fields = element("dl", "cabinet-fields");
+      const brief = element("div", "cabinet-brief");
       for (const [index, label] of section.columns.entries()) {
         if (index === lead || index === result || !row[index]) continue;
+        if (shortFields[id]?.includes(label)) {
+          brief.append(element("span", "", row[index]));
+          continue;
+        }
         const field = element("div");
         field.append(element("dt", "", label), element("dd", "", row[index]));
         fields.append(field);
       }
       if (fields.childElementCount) body.append(fields);
+      if (brief.childElementCount) body.append(brief);
       item.append(body);
       list.append(item);
     }
@@ -219,14 +226,23 @@
     return wrapper;
   }
 
-  function refreshIcon() {
+  function iconPath(outline, size = 20) {
     const namespace = "http://www.w3.org/2000/svg";
     const icon = document.createElementNS(namespace, "svg");
-    for (const [key, value] of Object.entries({ width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" })) icon.setAttribute(key, value);
+    for (const [key, value] of Object.entries({ width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" })) icon.setAttribute(key, value);
     const path = document.createElementNS(namespace, "path");
-    path.setAttribute("d", "M20 11a8 8 0 1 0-2 6M20 4v7h-7");
+    path.setAttribute("d", outline);
     icon.append(path);
     return icon;
+  }
+
+  function profileSummary() {
+    const fields = new Map(data?.sections?.profile?.flatMap(({ rows }) => rows));
+    const name = fields.get("Имя") || fields.get("ФИО");
+    const group = fields.get("Группа") || fields.get("Учебная группа");
+    const course = fields.get("Курс");
+    const meta = [group, /^\d+$/.test(course ?? "") ? `${course} курс` : course].filter(Boolean).join(" · ");
+    return { name, meta };
   }
 
   function draw() {
@@ -241,20 +257,31 @@
     const status = element("p", "cabinet-muted", syncStatus());
     status.setAttribute("role", "status");
     status.dataset.cabinetStatus = "";
-    const actions = element("div", "cabinet-sync");
+    const actions = element("div", "list cabinet-overview");
+    const summary = element("div", "cabinet-summary");
+    const { name, meta } = profileSummary();
+    if (name) {
+      const initials = name.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join("").toUpperCase();
+      const avatar = element("span", "cabinet-avatar", initials);
+      avatar.setAttribute("aria-hidden", "true");
+      actions.append(avatar);
+      summary.append(element("p", "cabinet-name", name));
+    }
+    if (meta) summary.append(element("p", "cabinet-study", meta));
+    summary.append(status);
     const expired = data?.status === "expired";
     const refresh = element("button", expired ? "btn" : "btn icon-btn", expired ? "Войти снова" : undefined);
     if (expired) refresh.addEventListener("click", () => { reauthenticating = true; draw(); });
     else {
       refresh.setAttribute("aria-label", "Проверить обновление");
       refresh.title = "Проверить обновление";
-      refresh.append(refreshIcon());
+      refresh.append(iconPath("M20 11a8 8 0 1 0-2 6M20 4v7h-7"));
       refresh.addEventListener("click", () => load());
     }
     const disconnect = element("button", "cabinet-source flink", "Отключить");
     disconnect.setAttribute("aria-label", "Отключить на этом устройстве");
     disconnect.addEventListener("click", () => { setConnection(null); draw(); });
-    actions.append(status, refresh);
+    actions.append(summary, refresh);
     root.append(actions);
     if (expired && reauthenticating) root.append(connectionForm(connection));
 
@@ -277,8 +304,9 @@
       footer.append(sourceLink("Открыть на сайте вуза", path), disconnect);
       section.append(footer);
     }
-    for (const [id, label] of pages) {
-      const button = element("button", "btn", label);
+    for (const [id, label, , outline] of pages) {
+      const button = element("button", "btn cabinet-page");
+      button.append(iconPath(outline, 19), element("span", "", label));
       button.dataset.page = id;
       button.addEventListener("click", () => { selected = id; drawSection(); });
       nav.append(button);

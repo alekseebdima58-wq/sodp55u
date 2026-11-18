@@ -143,6 +143,8 @@ async function saveMockup(browser, appUrl, directory) {
       if (colorScheme === 'dark') await capture('cabinet-connect');
       await enterCredentials(page, 'demo', 'fictional-password');
       await page.getByText('Рельсовые цепи', { exact: true }).waitFor();
+      await page.locator('.cabinet-overview').getByText('Иван Соколов', { exact: true }).waitFor();
+      await page.locator('.cabinet-overview').getByText('СОДП-00у · 2 курс', { exact: true }).waitFor();
       const footer = await page.locator('.cabinet-footer').boundingBox();
       const navigation = await page.getByRole('navigation', { name: 'Разделы', exact: true }).boundingBox();
       assert(footer.y + footer.height <= navigation.y, 'Нижняя панель перекрывает действия кабинета');
@@ -156,7 +158,7 @@ async function saveMockup(browser, appUrl, directory) {
           ['Моя группа', 'cabinet-group', 'Данилова Софья Павловна'],
         ]) {
           await page.getByRole('button', { name: tab, exact: true }).click();
-          await page.getByText(sample, { exact: true }).waitFor();
+          await page.locator('.cabinet-content').getByText(sample, { exact: true }).waitFor();
           await capture(filename);
         }
         await page.getByRole('button', { name: 'Зачётка', exact: true }).click();
