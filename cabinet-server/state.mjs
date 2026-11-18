@@ -71,11 +71,15 @@ export async function openStore(location = process.env.CABINET_STATE_DIR || join
     },
     async saveSession(account, value) {
       const current = await find(account.id);
-      if (!current || current.disabled || current.generation !== account.generation) return;
+      if (!current || current.disabled || current.generation !== account.generation) return false;
       const file = sessionFile(account);
       await writeJson(file, value);
       const latest = await find(account.id);
-      if (!latest || latest.disabled || latest.generation !== account.generation) await rm(file, { force: true });
+      if (!latest || latest.disabled || latest.generation !== account.generation) {
+        await rm(file, { force: true });
+        return false;
+      }
+      return true;
     },
   };
 }

@@ -6,7 +6,7 @@ import { extname, join, resolve, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { launchBrowser, makeApi, scheduleSync, syncAll } from './server.mjs';
+import { dueAccounts, launchBrowser, makeApi, scheduleSync, syncAll } from './server.mjs';
 import { portalOrigin, signInToPortal } from './portal.mjs';
 import { openStore } from './state.mjs';
 
@@ -187,6 +187,35 @@ async function savedKey(page) {
   await page.waitForFunction(() => !!localStorage.getItem('student-cabinet-connection'));
   return page.evaluate(() => JSON.parse(localStorage.getItem('student-cabinet-connection')).key);
 }
+
+test('обновление раз в 21 день и сохранение срока после перезапуска', async t => {
+  const path = await mkdtemp(join(tmpdir(), 'sodp55u-refresh-'));
+  t.after(() => rm(path, { recursive: true, force: true }));
+  const store = await openStore(path);
+  const browserState = { cookies: [], origins: [] };
+  const { id } = await store.create('student', browserState);
+  const account = await store.find(id);
+  const syncedAt = '2026-11-01T08:00:00Z';
+  const now = Date.parse(syncedAt);
+  const interval = 21 * 24 * 60 * 60 * 1000;
+  assert.deepEqual(await dueAccounts(store, undefined, now), [account]);
+
+  const snapshot = { version: 1, status: 'ready', syncedAt, sections: {} };
+  await store.saveSession(account, { browserState, snapshot });
+  assert.deepEqual(await dueAccounts(store, undefined, now + interval - 1), []);
+  assert.deepEqual(await dueAccounts(store, undefined, now + interval), [account]);
+
+  const lastAttemptAt = new Date(now + interval).toISOString();
+  await store.saveSession(account, { browserState, snapshot: { ...snapshot, status: 'error' }, lastAttemptAt });
+  const restarted = await openStore(path);
+  assert.deepEqual(await dueAccounts(restarted, undefined, now + interval * 2 - 1), []);
+  assert.deepEqual(await dueAccounts(restarted, undefined, now + interval * 2), [account]);
+
+  await restarted.saveSession(account, { browserState: null, snapshot: { ...snapshot, status: 'expired' }, lastAttemptAt });
+  assert.deepEqual(await dueAccounts(restarted, undefined, now + interval * 2), []);
+  await restarted.reconnect(id, 'student', browserState);
+  assert.deepEqual((await dueAccounts(restarted, undefined, now + interval)).map(item => item.id), [id]);
+});
 
 test('вход по паролю, повторный вход и синхронизация двух кабинетов', { timeout: 80000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'sodp55u-cabinet-'));

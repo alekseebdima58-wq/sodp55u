@@ -7,6 +7,8 @@ import { openStore } from './state.mjs';
 const snapshotPath = '/cabinet/v1/snapshot';
 const loginPath = '/cabinet/v1/login';
 const bearer = request => /^Bearer (\S+)$/.exec(request.headers.authorization || '')?.[1] || '';
+const refreshInterval = 21 * 24 * 60 * 60 * 1000;
+const dueCheckInterval = 5 * 60 * 1000;
 
 async function readCredentials(request) {
   if (!/^application\/json(?:;|$)/i.test(request.headers['content-type'] || '')) return null;
@@ -113,10 +115,25 @@ export function launchBrowser(headless = true) {
   return chromium.launch({ headless, executablePath });
 }
 
+export async function dueAccounts(store, accounts, now = Date.now()) {
+  const due = [];
+  for (const account of accounts ?? await store.accounts()) {
+    if (!account || account.disabled) continue;
+    const { browserState, snapshot, lastAttemptAt } = await store.session(account);
+    if (!browserState || snapshot.status === 'expired') continue;
+    const previous = Date.parse(lastAttemptAt ?? (snapshot.status === 'pending' ? null : snapshot.syncedAt));
+    if (!Number.isFinite(previous) || now - previous >= refreshInterval) due.push(account);
+  }
+  return due;
+}
+
 export async function syncAll(store, browser, prepareContext = async () => {}, accounts) {
   for (const account of accounts ?? await store.accounts()) {
-    const { browserState, snapshot } = await store.session(account);
+    const session = await store.session(account);
+    const { browserState, snapshot } = session;
     if (!browserState || snapshot.status === 'expired') continue;
+    const lastAttemptAt = new Date().toISOString();
+    if (!await store.saveSession(account, { ...session, lastAttemptAt })) continue;
     let context;
     try {
       context = await browser.newContext({ storageState: browserState, viewport: { width: 1440, height: 900 } });
@@ -127,6 +144,7 @@ export async function syncAll(store, browser, prepareContext = async () => {}, a
       const updatedState = safeSession(await context.storageState());
       await store.saveSession(account, {
         browserState: updatedState,
+        lastAttemptAt,
         snapshot: {
           version: 1, status: unavailable.length ? 'partial' : 'ready', syncedAt: new Date().toISOString(),
           sections: { ...snapshot.sections, ...sections }, unavailable,
@@ -136,6 +154,7 @@ export async function syncAll(store, browser, prepareContext = async () => {}, a
       const expired = error instanceof SessionExpired;
       await store.saveSession(account, {
         browserState: expired ? null : browserState,
+        lastAttemptAt,
         snapshot: { ...snapshot, status: expired ? 'expired' : 'error' },
       });
       if (!expired) console.error('Не удалось обновить один из кабинетов. Последняя версия данных сохранена.');
@@ -190,10 +209,7 @@ async function serve(store) {
     return url.origin !== origin || (url.protocol !== 'https:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname));
   })) throw new Error('Укажи CABINET_PWA_ORIGIN без пути, например https://example.github.io');
   const port = Number(process.env.CABINET_PORT || 8776);
-  const minutes = Number(process.env.CABINET_SYNC_MINUTES || 30);
-  if (!Number.isInteger(port) || port < 1 || port > 65535 || !Number.isFinite(minutes) || minutes < 5 || minutes > 1440) {
-    throw new Error('Некорректный CABINET_PORT или CABINET_SYNC_MINUTES (5–1440 минут)');
-  }
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Некорректный CABINET_PORT');
   let browser, starting;
   const getBrowser = async () => {
     if (browser?.isConnected()) return browser;
@@ -206,17 +222,19 @@ async function serve(store) {
     syncQueue = execution.catch(() => {});
     return execution;
   };
+  const syncDue = async (accounts) => {
+    const due = await dueAccounts(store, accounts);
+    if (due.length) await syncAll(store, await getBrowser(), undefined, due);
+  };
   const api = makeApi(store, origins, {
     signIn: async credentials => signInToPortal(await getBrowser(), credentials),
     onConnected: id => {
-      queueSync(async () => {
-        const account = await store.find(id);
-        if (account && !account.disabled) await syncAll(store, await getBrowser(), undefined, [account]);
-      }).catch(() => console.error('Не удалось запустить синхронизацию подключённого кабинета.'));
+      queueSync(async () => syncDue([await store.find(id)]))
+        .catch(() => console.error('Не удалось запустить синхронизацию подключённого кабинета.'));
     },
   });
   api.listen(port, '127.0.0.1');
-  const cancel = scheduleSync(() => queueSync(async () => syncAll(store, await getBrowser())), minutes * 60000,
+  const cancel = scheduleSync(() => queueSync(() => syncDue()), dueCheckInterval,
     () => console.error('Цикл синхронизации временно недоступен.'));
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, async () => { cancel(); api.close(); await browser?.close(); });
   console.log(`Кабинет принимает запросы на 127.0.0.1:${port}`);
