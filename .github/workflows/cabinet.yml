@@ -1,0 +1,69 @@
+name: Кабинет — проверки
+
+on:
+  push:
+    paths: ['cabinet-server/**', 'cabinet.js', 'cabinet.css', 'index.html', '.github/workflows/cabinet.yml']
+  pull_request:
+    paths: ['cabinet-server/**', 'cabinet.js', 'cabinet.css', 'index.html', '.github/workflows/cabinet.yml']
+  workflow_dispatch:
+    inputs:
+      live:
+        description: 'Войти на настоящий newlk.samgups.ru (нужны секреты LK_LOGIN и LK_PASSWORD)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Тесты (${{ matrix.parser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        parser: [linkedom, chromium]
+    defaults:
+      run:
+        working-directory: cabinet-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: npm test
+        run: npm test
+        env:
+          # linkedom — как на сервере; chromium — сверка разбора страниц в настоящем браузере
+          CABINET_PARSER: ${{ matrix.parser == 'chromium' && 'chromium' || '' }}
+          CABINET_MOCKUP_DIR: ${{ github.workspace }}/screens
+      - name: Скриншоты кабинета в PWA
+        if: always() && matrix.parser == 'linkedom'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cabinet-screens
+          path: screens
+          if-no-files-found: ignore
+
+  live:
+    name: Вход на настоящий сайт
+    if: github.event_name == 'workflow_dispatch' && inputs.live
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: cabinet-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --omit=dev --no-audit --no-fund
+      # Печатает только количество строк по разделам — без оценок и ФИО
+      - run: node live-check.mjs
+        env:
+          LK_LOGIN: ${{ secrets.LK_LOGIN }}
+          LK_PASSWORD: ${{ secrets.LK_PASSWORD }}

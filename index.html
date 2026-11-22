@@ -1,8 +1,6 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="2490d109fd8b">
-<meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
 <meta name="app-build" content="2026-10-17 modern-2026 pwa fast-days icon-pick net-fallback install-sheet no-tg-shortcut yandex-mirrors solid-head install-video video-url-v2 video-inline video-auto-os yandex-note no-chrome install-wizard safari-hint av1-android ibar-smart notif-jump fresh-data">
@@ -561,7 +559,7 @@ html[data-theme="light"] .toast { box-shadow: 0 6px 18px rgba(20, 30, 60, .18); 
    border-top: 1px solid var(--tab-border);
 
 }
-.tabs .in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tabs .in { --tab-count: 4; max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(var(--tab-count), minmax(0, 1fr)); }
 .tab {
    border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
@@ -1308,7 +1306,7 @@ html[data-theme="dark"] .c1 { background: #3987e5; } html[data-theme="dark"] .c2
 .tab { position: relative; z-index: 1; }
 .tab.on, html[data-theme="light"] .tab.on { background: transparent; box-shadow: none; }
 .tabs .lens {
-  position: absolute; z-index: 0; top: 0; bottom: 0; left: 0; width: calc(100% / 3); border-radius: 30px; pointer-events: none;
+  position: absolute; z-index: 0; top: 0; bottom: 0; left: 0; width: calc(100% / var(--tab-count)); border-radius: 30px; pointer-events: none;
   background: rgba(255, 255, 255, .12); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), inset 0 0 0 1px rgba(255, 255, 255, .06);
   transform: translate3d(calc(var(--ti, 0) * 100%), 0, 0);
   transition: transform .5s var(--ease-spring, cubic-bezier(.3, 1.3, .5, 1));
@@ -1833,6 +1831,7 @@ html.d3 .hero > .hlights { position: absolute; inset: 0; z-index: -1; overflow: 
 /* вариант «static» — свет нарисован прямо в карточке, без своего слоя */
 html.d3[data-lv="static"] .hero .hglow, html.d3[data-lv="static"] .hero .hstreak { will-change: auto; }
 </style>
+<link rel="stylesheet" href="cabinet.css">
 </head>
 <body>
 <!-- Заставка ярлыка: iPhone свою картинку-заставку берёт только при добавлении на экран «Домой»
@@ -1876,6 +1875,10 @@ html.d3[data-lv="static"] .hero .hglow, html.d3[data-lv="static"] .hero .hstreak
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1M16 4a4 4 0 0 1 0 8M22 21v-1a6 6 0 0 0-4-5.6"/></svg>
       Преподаватели
     </button>
+    <button class="tab" data-tab="cabinet" aria-label="Личный кабинет">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="12" cy="10" r="2"/><path d="M8 16a4 4 0 0 1 8 0"/></svg>
+      <span class="cabinet-tab-label">Личный кабинет</span>
+    </button>
     <button class="tab" data-tab="settings">
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
       Настройки
@@ -1883,6 +1886,7 @@ html.d3[data-lv="static"] .hero .hglow, html.d3[data-lv="static"] .hero .hstreak
   </div>
 </nav>
 
+<script src="cabinet.js"></script>
 <script>
 window.__appStart = () => {
   "use strict";
@@ -2256,7 +2260,7 @@ window.__appStart = () => {
   // Бот кладёт в адрес приложения: n=15.0.1.1 (минуты напоминания или 0, утро, вечер, изменения),
   // Личный ключ получается через проверенный initData или подтверждение в чате.
   const QS = new URLSearchParams(location.search);
-  const APP_LABEL = "v2.5.1";   // номер версии внизу «Настроек»
+  const APP_LABEL = "v3.0";   // номер версии внизу «Настроек»
   const TG_USER = (() => {
     try { return tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : ""; } catch (e) { return ""; }
   })();
@@ -2633,7 +2637,7 @@ window.__appStart = () => {
     }
   }
   // ---------------- состояние и навигация ----------------
-  let view = "schedule";      // schedule | teachers | teacher | settings | notif
+  let view = "schedule";      // schedule | teachers | teacher | cabinet | settings | notif
   let target = "g";           // файл данных: g — группа, tN — преподаватель
   let stack = [];             // для кнопки «назад»
   let query = "";
@@ -3147,12 +3151,18 @@ window.__appStart = () => {
     const token = ++renderToken;
     if (app.style.transform && window.resetEdgeSwipe && !ROOT.classList.contains("ptr-busy") && !ROOT.classList.contains("nav-anim")) window.resetEdgeSwipe();   // экран не должен остаться сдвинутым (кроме самого свайпа)
     app.classList.remove("fill");
+    if (view === "cabinet") return window.studentCabinet.mount(app, target);
     if (view === "settings") return renderSettings();
     if (view === "teachers") return renderTeachers(token);
     if (view === "notif") return renderNotif(token);
     if (view === "stats") return renderStats();
     return renderSchedule(token);
   }
+  // Общие помощники для личного кабинета (cabinet.js): тот же переход между экранами, вибрация, аватары
+  window.sodp = { go: (v, t, push) => go(v, t, push), back: () => goBack(), haptic, hue, initials, fmtAgo, inTG, toast: (text) => toast(text),
+    // Уведомления о кабинете идут через бота: метка из личного ключа (сам ключ кабинету не передаём) и канал бота
+    notifyLabel: async () => (nkey && window.crypto && crypto.subtle ? hmacRaw(Uint8Array.from(nkey.match(/../g).map((h) => parseInt(h, 16))), utf8("cabinet")) : ""),
+    relay: () => (index && index.relay) || "" };
   // ---------------- уведомления ----------------
   function changeItems() { return changes && Array.isArray(changes.items) ? changes.items : []; }
   // Лента «Уведомлений»: изменения расписания от бота + то, что приходит на телефон по расписанию —
@@ -3183,6 +3193,8 @@ window.__appStart = () => {
   }
   function feedItemsAll() {
     const out = changeItems().map((c) => Object.assign({ src: "change" }, c));
+    // новые оценки из личного кабинета (их замечает cabinet.js при обновлении зачётки)
+    try { for (const g of (window.studentCabinet && window.studentCabinet.feedItems ? window.studentCabinet.feedItems() : [])) out.push(Object.assign({ src: "grade", kind: "grade" }, g)); } catch (e) { /* без кабинета */ }
     const now = samaraNow(), lead = remindLead();
     const today = now.date, yesterday = addDays(today, -1);
     // вчера вечером — «пары на завтра» (то есть на сегодня)
@@ -3252,6 +3264,17 @@ window.__appStart = () => {
   function postedLabel(ts) {
     ts = String(ts || "");
     return ts.slice(0, 10) === samaraNow().date ? ts.slice(11, 16) : (ts ? `${+ts.slice(8, 10)} ${MSHORT[+ts.slice(5, 7) - 1]}` : "");
+  }
+  // «Новая оценка» — из личного кабинета; нажатие открывает зачётку
+  function gradeItemHTML(c, unread) {
+    const chip = (t, cls) => `<span class="nc-chip ${cls}">${esc(t)}</span>`;
+    const good = /^(отлично|хорошо|зачтено|зач[её]т|5|4)$/i.test(String(c.result || "").trim());
+    return `<button class="nc nc-${good ? "green" : "orange"}${unread ? " unread" : ""}" data-act="cabgrade">
+      <span class="nc-top"><span class="nc-ic" aria-hidden="true">${I.cap}</span><span class="nc-title">Новая оценка</span>
+        <span class="nc-ts">${unread ? `<i class="nc-dot" aria-label="новое"></i>` : ""}${esc(postedLabel(c.ts))}</span></span>
+      <span class="nc-when">${esc(c.semester || "Зачётка")}<span class="nc-go" aria-hidden="true">${I.chev}</span></span>
+      <span class="nc-subj">${esc(c.subject)}</span>
+      <span class="nc-diff">${chip(c.result, "new")}${c.form ? chip(c.form, "plain") : ""}${c.date ? chip(c.date, "plain") : ""}</span></button>`;
   }
   function appItemHTML(c, unread) {
     const chip = (t, cls) => `<span class="nc-chip ${cls}">${esc(t)}</span>`;
@@ -3556,7 +3579,7 @@ window.__appStart = () => {
       for (const [title, list] of groups) {
         if (!list.length) continue;
         html += `<div class="nsec"><h2 class="sec">${title}</h2><button class="nclear" data-act="nclear" data-ids="${esc(JSON.stringify(list.map(nItemId)))}">Очистить</button></div>
-          <div class="nlist">${list.map((c) => `<div class="ncw" data-nid="${esc(nItemId(c))}"><button class="nc-del" data-act="ndel" aria-label="Удалить уведомление" tabindex="-1">${I.trash}<span>Удалить</span></button>${(c.src === "app" ? appItemHTML : changeHTML)(c, String(c.ts) > seen)}</div>`).join("")}</div>`;
+          <div class="nlist">${list.map((c) => `<div class="ncw" data-nid="${esc(nItemId(c))}"><button class="nc-del" data-act="ndel" aria-label="Удалить уведомление" tabindex="-1">${I.trash}<span>Удалить</span></button>${(c.src === "app" ? appItemHTML : c.src === "grade" ? gradeItemHTML : changeHTML)(c, String(c.ts) > seen)}</div>`).join("")}</div>`;
       }
       html += `<div class="nfoot">${foot}</div>`;
     }
@@ -4934,6 +4957,9 @@ window.__appStart = () => {
       toggleCard(el.dataset.key);
     } else if (act === "back") {
       goBack();
+    } else if (act === "cabgrade") {
+      haptic("light");
+      go("cabinet", "cab:grades", true);
     } else if (act === "notif") {
       haptic("light");
       go("notif", null, true);
@@ -5080,7 +5106,7 @@ window.__appStart = () => {
     } else if (view === t) {
       // уже открыта эта вкладка — не перерисовываем заново, просто наверх
       window.scrollTo({ top: 0, behavior: REDUCED ? "auto" : "smooth" });
-    } else go(t, null, false);
+    } else go(t, t === "cabinet" ? "cab" : null, false);
   }));
 
   // ---------------- свежие данные при возвращении ----------------
@@ -5837,7 +5863,7 @@ window.__appStart = () => {
   function syncNavbar() {
     nbRaf = 0;
     if (!navbar) return;
-    const h1 = (view === "teachers" || view === "settings" || view === "notif" || view === "stats") && app.querySelector(":scope > .top h1");
+    const h1 = (view === "teachers" || view === "cabinet" || view === "settings" || view === "notif" || view === "stats") && app.querySelector(":scope > .top h1, :scope > .cabinet > .top h1");
     let on = false;
     if (h1) {
       const barBottom = navbar.getBoundingClientRect().height;
@@ -6233,6 +6259,11 @@ window.__appStart = () => {
     if (!inTG && location.hash === "#notif") {
       try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* не страшно */ }
       go("notif", null, true);
+    } else if (!inTG && /^#(grades|session)$/.test(location.hash)) {
+      // нажали уведомление о новой оценке или сессии — сразу в кабинет
+      const page = location.hash.slice(1);
+      try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* не страшно */ }
+      go("cabinet", "cab:" + page, true);
     } else if (restore && restore.view && restore.view !== "schedule") {
       if (restore.view === "teacher") stack = [{ view: "teachers", target: "g" }];
       go(restore.view, restore.target, false);
@@ -6450,11 +6481,13 @@ window.__appStart = () => {
       const updated = await checkAppVersion(true);
       if (updated) return;
       loadedAt = 0;
-      const ok = view === "stats" ? !!(await loadAdminStats(true)) : await reloadIfStale(true);
+      // в личном кабинете — свежие данные с сайта вуза (подсказки о результате кабинет показывает сам)
+      const cab = view === "cabinet" && window.studentCabinet && window.studentCabinet.refresh;
+      const ok = view === "stats" ? !!(await loadAdminStats(true)) : cab ? await window.studentCabinet.refresh() : await reloadIfStale(true);
       if (view === "stats") render();
       await new Promise((r) => setTimeout(r, Math.max(0, 700 - (Date.now() - t0))));   // крутилка не мелькает
       release(420);
-      if (ok) setTimeout(() => toast(view === "stats" ? "Статистика обновлена" : "Расписание обновлено"), 200);
+      if (ok && !cab) setTimeout(() => toast(view === "stats" ? "Статистика обновлена" : "Расписание обновлено"), 200);
     };
   }
 
@@ -6548,6 +6581,8 @@ window.__appStart = () => {
     try {
       navigator.serviceWorker.addEventListener("message", (e) => {
         if (e.data && e.data.type === "open" && /#notif$/.test(e.data.url || "")) { changes = null; go("notif", null, view !== "notif"); }
+        const cab = e.data && e.data.type === "open" && /#(grades|session)$/.exec(e.data.url || "");
+        if (cab) go("cabinet", "cab:" + cab[1], true);
       });
     } catch (e) { /* старый браузер */ }
   }
