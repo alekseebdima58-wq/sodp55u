@@ -1,0 +1,8 @@
+{
+  "name": "sodp55u-cabinet-server",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "test": "node --test cabinet.test.mjs" },
+  "dependencies": { "playwright": "1.56.0" }
+}
