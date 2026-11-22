@@ -563,9 +563,11 @@ html[data-theme="light"] .toast { box-shadow: 0 6px 18px rgba(20, 30, 60, .18); 
 }
 .tabs .in { --tab-count: 4; max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(var(--tab-count), minmax(0, 1fr)); }
 .tab {
-   border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500;
+   border: 0; background: transparent; color: var(--muted); font-size: clamp(9px, 2.45vw, 11px); font-weight: 500;
+  padding-inline: 3px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
 }
+.tab > span { max-inline-size: 100%; line-height: 1.1; text-align: center; text-wrap: balance; overflow-wrap: anywhere; }
 .tab.on { color: var(--accent); font-weight: 600; }
 /* ================= Оформление 2.0 =================
    Меньше рамок: блоки отделяются тоном фона и мягкой тенью. Крупнее заголовки и номер аудитории,
@@ -1333,6 +1335,12 @@ html[data-theme="light"] .navbar { background: rgba(250, 250, 252, .82); box-sha
   background: linear-gradient(rgba(8, 9, 11, .55), rgba(8, 9, 11, 0)); }
 html[data-theme="light"] .navbar::after { background: linear-gradient(rgba(250, 250, 252, .6), rgba(250, 250, 252, 0)); }
 html.nb-on .navbar { opacity: 1; visibility: visible; transition: opacity .22s ease; }
+html.nb-cabinet .navbar {
+  box-shadow: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 12px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 12px), transparent);
+}
+html.nb-cabinet .navbar::after { display: none; }
 .nb-title {
   max-width: calc(100% - 140px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 17px; font-weight: 600; color: var(--text); transform: translate3d(0, 8px, 0); opacity: 0;
@@ -1400,16 +1408,17 @@ html[data-theme="light"] .seg3 .thumb { background: #FFFFFF; box-shadow: 0 1px 3
 html.onb-open, html.onb-open body { overflow: hidden; }
 .onb {
   position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column;
-  padding: calc(env(safe-area-inset-top, 0px) + var(--safe-top, 0px) + 12px) 0 calc(max(env(safe-area-inset-bottom), var(--safe-bottom, 0px)) + 18px);
+  --onb-safe-top: max(env(safe-area-inset-top, 0px), var(--safe-top, 0px));
+  padding: calc(var(--onb-safe-top) + 52px) 0 calc(max(env(safe-area-inset-bottom), var(--safe-bottom, 0px)) + 18px);
   background: var(--bg); opacity: 0; transform: scale(1.03);
   transition: opacity .32s ease, transform .45s var(--ease-spring, ease);
 }
 .onb.in { opacity: 1; transform: none; }
 .onb.out { opacity: 0; transform: scale(.97); transition-duration: .28s; pointer-events: none; }
-.onb-skip { align-self: flex-end; margin: 0 16px 0 0; padding: 8px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: calc(15px * var(--fs, 1)); font-weight: 600; }
+.onb-skip { position: absolute; z-index: 1; top: calc(var(--onb-safe-top) + 4px); right: max(16px, env(safe-area-inset-right, 0px)); min-height: 44px; padding: 8px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: calc(15px * var(--fs, 1)); font-weight: 600; }
 .onb-pages { flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior: contain; }
 .onb-pages::-webkit-scrollbar { display: none; }
-.onb-p { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; display: flex; flex-direction: column; align-items: center; justify-content: center;
+.onb-p { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; display: flex; flex-direction: column; align-items: center; justify-content: safe center; overflow-y: auto;
   padding: 0 28px; text-align: center; max-width: 100%; box-sizing: border-box; }
 .onb-p h2 { margin: 26px 0 10px; font-size: calc(28px * var(--fs, 1)); line-height: calc(34px * var(--fs, 1)); font-weight: 700; letter-spacing: -.3px; color: var(--text); }
 .onb-p p { margin: 0 auto; max-width: 340px; font-size: calc(16px * var(--fs, 1)); line-height: calc(23px * var(--fs, 1)); color: var(--text2); }
@@ -1422,7 +1431,7 @@ html.onb-open, html.onb-open body { overflow: hidden; }
 .onb-next:active, .onb-link:active, .onb-skip:active { transform: scale(.96); }
 
 /* картинки-демо: размеры фиксированные (в «Размер текста» не растут) */
-.onb-art { position: relative; width: 300px; height: 220px; max-width: 100%; border-radius: 30px; overflow: hidden;
+.onb-art { position: relative; flex-shrink: 0; width: 300px; height: 220px; max-width: 100%; border-radius: 30px; overflow: hidden;
   background: radial-gradient(120% 90% at 30% 0%, rgba(var(--acc-rgb), .22), transparent 60%), var(--surface);
   box-shadow: inset 0 0 0 1px var(--hair); }
 .onb-p:not(.cur) .onb-art * { animation-play-state: paused !important; }
@@ -1432,9 +1441,9 @@ html.onb-open, html.onb-open body { overflow: hidden; }
 .a1 .o-d { position: relative; z-index: 1; display: grid; place-items: center; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--muted); }
 .a1 .o-pill { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(20% - 6px); border-radius: 14px; background: var(--accent); animation: oPill 4.8s var(--ease-spring, ease) infinite; }
 .a1 .o-d.on { color: var(--on-accent); animation: oDayOn 4.8s infinite; }
-.a1 .o-view { position: absolute; left: 0; right: 0; top: 66px; height: 120px; overflow: hidden; }
-.a1 .o-track { display: flex; width: 300%; height: 100%; animation: oTrack 4.8s var(--ease-spring, ease) infinite; }
-.a1 .o-card { flex: 0 0 calc(100% / 3); box-sizing: border-box; margin: 0; padding: 14px 18px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
+.a1 .o-view { position: absolute; left: 0; right: 0; top: 62px; bottom: 12px; overflow: hidden; }
+.a1 .o-track { display: flex; width: 100%; height: 100%; animation: oTrack 4.8s var(--ease-spring, ease) infinite; }
+.a1 .o-card { flex: 0 0 100%; min-width: 0; box-sizing: border-box; margin: 0; padding: 14px 18px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
   border-left: 4px solid var(--lab-bar); background-clip: content-box; }
 .a1 .o-card > * { margin-left: 16px; }
 .a1 .o-card.lab { border-color: var(--lab-bar); } .a1 .o-card.prac { border-color: var(--prac-bar); } .a1 .o-card.lec { border-color: var(--lec-bar); }
@@ -1448,7 +1457,7 @@ html.onb-open, html.onb-open body { overflow: hidden; }
 .a1 .o-finger { position: absolute; top: 120px; left: 220px; width: 34px; height: 34px; border-radius: 50%;
   background: rgba(255, 255, 255, .35); box-shadow: 0 0 0 2px rgba(255, 255, 255, .5); animation: oFinger 4.8s ease-in-out infinite; }
 html[data-theme="light"] .a1 .o-finger { background: rgba(0, 0, 0, .14); box-shadow: 0 0 0 2px rgba(0, 0, 0, .18); }
-@keyframes oTrack { 0%, 18% { transform: translate3d(0, 0, 0); } 30%, 52% { transform: translate3d(-33.333%, 0, 0); } 64%, 86% { transform: translate3d(-66.666%, 0, 0); } 100% { transform: translate3d(0, 0, 0); } }
+@keyframes oTrack { 0%, 18% { transform: translate3d(0, 0, 0); } 30%, 52% { transform: translate3d(-100%, 0, 0); } 64%, 86% { transform: translate3d(-200%, 0, 0); } 100% { transform: translate3d(0, 0, 0); } }
 @keyframes oPill { 0%, 18% { transform: translate3d(0, 0, 0); } 30%, 52% { transform: translate3d(calc(100% + 6px), 0, 0); } 64%, 86% { transform: translate3d(calc(200% + 12px), 0, 0); } 100% { transform: translate3d(0, 0, 0); } }
 @keyframes oDayOn { 0%, 100% { color: var(--on-accent); } }
 @keyframes oFinger { 0%, 8% { opacity: 0; transform: translate3d(0, 0, 0) scale(.8); } 12% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
@@ -1495,9 +1504,9 @@ html[data-theme="light"] .a2 .o-note { background: rgba(255, 255, 255, .9); box-
 .onb-next:focus { outline: none; } .onb-next:focus-visible { box-shadow: 0 0 0 3px rgba(var(--acc-rgb), .4), 0 8px 24px rgba(var(--acc-rgb), .35); }
 /* карточка-демо: подпись вида пары и внутренняя обёртка (в обычном оформлении — просто текст справа от полоски) */
 .a1 .o-in { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.a1 .o-in b { display: flex; align-items: center; gap: 8px; }
+.a1 .o-in b { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .a1 .o-in em { font-style: normal; font-size: calc(12px * var(--fs, 1)); font-weight: 700; padding: 2px 7px; border-radius: 8px; color: var(--muted); background: var(--surface2); }
-.a1 .o-in span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.a1 .o-in span { overflow-wrap: anywhere; }
 /* ---------- оформление «Стекло»: цветной фон, полупрозрачные карточки с бликом ---------- */
 /* включается классом html.glass — остальная тема (цвета пар, жесты, размеры) не меняется */
 html.glass[data-theme="dark"] {
@@ -1609,9 +1618,14 @@ html.glass[data-theme="dark"] .onb { --o-btn: #FFFFFF; --o-btn-fg: #000000; --o-
 html.glass[data-theme="light"] .onb { --o-btn: #111522; --o-btn-fg: #FFFFFF; --o-ink: #111522; }
 /* у каждой страницы своё цветное свечение за картинкой: янтарь, синий, фиолетовый — уезжает вместе со страницей */
 html.glass .onb-p { position: relative; }
-html.glass .onb-p::before { content: ""; position: absolute; left: 50%; top: 50%; width: 420px; height: 420px; margin: -330px 0 0 -210px; pointer-events: none;
-  background: radial-gradient(closest-side, rgba(var(--o-rgb), .38), rgba(var(--o-rgb), 0)); z-index: 0; }
-html.glass[data-theme="light"] .onb-p::before { background: radial-gradient(closest-side, rgba(var(--o-rgb), .22), rgba(var(--o-rgb), 0)); }
+html.glass .onb-p::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse min(210px, 50%) 210px at 50% max(130px, calc(50% - 120px)),
+    rgba(var(--o-rgb), var(--onb-glow, .38)), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 64px, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 64px, #000 calc(100% - 24px), transparent);
+}
+html.glass[data-theme="light"] .onb-p { --onb-glow: .22; }
 html.glass .onb-p > * { position: relative; z-index: 1; }
 html.glass .onb-art {
   border-radius: 34px;
@@ -1636,7 +1650,7 @@ html.glass .a1 { --on-accent: var(--o-btn-fg); }
 html.glass .a1 .o-days { background: rgba(255, 255, 255, .08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2); }
 html.glass[data-theme="light"] .a1 .o-days { background: rgba(20, 30, 60, .05); box-shadow: none; }
 html.glass .a1 .o-pill { background: var(--o-btn); box-shadow: 0 4px 12px rgba(0, 0, 0, .25); }
-html.glass .a1 .o-view { top: 62px; height: 140px; }
+@media (max-height: 640px) { .onb-art.a1 { height: 200px; } }
 html.glass .a1 .o-card { padding: 0 16px; align-items: stretch; }
 html.glass .a1 .o-card::before { display: none; }
 html.glass .a1 .o-card > * { margin-left: 0; }
@@ -1871,19 +1885,19 @@ html.d3[data-lv="static"] .hero .hglow, html.d3[data-lv="static"] .hero .hstreak
     <span class="lens" aria-hidden="true"></span>
     <button class="tab on" data-tab="schedule">
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="12" cy="16" r="1.5"/></svg>
-      Расписание
+      <span>Расписание</span>
     </button>
     <button class="tab" data-tab="teachers">
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1M16 4a4 4 0 0 1 0 8M22 21v-1a6 6 0 0 0-4-5.6"/></svg>
-      Преподаватели
+      <span>Преподаватели</span>
     </button>
     <button class="tab" data-tab="cabinet" aria-label="Личный кабинет">
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="12" cy="10" r="2"/><path d="M8 16a4 4 0 0 1 8 0"/></svg>
-      <span class="cabinet-tab-label">Личный кабинет</span>
+      <span>Личный кабинет</span>
     </button>
     <button class="tab" data-tab="settings">
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-      Настройки
+      <span>Настройки</span>
     </button>
   </div>
 </nav>
@@ -5873,6 +5887,7 @@ window.__appStart = () => {
       if (on && nbTitle.textContent !== h1.textContent) nbTitle.textContent = h1.textContent;
     }
     if (on !== nbOn) { nbOn = on; ROOT.classList.toggle("nb-on", on); }
+    ROOT.classList.toggle("nb-cabinet", view === "cabinet");
     ROOT.classList.toggle("nb-back-on", on && !!stack.length);
   }
   const nbQueue = () => { if (!nbRaf) nbRaf = requestAnimationFrame(syncNavbar); };

@@ -74,7 +74,7 @@ function readTables(document, { expected, columns, semester }) {
     const headings = cells(head).map(text);
     if (!expected.every(label => headings.includes(label))) return [];
     const selected = columns || headings;
-    const indices = selected.map(column => headings.indexOf(column));
+    const indices = columns ? columns.map(column => headings.indexOf(column)) : headings.map((_, index) => index);
     if (indices.some(index => index < 0)) return [];
     const minimum = 1 + Math.max(...indices);
     const rows = [...table.querySelectorAll('tbody tr')].filter(own).map(cells).filter(row => row.length >= minimum);
@@ -106,23 +106,24 @@ function readPlan(document) {
 
 function readProfile(document) {
   const clean = node => (node?.textContent || '').replace(/\s+/g, ' ').trim();
-  const fields = ['Курс', 'Группа', 'Учебная группа', 'Направление подготовки', 'Форма обучения', 'Институт', 'Факультет', 'Подразделение', 'Квалификация'];
+  const fields = ['ФИО', 'Фамилия', 'Имя', 'Отчество', 'Курс', 'Группа', 'Учебная группа', 'Направление подготовки', 'Форма обучения', 'Институт', 'Факультет', 'Подразделение', 'Квалификация'];
   const result = new Map();
   const links = [...document.querySelectorAll('a[href$="/user/profile"]')];
   const label = node => node.getAttribute('aria-label') || node.getAttribute('title') || node.querySelector('img')?.getAttribute('alt') || '';
   const name = links.map(label).find(Boolean) || links.map(clean).find(Boolean);
-  if (name) result.set('Имя', name);
-  for (const node of document.querySelectorAll('div, dt')) {
+  for (const node of document.querySelectorAll('label, div, dt')) {
     const field = clean(node);
     if (!fields.includes(field) || node.children.length || result.has(field)) continue;
-    const value = clean(node.nextElementSibling);
+    const control = node.control || document.getElementById(node.getAttribute('for') || '') || node.nextElementSibling?.querySelector('input') || node.nextElementSibling;
+    const value = control?.getAttribute('value')?.trim() || clean(control);
     if (value) result.set(field, value);
   }
   if (!result.has('Группа') && !result.has('Учебная группа')) {
     const role = [...document.querySelectorAll('a, button')].map(clean).find(value => /^Студент\s*\|\s*[^\s]+$/i.test(value));
     if (role) result.set('Группа', role.split('|').pop().trim());
   }
-  return [...result];
+  const fallback = name && !result.has('ФИО') && !result.has('Имя') ? [['Имя', name]] : [];
+  return [...fallback, ...result];
 }
 
 function trajectoryState(document) {
