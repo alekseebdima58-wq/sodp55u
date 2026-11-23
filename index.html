@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="606b5f289427">
+<meta name="app-ver" content="4b23d4df8bf7">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -3178,7 +3178,10 @@ window.__appStart = () => {
   window.sodp = { go: (v, t, push) => go(v, t, push), back: () => goBack(), haptic, hue, initials, fmtAgo, inTG, toast: (text) => toast(text),
     // Уведомления о кабинете идут через бота: метка из личного ключа (сам ключ кабинету не передаём) и канал бота
     notifyLabel: async () => (nkey && window.crypto && crypto.subtle ? hmacRaw(Uint8Array.from(nkey.match(/../g).map((h) => parseInt(h, 16))), utf8("cabinet")) : ""),
-    relay: () => (index && index.relay) || "" };
+    relay: () => (index && index.relay) || "",
+    // кабинет открывает страницу преподавателя из зачётки, сессии и карточки дисциплины
+    teachers: () => (index && Array.isArray(index.teachers) ? index.teachers : []),
+    openTeacher: (id) => go("teacher", id, true) };
   // ---------------- уведомления ----------------
   function changeItems() { return changes && Array.isArray(changes.items) ? changes.items : []; }
   // Лента «Уведомлений»: изменения расписания от бота + то, что приходит на телефон по расписанию —

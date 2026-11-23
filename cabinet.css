@@ -149,3 +149,25 @@ html[data-theme="light"] .cab-pass { --k-fg: #248a3d; --k-bar: rgba(52, 199, 89,
 .cab-chip { position: relative; }
 .cab-dot { position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: #ff453a; box-shadow: 0 0 0 2px var(--bg); }
 .item.cab-fresh { background: rgba(var(--acc-rgb), .08); }
+
+/* строки, которые открывают карточку дисциплины */
+.cab-tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cab-tap:active { background: rgba(127, 127, 140, .12); }
+.cab-tchev { flex: none; align-self: center; margin-left: -4px; opacity: .45; }
+.cab-tchev svg { width: 15px; height: 15px; }
+/* имя преподавателя — ссылка на его страницу */
+.cab-tlink { display: inline; padding: 0; border: 0; background: none; font: inherit; color: var(--accent); cursor: pointer; text-decoration: none; }
+.cab-tlink:active { opacity: .6; }
+/* карточка дисциплины */
+.cab-subj { align-items: flex-start; }
+.cab-subj .nm { font-size: calc(19px * var(--fs, 1)); line-height: 1.3; }
+.cab-kinds-row { flex-direction: row; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+/* приказы: свёрнутый текст — две строки; по нажатию целиком и «Скопировать» */
+.cab-order .cab-otext { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cab-order.open .cab-otext { display: block; -webkit-line-clamp: unset; }
+.cab-order .cab-fold { align-self: flex-start; margin-top: 2px; }
+.cab-order.open .cab-fold { transform: rotate(90deg); }
+.cab-oacts { display: flex; margin-top: 10px; }
+.cab-obtn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border: 0; border-radius: 999px; font: inherit;
+  font-size: calc(13px * var(--fs, 1)); font-weight: 600; color: var(--accent); background: rgba(var(--acc-rgb), .14); cursor: pointer; }
+.cab-obtn:active { transform: scale(.95); }

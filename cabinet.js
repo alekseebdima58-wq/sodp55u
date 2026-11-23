@@ -29,6 +29,7 @@
     empty: svg("M4 7h16M4 12h10M4 17h7", 28),
     search: svg("M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-3.5-3.5", 18),
     check: svg("m5 12 5 5 9-10", 14),
+    copy: svg("M8 8h11a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1ZM16 8V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h3", 16),
   };
   const MONTHS = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
   const dateFormat = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Samara" });
@@ -250,7 +251,7 @@
   const isNewGrade = (r) => gradeEvents.some((e) => e.id === gradeId(r) && Date.now() - Date.parse(e.ts) < 3 * 864e5);
 
   // траектория: какие семестры раскрыты/свёрнуты вручную; план: выбранный семестр
-  let openSteps = new Set(), closedSteps = new Set(), planSem = null, gradesSem = null;
+  let openSteps = new Set(), closedSteps = new Set(), planSem = null, gradesSem = null, openOrders = new Set();
 
   // ---------- разметка ----------
   const backButton = () => (app().inTG ? "" : `<button class="btn icon-btn" data-act="back" aria-label="Назад">${icons.left}</button>`);
@@ -360,14 +361,91 @@
       list.forEach((r) => used.add(r));
       if (!list.length) return "";
       return `<h2 class="sec cab-sec">${esc(title)}<span class="cab-sec-note">${list.length}</span></h2>
-        <div class="list">${list.map((r) => `<div class="item cab-plain${isNewGrade(r) ? " cab-fresh" : ""}">
+        <div class="list">${list.map((r) => `<div class="item cab-plain cab-tap${isNewGrade(r) ? " cab-fresh" : ""}"${subjectAttrs(r.subject)}>
           <span class="body"><span class="nm cab-wrap">${isNewGrade(r) ? `<span class="cab-new">новая</span>` : ""}${esc(r.subject)}</span>
-          <span class="sub cab-wrap">${esc([shortDate(r.date), shortTeacher(r.teacher)].filter(Boolean).join(" · ") || "Дата не назначена")}</span>
+          <span class="sub cab-wrap">${[esc(shortDate(r.date)), teacherLinks(r.teacher)].filter(Boolean).join(" · ") || "Дата не назначена"}</span>
           ${r.hours || r.units ? `<span class="sub cab-faint">${esc([r.hours && `${r.hours} ч`, r.units && `${r.units} з. е.`].filter(Boolean).join(" · "))}</span>` : ""}</span>
-          ${r.result ? markHTML(r.result) : `<span class="cab-mark cab-neutral">ожидается</span>`}</div>`).join("")}</div>`;
+          ${r.result ? markHTML(r.result) : `<span class="cab-mark cab-neutral">ожидается</span>`}${tapChev(r.subject)}</div>`).join("")}</div>`;
     }).join("");
     return tabs + summary + blocks;
   }
+  // ---------- карточка дисциплины: всё о предмете из зачётки, плана, траектории и сессии ----------
+  const subjectKey = (name) => String(name || "").toLowerCase().replace(/ё/g, "е").replace(/[«»"']/g, "").replace(/\s+/g, " ").trim();
+  function allSubjects() {
+    const names = new Map();
+    const add = (name) => { const k = subjectKey(name); if (k && !names.has(k)) names.set(k, String(name).trim()); };
+    gradeRows().forEach((r) => add(r.subject));
+    for (const items of planItems().values()) items.forEach((d) => { if (!/^дисциплины \(модули\) по выбору/i.test(d.subject)) add(d.subject); });
+    (sections("trajectory") || []).forEach((s) => trajectoryItems(s.rows).forEach((d) => add(d.subject)));
+    sessionEvents().forEach((e) => add(e.subject));
+    return [...names].sort((a, b) => a[1].localeCompare(b[1], "ru"));
+  }
+  let subjectsCache = null, subjectsFor = null;
+  function subjectIndex(name) {
+    if (subjectsFor !== data) { subjectsCache = allSubjects(); subjectsFor = data; }
+    return subjectsCache.findIndex(([k]) => k === subjectKey(name));
+  }
+  // строка, по нажатию на которую открывается карточка дисциплины
+  const subjectAttrs = (name) => { const i = subjectIndex(name); return i < 0 ? "" : ` role="button" tabindex="0" data-cab="open" data-page="subject" data-arg="${i}"`; };
+  const tapChev = (name) => (subjectIndex(name) < 0 ? "" : `<span class="chev cab-tchev">${icons.chev}</span>`);
+
+  // Преподаватель из кабинета («Кузнецов Д. И.», «Кузнецов Д.И.» или полностью) → его страница в «Преподавателях»
+  const teacherKey = (name) => { const w = String(name || "").toLowerCase().replace(/ё/g, "е").split(/[\s.]+/).filter(Boolean); return w.length ? `${w[0]}|${w.slice(1, 3).map((x) => x[0]).join("")}` : ""; };
+  function findTeacher(name) {
+    const list = app().teachers ? app().teachers() : [];
+    const k = teacherKey(name);
+    const same = k ? list.filter((t) => teacherKey(t.name) === k) : [];
+    return same.length === 1 ? same[0] : null;
+  }
+  // имена через запятую: те, что нашлись в «Преподавателях», — ссылками
+  const teacherLinks = (names) => String(names || "").split(/,\s*/).filter(Boolean).map((n) => {
+    const t = findTeacher(n);
+    return t ? `<button class="cab-tlink" data-cab="teacher" data-arg="${esc(t.id)}">${esc(shortTeacher(n))}</button>` : esc(shortTeacher(n));
+  }).join(", ");
+
+  function subjectHTML(index) {
+    if (subjectsFor !== data) { subjectsCache = allSubjects(); subjectsFor = data; }
+    const entry = subjectsCache[index];
+    if (!entry) return headerHTML("Дисциплина", true) + empty(icons.empty, "Дисциплина не найдена", "");
+    const [key, name] = entry;
+    const same = (n) => subjectKey(n) === key;
+    const grades = gradeRows().filter((r) => same(r.subject)).sort((a, b) => (parseInt(a.semester, 10) || 0) - (parseInt(b.semester, 10) || 0));
+    const plan = [...planItems()].flatMap(([sem, items]) => items.filter((d) => same(d.subject)).map((d) => ({ ...d, sem })));
+    const traj = (sections("trajectory") || []).flatMap((s) => trajectoryItems(s.rows).filter((d) => same(d.subject)).map((d) => ({ ...d, title: s.title })));
+    const events = sessionEvents().filter((e) => same(e.subject));
+    const kinds = [...new Set([...plan.flatMap((d) => d.kinds), ...traj.flatMap((d) => d.kinds), ...grades.map((g) => g.form).filter(Boolean)].map(kindShort))];
+    // часы в плане — на всю дисциплину (строка повторяется в каждом её семестре): считаем по индексу один раз
+    const byIndex = new Map(plan.map((d) => [d.index || d.subject, parseInt(d.hours, 10) || 0]));
+    const hours = [...byIndex.values()].reduce((a, b) => a + b, 0) || traj.reduce((sum, d) => sum + (parseInt(d.hours, 10) || 0), 0);
+    const last = grades.filter((g) => g.result).pop();
+    const head = `<div class="tcard cab-subj"><div style="min-width:0;flex:1"><div class="nm cab-wrap">${esc(name)}</div>
+        <div class="sub">${esc([plan[0]?.index, hours && `${hours} ч`, plan.length ? `${new Set(plan.map((d) => d.sem)).size} ${plural(new Set(plan.map((d) => d.sem)).size, "семестр", "семестра", "семестров")}` : ""].filter(Boolean).join(" · "))}</div>
+        ${kinds.length ? `<div class="cab-kinds cab-kinds-row">${kinds.map((k) => `<span class="cab-mark ${kindTone(k)}">${esc(k)}</span>`).join("")}</div>` : ""}</div>
+        ${last ? markHTML(last.result) : ""}</div>`;
+    const blocks = [];
+    if (events.length) blocks.push(`<h2 class="sec cab-sec">Сессия</h2><div class="list">${events.map((e) => `<div class="item cab-plain cab-exam${daysUntil(e.day) < 0 ? " cab-past" : ""}"><span class="cab-time">${esc((e.time || "—").split(/[–-]/)[0])}</span>
+      <span class="body"><span class="nm">${esc(`${e.day.getDate()} ${MONTHS_FULL[e.day.getMonth()]}, ${daysUntil(e.day) < 0 ? "прошло" : inDays(daysUntil(e.day))}`)}</span>
+      <span class="sub cab-wrap">${[esc(e.room), teacherLinks(e.teacher)].filter(Boolean).join(" · ")}</span></span>
+      <span class="cab-mark ${kindClass(e.kind)}">${esc(e.kind || "Экзамен")}</span></div>`).join("")}</div>`);
+    if (grades.length) blocks.push(`<h2 class="sec cab-sec">Оценки</h2><div class="list">${grades.map((g) => `<div class="item cab-plain"><span class="body">
+      <span class="nm">${esc([g.semester, g.form].filter(Boolean).join(" · "))}</span>
+      <span class="sub cab-wrap">${[esc(shortDate(g.date) || "дата не назначена"), teacherLinks(g.teacher)].filter(Boolean).join(" · ")}</span></span>
+      ${g.result ? markHTML(g.result) : `<span class="cab-mark cab-neutral">ожидается</span>`}</div>`).join("")}</div>`);
+    if (plan.length) blocks.push(`<h2 class="sec cab-sec">Учебный план</h2><div class="list">${plan.map((d) => `<div class="item cab-plain"><span class="body">
+      <span class="nm">${esc(d.sem ? `${d.sem} семестр` : "Без семестра")}</span>${plan.length === 1 && d.hours ? `<span class="sub">${esc(`${d.hours} ч`)}</span>` : ""}</span>${chipsHTML(d.kinds)}</div>`).join("")}</div>`);
+    if (traj.length) blocks.push(`<h2 class="sec cab-sec">Траектория</h2><div class="list">${traj.map((d) => `<div class="item cab-plain"><span class="body">
+      <span class="nm">${esc(d.title)}</span>${d.hours ? `<span class="sub">${esc(`${d.hours} ч · ${d.units} з. е.`)}</span>` : ""}</span>${chipsHTML(d.kinds)}</div>`).join("")}</div>`);
+    // преподаватели предмета — отдельным списком, с переходом к расписанию
+    const teachers = [...new Set([...grades.map((g) => g.teacher), ...events.map((e) => e.teacher)].flatMap((t) => String(t || "").split(/,\s*/)).filter(Boolean))];
+    if (teachers.length) blocks.push(`<h2 class="sec cab-sec">Преподаватели</h2><div class="list">${teachers.map((n) => {
+      const t = findTeacher(n), label = t ? t.name : n;
+      return t ? `<button class="item" data-cab="teacher" data-arg="${esc(t.id)}"><span class="av" style="--h:${hue(label)}" aria-hidden="true">${esc(initials(label))}</span>
+          <span class="body"><span class="nm">${esc(label)}</span><span class="sub">Расписание преподавателя</span></span><span class="chev">${icons.chev}</span></button>`
+        : `<div class="item cab-plain"><span class="av" style="--h:${hue(label)}" aria-hidden="true">${esc(initials(label))}</span><span class="body"><span class="nm">${esc(label)}</span></span></div>`;
+    }).join("")}</div>`);
+    return headerHTML("Дисциплина", true) + head + (blocks.join("") || empty(icons.empty, "Других сведений нет", ""));
+  }
+
   // «Иванова Мария Сергеевна» → «Иванова М. С.»; уже сокращённое — как есть
   const shortTeacher = (name) => String(name || "").split(/,\s*/).map((n) => {
     const w = n.trim().split(/\s+/);
@@ -392,9 +470,9 @@
       return `<h2 class="sec cab-sec${n < 0 ? " cab-past" : ""}">${d.getDate()} ${MONTHS_FULL[d.getMonth()]}, ${WD[d.getDay()]}<span class="cab-sec-note">${n < 0 ? "прошло" : esc(inDays(n))}</span></h2>
         <div class="list${n < 0 ? " cab-past" : ""}">${list.map((e) => {
           const grade = grades.find((g) => g.subject === e.subject && g.result && isExam(e));
-          return `<div class="item cab-plain cab-exam"><span class="cab-time">${esc((e.time || "—").split(/[–-]/)[0])}</span>
+          return `<div class="item cab-plain cab-exam cab-tap"${subjectAttrs(e.subject)}><span class="cab-time">${esc((e.time || "—").split(/[–-]/)[0])}</span>
             <span class="body"><span class="nm cab-wrap">${esc(e.subject)}</span>
-            <span class="sub cab-wrap">${esc([e.room, e.teacher].filter(Boolean).join(" · "))}</span></span>
+            <span class="sub cab-wrap">${[esc(e.room), teacherLinks(e.teacher)].filter(Boolean).join(" · ")}</span></span>
             ${grade ? markHTML(grade.result) : `<span class="cab-mark ${kindClass(e.kind)}">${esc(e.kind || "Экзамен")}</span>`}</div>`;
         }).join("")}</div>`;
     }).join("");
@@ -445,8 +523,8 @@
           <button class="cab-stephead" data-cab="step" data-arg="${index}" aria-expanded="${open}">
             <span class="body"><span class="nm">${esc(s.title)}</span><span class="sub">${esc([status, summary].filter(Boolean).join(" · "))}</span></span>
             <span class="chev cab-fold">${icons.chev}</span></button>
-          ${open ? `<div class="list">${items.length ? items.map((d) => `<div class="item cab-plain"><span class="body"><span class="nm cab-wrap">${esc(d.subject)}</span>
-            ${d.hours ? `<span class="sub">${esc(`${d.hours} ч · ${d.units} з. е.`)}</span>` : ""}</span>${chipsHTML(d.kinds)}</div>`).join("") : `<div class="nothing">Дисциплин нет</div>`}</div>` : ""}
+          ${open ? `<div class="list">${items.length ? items.map((d) => `<div class="item cab-plain cab-tap"${subjectAttrs(d.subject)}><span class="body"><span class="nm cab-wrap">${esc(d.subject)}</span>
+            ${d.hours ? `<span class="sub">${esc(`${d.hours} ч · ${d.units} з. е.`)}</span>` : ""}</span>${chipsHTML(d.kinds)}${tapChev(d.subject)}</div>`).join("") : `<div class="nothing">Дисциплин нет</div>`}</div>` : ""}
         </div></section>`;
     }).join("")}</div>`;
   }
@@ -501,8 +579,8 @@
     const isChild = (d) => items.some((p) => p !== d && /ДВ\.\d+$/.test(p.index) && d.index.startsWith(p.index + "."));
     const top = items.filter((d) => !isChild(d))
       .sort((a, b) => kindRank(a.kinds[0] || (children(a)[0]?.kinds[0]) || "") - kindRank(b.kinds[0] || (children(b)[0]?.kinds[0]) || "") || a.subject.localeCompare(b.subject, "ru"));
-    const row = (d, sub) => `<div class="item cab-plain${sub ? " cab-option" : ""}"><span class="body"><span class="nm cab-wrap">${esc(d.subject)}</span>
-      <span class="sub">${esc([d.hours && `${d.hours} ч`, d.index].filter(Boolean).join(" · "))}</span></span>${chipsHTML(d.kinds)}</div>`;
+    const row = (d, sub) => `<div class="item cab-plain cab-tap${sub ? " cab-option" : ""}"${subjectAttrs(d.subject)}><span class="body"><span class="nm cab-wrap">${esc(d.subject)}</span>
+      <span class="sub">${esc([d.hours && `${d.hours} ч`, d.index].filter(Boolean).join(" · "))}</span></span>${chipsHTML(d.kinds)}${tapChev(d.subject)}</div>`;
     const count = top.length;
     const exams = top.filter((d) => d.kinds.some((k) => /экзам/i.test(k))).length;
     const credits = top.filter((d) => d.kinds.some((k) => /зач/i.test(k))).length;
@@ -563,14 +641,25 @@
         : empty(icons.empty, "Других сведений нет", ""));
   }
 
+  function ordersRows() {
+    return (sections("orders") || []).flatMap((s) => s.rows.map((r) => ({ date: r[col(s, "Дата")], number: r[col(s, "Номер приказа")], title: r[col(s, "Название")], text: r[col(s, "Содержание")] })));
+  }
+  // Приказ: нажатие раскрывает полный текст и кнопку «Скопировать»
   function ordersHTML() {
-    const list = sections("orders") || [];
-    const rows = list.flatMap((s) => s.rows.map((r) => ({ date: r[col(s, "Дата")], number: r[col(s, "Номер приказа")], title: r[col(s, "Название")], text: r[col(s, "Содержание")] })));
+    const rows = ordersRows();
     if (!rows.length) return empty(icons.empty, "Приказов нет", "Здесь появятся приказы о переводе, стипендии и другие.");
-    return `<div class="list cab-gap">${rows.map((r) => `<div class="item cab-plain"><span class="body">
-      <span class="nm cab-wrap">${esc(r.title || r.text || "Приказ")}</span>
-      ${r.title && r.number && r.title.includes(r.number) ? "" : `<span class="sub">${esc([r.number && `№ ${r.number}`, shortDate(r.date)].filter(Boolean).join(" · "))}</span>`}
-      ${r.text && r.text !== r.title ? `<span class="sub cab-wrap cab-faint">${esc(r.text)}</span>` : ""}</span></div>`).join("")}</div>`;
+    return `<div class="list cab-gap">${rows.map((r, i) => {
+      const open = openOrders.has(i);
+      const meta = r.title && r.number && r.title.includes(r.number) ? "" : [r.number && `№ ${r.number}`, shortDate(r.date)].filter(Boolean).join(" · ");
+      const more = r.text && r.text !== r.title;
+      const tap = more ? ` role="button" tabindex="0" aria-expanded="${open}" data-cab="order" data-arg="${i}"` : "";
+      return `<div class="item cab-plain cab-order${more ? " cab-tap" : ""}${open ? " open" : ""}"${tap}><span class="body">
+        <span class="nm cab-wrap">${esc(r.title || r.text || "Приказ")}</span>
+        ${meta ? `<span class="sub">${esc(meta)}</span>` : ""}
+        ${r.text && r.text !== r.title ? `<span class="sub cab-wrap cab-faint cab-otext">${esc(r.text)}</span>` : ""}
+        ${open ? `<span class="cab-oacts"><button class="cab-obtn" data-cab="copy" data-arg="${i}">${icons.copy}Скопировать</button></span>` : ""}</span>
+        ${more ? `<span class="chev cab-fold">${icons.chev}</span>` : ""}</div>`;
+    }).join("")}</div>`;
   }
 
   function profileHTML() {
@@ -642,6 +731,10 @@
             invalid_key: "Текущее подключение отозвано. Отключи его и войди снова.",
             bad_request: "Введи логин и пароль ПривГУПС.",
           };
+          if (result?.error === "rate_limited" && result.retryAfter > 0) {
+            const min = Math.max(1, Math.ceil(result.retryAfter / 60));
+            messages.rate_limited = `Слишком много попыток входа. Попробуй снова через ${min} ${plural(min, "минуту", "минуты", "минут")}.`;
+          }
           error.textContent = messages[result?.error] || "Сейчас не удалось войти в кабинет вуза.";
           haptic("heavy");
           return;
@@ -671,8 +764,9 @@
       root.querySelector(".cab-center").append(connectionForm());
       return;
     }
-    const current = page !== "home" && pages.some(([id]) => id === page) ? page : "home";
-    root.innerHTML = current === "home" ? homeHTML() : current === "group" && pageArg !== "" ? personHTML(+pageArg) : sectionHTML(current);
+    const current = page === "subject" ? "subject" : page !== "home" && pages.some(([id]) => id === page) ? page : "home";
+    root.innerHTML = current === "home" ? homeHTML() : current === "subject" ? (data ? subjectHTML(+pageArg) : headerHTML("Дисциплина", true) + `<div class="sk" style="height:220px;margin-top:22px"></div>`)
+      : current === "group" && pageArg !== "" ? personHTML(+pageArg) : sectionHTML(current);
     if (current === "home" && reauthenticating && data?.status === "expired") {
       const card = root.querySelector(".cab-warn") || root.querySelector(".tcard");
       card.after(connectionForm(connection));
@@ -794,6 +888,20 @@
       const i = +el.dataset.arg, open = el.getAttribute("aria-expanded") === "true";
       if (open) { openSteps.delete(i); closedSteps.add(i); } else { closedSteps.delete(i); openSteps.add(i); }
       draw();
+    } else if (act === "teacher") {
+      haptic("light");
+      if (app().openTeacher) app().openTeacher(el.dataset.arg);
+    } else if (act === "order") {
+      haptic("light");
+      const i = +el.dataset.arg;
+      if (openOrders.has(i)) openOrders.delete(i); else openOrders.add(i);
+      draw();
+    } else if (act === "copy") {
+      const r = ordersRows()[+el.dataset.arg];
+      const text = r ? [r.title, r.number && !(r.title || "").includes(r.number) && `№ ${r.number} от ${r.date}`, r.text].filter(Boolean).join("\n") : "";
+      const done = () => { haptic("light"); say("Скопировано"); };
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, () => say("Не удалось скопировать"));
+      else say("Не удалось скопировать");
     } else if (act === "gradesem") {
       haptic("light");
       gradesSem = el.dataset.arg;
@@ -841,6 +949,8 @@
         root = document.createElement("div");
         root.className = "cabinet";
         root.addEventListener("click", onClick);
+        // строки-кнопки (div role="button") — и с клавиатуры
+        root.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.matches?.('[role="button"][data-cab]')) { e.preventDefault(); e.target.click(); } });
         root.addEventListener("input", (event) => {
           if (event.target.dataset?.cab === "search") { searchText = event.target.value; filterPeople(); }
         });
