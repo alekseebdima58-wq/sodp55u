@@ -67,6 +67,25 @@ function readBookNumber(document) {
 function readTables(document, { expected, columns, semester }) {
   const text = node => (node?.textContent || '').replace(/\s+/g, ' ').trim();
   const cells = row => [...row.children].filter(cell => /^(TD|TH)$/i.test(cell.tagName));
+  // Длинный текст сайт может обрезать, а целиком поместить в подсказку или
+  // кнопку «копировать». Ищем в атрибутах ячейки строку длиннее, которая начинается так же.
+  const full = cell => {
+    const shown = text(cell);
+    if (!cell) return shown;
+    const nodes = [cell, ...cell.querySelectorAll('*')];
+    // видимый обрезанный кусок: сама ячейка или её элемент, текст которого кончается многоточием
+    const cut = [shown, ...nodes.filter(node => !node.children.length).map(text)].map(value => /^(.*?)\s*(?:\.\.\.|…)$/s.exec(value)).find(m => m && m[1].length >= 3);
+    if (!cut) return shown;
+    const prefix = cut[1].toLowerCase();
+    const found = [
+      ...nodes.map(text),                                                        // скрытый текст подсказки
+      ...nodes.flatMap(node => [...(node.attributes || [])].map(attr => attr.value))  // title, data-*, x-data
+        .flatMap(value => [value, ...[...value.matchAll(/(['"`])((?:\\.|(?!\1).)*)\1/g)].map(q => q[2])]),
+    ].map(value => value.replace(/\\(['"`\\])/g, '$1').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim())
+      .filter(value => value.length > cut[1].length && value.toLowerCase().startsWith(prefix) && !/(?:\.\.\.|…)/.test(value.slice(cut[1].length, cut[1].length + 4)))
+      .sort((a, b) => a.length - b.length)[0];
+    return found || shown;
+  };
   const sections = [...document.querySelectorAll('table')].flatMap(table => {
     const own = node => node.closest('table') === table;
     const head = [...table.querySelectorAll('thead tr')].find(own);
@@ -76,8 +95,9 @@ function readTables(document, { expected, columns, semester }) {
     const selected = columns || headings;
     const indices = selected.map(column => headings.indexOf(column));
     if (indices.some(index => index < 0)) return [];
-    const minimum = 1 + Math.max(...indices);
-    const rows = [...table.querySelectorAll('tbody tr')].filter(own).map(cells).filter(row => row.length >= minimum);
+    // Пустые ячейки в конце строки сайт может не выводить вовсе (приказ без «Содержания» — 3 ячейки из 4):
+    // такие строки берём, недостающее — пусто. Строки из одной ячейки (заголовки-разделители) пропускаем.
+    const rows = [...table.querySelectorAll('tbody tr')].filter(own).map(cells).filter(row => row.length >= Math.min(2, headings.length) && row.length > indices[0]);
     let title = '';
     if (semester) {
       for (let node = table.parentElement, depth = 0; node && depth < 8; node = node.parentElement, depth++) {
@@ -86,7 +106,7 @@ function readTables(document, { expected, columns, semester }) {
         if (title) break;
       }
     }
-    return [{ title, columns: selected, rows: rows.map(row => indices.map(i => text(row[i]))).filter(row => row.some(Boolean)) }];
+    return [{ title, columns: selected, rows: rows.map(row => indices.map(i => full(row[i]))).filter(row => row.some(Boolean)) }];
   });
   const empty = [...document.querySelectorAll('body *')].some(node => !node.children.length
     && /^Нет (данных(?: для отображения)?|приказов|записей|результатов)\.?$/i.test(text(node)));
@@ -106,12 +126,16 @@ function readPlan(document) {
 
 function readProfile(document) {
   const clean = node => (node?.textContent || '').replace(/\s+/g, ' ').trim();
-  const fields = ['Курс', 'Группа', 'Учебная группа', 'Направление подготовки', 'Форма обучения', 'Институт', 'Факультет', 'Подразделение', 'Квалификация'];
+  const fields = ['ФИО', 'Фамилия', 'Отчество', 'Курс', 'Группа', 'Учебная группа', 'Направление подготовки', 'Форма обучения', 'Институт', 'Факультет', 'Подразделение', 'Квалификация'];
   const result = new Map();
   const links = [...document.querySelectorAll('a[href$="/user/profile"]')];
   const label = node => node.getAttribute('aria-label') || node.getAttribute('title') || node.querySelector('img')?.getAttribute('alt') || '';
   const name = links.map(label).find(Boolean) || links.map(clean).find(Boolean);
   if (name) result.set('Имя', name);
+  // Полное имя из формы профиля (поле «Имя»/«ФИО»), если оно длиннее, чем в меню
+  const input = document.querySelector('input#name, input[name="name"], input[name="fio"]');
+  const full = (input?.getAttribute('value') || '').replace(/\s+/g, ' ').trim();
+  if (full && full.split(' ').length >= 2 && full.length > (name || '').length) result.set('ФИО', full);
   for (const node of document.querySelectorAll('div, dt')) {
     const field = clean(node);
     if (!fields.includes(field) || node.children.length || result.has(field)) continue;
@@ -144,12 +168,29 @@ function trajectoryState(document) {
     return [{ label, key, component: link ? owner(link) : '' }];
   });
   const panel = nav.nextElementSibling;
-  const main = panel?.firstElementChild;
-  const rows = [...(main?.children || [])].flatMap(block => {
-    const parts = [...block.children];
-    const subject = text(parts[0]);
-    if (!subject || parts.length < 2) return [];
-    return [[subject, parts.slice(1).map(text).filter(Boolean).join(' · ')]];
+  // Список дисциплин: спускаемся через обёртки (прокрутка и т. п.) до блока, где элементов больше одного.
+  let list = panel?.firstElementChild;
+  while (list && list.children.length === 1) list = list.firstElementChild;
+  const items = [...(list?.children || [])];
+  // Текст части: если внутри несколько блоков (вид контроля, часы) — через « · »
+  const part = node => node.children.length > 1 ? [...node.children].map(text).filter(Boolean).join(' · ') : text(node);
+  // На сайте дисциплины идут плоско: название, вид контроля и часы, пустой разделитель — и так далее.
+  // Если же каждая дисциплина в своём блоке — у всех элементов по несколько частей; тогда блок = дисциплина.
+  const groups = [];
+  if (items.length && items.every(item => item.children.length >= 2 && text(item))) {
+    for (const item of items) groups.push([...item.children]);
+  } else {
+    let current = [];
+    for (const item of items) {
+      if (!text(item)) { if (current.length) groups.push(current); current = []; continue; }
+      current.push(item);
+    }
+    if (current.length) groups.push(current);
+  }
+  const rows = groups.flatMap(group => {
+    const subject = text(group[0]);
+    if (!subject || group.length < 2) return [];
+    return [[subject, group.slice(1).map(part).filter(Boolean).join(' · ')]];
   });
   const footer = panel?.children[1];
   const status = text(footer?.lastElementChild);
@@ -464,7 +505,7 @@ async function readTrajectory(portal) {
 // держит события месяца готовым списком (serverMemo.data.events); следующие месяцы — методом addMonth.
 // Фильтры сайта («Экзамены (зачеты)» и другие) не трогаем: отбираем по типу события сами.
 const sessionColumns = ['Дата', 'Время', 'Дисциплина', 'Вид', 'Аудитория', 'Преподаватель'];
-const isSessionEvent = event => event.color === 'red' || /exam|test|credit|consult/i.test(event.code || '')
+export const isSessionEvent = event => event.color === 'red' || /exam|test|credit|consult/i.test(event.code || '')
   || /экзам|зач[её]т|консультац|аттестац/i.test(event.groupType || '');
 function sessionRow(event) {
   const teachers = Object.values(event.teachers && typeof event.teachers === 'object' ? event.teachers : {})
@@ -474,7 +515,8 @@ function sessionRow(event) {
   const time = [event.startTime, event.endTime].filter(Boolean).join('–');
   return [event.date || '', time, event.discipline || '', event.groupType || '', room || event.place || '', teachers.join(', ')];
 }
-async function readSession(portal, months = 3) {
+// Все события расписания за несколько месяцев, как отдаёт сайт (для сессии и для проверки live-check)
+export async function readScheduleEvents(portal, months = 3) {
   const path = '/schedule/students/list';
   const html = await portal.open(path);
   const livewire = await livewireSession(portal, html, path);
@@ -488,9 +530,74 @@ async function readSession(portal, months = 3) {
     if (!Array.isArray(next)) throw new Error('Не удалось открыть следующий месяц расписания');
     events.push(...next);
   }
+  return events;
+}
+// События из фильтра сайта «Экзамены (зачеты)». Ищем его в «Списке» и в «Сетке» расписания: компонент со свойством
+// exams. Включаем фильтр, как галочку на сайте, и берём события. Нет фильтра или не сработал — null.
+const eventKey = event => event.id_ext || `${event.date}|${event.startTime}|${event.discipline}`;
+const isEvent = value => value && typeof value === 'object' && 'date' in value && ('discipline' in value || 'groupType' in value);
+function eventsIn(data) {
+  if (Array.isArray(data?.events)) return data.events;
+  for (const value of Object.values(data || {})) {
+    const list = Array.isArray(value) ? value : value && typeof value === 'object' ? Object.values(value) : [];
+    if (list.length && list.every(isEvent)) return list;
+  }
+  return null;
+}
+export async function readExamFilterEvents(portal, months = 3) {
+  for (const [path, name] of [['/schedule/students/list', 'schedule-student-main'], ['/schedule/students', 'schedule-student-grid']]) {
+    try {
+      const html = await portal.open(path);
+      const livewire = await livewireSession(portal, html, path);
+      const component = () => livewire.component(name);
+      if (typeof component()?.data.exams !== 'boolean') continue;
+      const id = component().id;
+      if (component().data.exams) await livewire.dispatch(id, [{ type: 'syncInput', payload: { id: randomId(), name: 'exams', value: false } }]);
+      const before = eventsIn(component()?.data);
+      await livewire.dispatch(id, [{ type: 'syncInput', payload: { id: randomId(), name: 'exams', value: true } }]);
+      const first = eventsIn(component()?.data);
+      if (!before || !first || component()?.data.exams !== true) continue;
+      // что делает галочка — по тому же месяцу (неделе) до и после: оставляет только экзамены или добавляет их
+      const was = new Set(before.map(eventKey)), now = new Set(first.map(eventKey));
+      const mode = first.every(event => was.has(eventKey(event))) && first.length < before.length ? 'only'
+        : before.every(event => now.has(eventKey(event))) && first.length > before.length ? 'add' : null;
+      if (!mode) continue;   // ничего не изменила (или не понять) — фильтром не пользуемся
+      const events = [...first];
+      // «Список» листается по месяцам; у «Сетки» — что отдала
+      if (name === 'schedule-student-main') for (let month = 1; month < months; month++) {
+        await livewire.dispatch(id, [{ type: 'callMethod', payload: { id: randomId(), method: 'addMonth', params: [] } }]);
+        const next = eventsIn(component()?.data);
+        if (!next) break;
+        events.push(...next);
+      }
+      return { source: name, mode, events };
+    } catch (error) {
+      if (error instanceof SessionExpired) throw error;
+    }
+  }
+  return null;
+}
+// Какие события фильтр сайта отметил как экзамены: «только экзамены» — все его события; «добавляет» — сверх обычных
+export function examsFromFilter(plain, filter) {
+  if (!filter) return [];
+  if (filter.mode === 'only') return filter.events;
+  const known = new Set(plain.map(eventKey));
+  return filter.events.filter(event => !known.has(eventKey(event)));
+}
+async function readSession(portal, months = 3) {
+  const plain = await readScheduleEvents(portal, months);
+  let filter = null;
+  try { filter = await readExamFilterEvents(portal, months); }
+  catch (error) { if (error instanceof SessionExpired) throw error; }
+  const filtered = filter?.events || null;
+  // экзамен — если так его отметил сайт (фильтр) или по виду, цвету и коду события
+  const marked = new Set(examsFromFilter(plain, filter).map(eventKey));
   const seen = new Set();
-  const rows = events.filter(isSessionEvent)
-    .filter(event => { const key = event.id_ext || `${event.date}|${event.startTime}|${event.discipline}`; if (seen.has(key)) return false; seen.add(key); return true; })
+  const dateKey = event => { const [d, m, y] = String(event.date || '').split('.'); return `${y}${m}${d}${event.startTime || ''}`; };
+  const rows = [...plain, ...(filtered || [])]
+    .filter(event => marked.has(eventKey(event)) || isSessionEvent(event))
+    .filter(event => { const key = eventKey(event); if (seen.has(key)) return false; seen.add(key); return true; })
+    .sort((a, b) => dateKey(a).localeCompare(dateKey(b)))
     .map(sessionRow);
   return [{ columns: sessionColumns, rows }];
 }

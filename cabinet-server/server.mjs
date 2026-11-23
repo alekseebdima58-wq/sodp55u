@@ -9,7 +9,9 @@ const loginPath = '/cabinet/v1/login';
 const refreshPath = '/cabinet/v1/refresh';
 const notifyPath = '/cabinet/v1/notify';
 // Кнопка «Обновить» в приложении: сервер сразу идёт на сайт вуза, но не чаще раза в 30 минут на подключение
-export const manualRefreshInterval = 30 * 60 * 1000;
+// Ручное обновление (свайп) — без ограничения по времени: каждый раз сразу на сайт вуза.
+// Параллельно для одного подключения идёт только одно обновление.
+export const manualRefreshInterval = 0;
 const bearer = request => /^Bearer (\S+)$/.exec(request.headers.authorization || '')?.[1] || '';
 // Как часто обновлять кабинет каждого подключения: обычно раз в 3 дня,
 // в декабре и январе (зимняя сессия) — каждые 4 часа, чтобы новые оценки приходили сразу
@@ -21,6 +23,13 @@ export function refreshIntervalAt(time) {
   return sessionMonths.has(month) ? sessionRefreshInterval : refreshInterval;
 }
 const dueCheckInterval = 5 * 60 * 1000;
+// Сайт вуза не ответил (или ответил не всё) — не ждём 3 дня, а пробуем снова: через 15 минут, 30, час, 2 часа…
+// но не реже обычного срока. Счётчик неудач подряд хранится в сессии и сбрасывается после удачного обновления.
+export const retryDelays = [15, 30, 60, 120, 240].map(minutes => minutes * 60 * 1000);
+export function retryDelay(failures, time) {
+  const normal = refreshIntervalAt(time);
+  return Math.min(normal, retryDelays[Math.min(Math.max(failures, 1), retryDelays.length) - 1]);
+}
 
 async function readJson(request, limit = 4096) {
   if (!/^application\/json(?:;|$)/i.test(request.headers['content-type'] || '')) return null;
@@ -51,25 +60,45 @@ async function readCredentials(request) {
   } catch { return null; }
 }
 
-function signInLimiter() {
-  let windowEnd = 0, attempts = 0;
-  const users = new Map();
+// Попытки входа. Вуз может заблокировать адрес сервера, если с него много раз вводят неверный пароль, поэтому:
+// • не больше 2 входов одновременно и не два входа одного логина сразу;
+// • 5 неверных паролей для одного логина за 15 минут — этот логин ждёт 15 минут;
+// • 10 неверных паролей по всем логинам за 15 минут — вход для всех на паузе 15 минут;
+// • не больше 30 попыток входа всего за 5 минут.
+// Удачный вход неудачи этого логина обнуляет. Логины в памяти — только хешем.
+export const signInLimits = { window: 15 * 60 * 1000, perLogin: 5, total: 10, burstWindow: 5 * 60 * 1000, burst: 30, parallel: 2 };
+export function signInLimiter(now = Date.now, limits = signInLimits) {
+  const failures = new Map();   // логин (хеш) → времена неудач
+  let all = [];                 // времена неудач всех логинов
+  let tries = [];               // времена всех попыток
   const active = new Set();
+  const recent = (list, window) => list.filter(time => now() - time < window);
+  const wait = (list, limit, window) => (list.length >= limit ? list[list.length - limit] + window - now() : 0);
   return login => {
-    const now = Date.now();
-    if (now >= windowEnd) { windowEnd = now + 300000; attempts = 0; users.clear(); }
     const id = createHash('sha256').update(login.toLowerCase()).digest('hex');
-    const tries = users.get(id) || 0;
-    if (active.size >= 2 || active.has(id) || tries >= 5 || attempts >= 30) return null;
-    attempts++;
-    users.set(id, tries + 1);
+    all = recent(all, limits.window);
+    tries = recent(tries, limits.burstWindow);
+    const mine = recent(failures.get(id) || [], limits.window);
+    if (mine.length) failures.set(id, mine); else failures.delete(id);
+    const retryAfter = Math.max(wait(mine, limits.perLogin, limits.window), wait(all, limits.total, limits.window), wait(tries, limits.burst, limits.burstWindow));
+    if (retryAfter > 0) return { blocked: true, retryAfter: Math.ceil(retryAfter / 1000) };
+    if (active.size >= limits.parallel || active.has(id)) return { blocked: true, retryAfter: 5 };
+    tries.push(now());
     active.add(id);
-    return () => active.delete(id);
+    return {
+      blocked: false,
+      // ok — пароль подошёл; false — неверный пароль; null — сайт вуза не ответил (не считаем)
+      done(ok) {
+        active.delete(id);
+        if (ok === true) failures.delete(id);
+        if (ok === false) { failures.set(id, [...(failures.get(id) || []), now()]); all.push(now()); }
+      },
+    };
   };
 }
 
-export function makeApi(store, allowedOrigins, { signIn, onConnected = () => {}, onRefresh, now = Date.now } = {}) {
-  const loginSlot = signInLimiter();
+export function makeApi(store, allowedOrigins, { signIn, onConnected = () => {}, onRefresh, now = Date.now, limits = signInLimits } = {}) {
+  const loginSlot = signInLimiter(now, limits);
   const refreshing = new Set();
   return createServer({ requestTimeout: 25000, headersTimeout: 10000 }, async (request, response) => {
     response.setHeader('Cache-Control', 'private, no-store');
@@ -120,9 +149,6 @@ export function makeApi(store, allowedOrigins, { signIn, onConnected = () => {},
         if (!browserState || snapshot.status === 'expired') return send(409, { error: 'expired' });
         // Ответ сразу; приложение ждёт новую копию через /snapshot (в ней изменится syncedAt)
         if (refreshing.has(account.id)) return send(202, { status: 'queued' });
-        const last = Date.parse(lastAttemptAt ?? '');
-        const wait = Number.isFinite(last) ? last + manualRefreshInterval - now() : 0;
-        if (wait > 0) return send(429, { error: 'too_soon', retryAfter: Math.ceil(wait / 1000), lastAttemptAt });
         refreshing.add(account.id);
         Promise.resolve().then(() => onRefresh(account)).catch(() => {}).finally(() => refreshing.delete(account.id));
         return send(202, { status: 'queued' });
@@ -138,10 +164,15 @@ export function makeApi(store, allowedOrigins, { signIn, onConnected = () => {},
         if (key && !old) return send(401, { error: 'invalid_key' });
         const credentials = await readCredentials(request);
         if (!credentials) return send(400, { error: 'bad_request' });
-        const release = loginSlot(credentials.login);
-        if (!release) return send(429, { error: 'rate_limited' });
+        const slot = loginSlot(credentials.login);
+        if (slot.blocked) { credentials.password = ''; return send(429, { error: 'rate_limited', retryAfter: slot.retryAfter }); }
+        let outcome = null;
         try {
-          const { identity, browserState } = await signIn(credentials);
+          let signedIn;
+          try { signedIn = await signIn(credentials); }
+          catch (error) { if (error instanceof SignInFailed && error.code === 'invalid_credentials') outcome = false; throw error; }
+          outcome = true;
+          const { identity, browserState } = signedIn;
           if (old && old.identity !== identity) return send(409, { error: 'different_account' });
           let connection;
           if (old) {
@@ -154,7 +185,7 @@ export function makeApi(store, allowedOrigins, { signIn, onConnected = () => {},
           return send(200, { key: connection.key, snapshot });
         } finally {
           credentials.password = '';
-          release();
+          slot.done(outcome);
         }
       } catch (error) {
         const code = error instanceof SignInFailed ? error.code : 'portal_unavailable';
@@ -180,10 +211,12 @@ export async function dueAccounts(store, accounts, now = Date.now()) {
   const due = [];
   for (const account of accounts ?? await store.accounts()) {
     if (!account || account.disabled) continue;
-    const { browserState, snapshot, lastAttemptAt } = await store.session(account);
+    const { browserState, snapshot, lastAttemptAt, failures = 0 } = await store.session(account);
     if (!browserState || snapshot.status === 'expired') continue;
     const previous = Date.parse(lastAttemptAt ?? (snapshot.status === 'pending' ? null : snapshot.syncedAt));
-    if (!Number.isFinite(previous) || now - previous >= refreshIntervalAt(now)) due.push(account);
+    const failed = failures > 0 && (snapshot.status === 'error' || snapshot.status === 'partial');
+    const interval = failed ? retryDelay(failures, now) : refreshIntervalAt(now);
+    if (!Number.isFinite(previous) || now - previous >= interval) due.push(account);
   }
   return due;
 }
@@ -209,6 +242,8 @@ export async function syncAll(store, portal = {}, accounts, now = Date.now, { no
       await store.saveSession(account, {
         browserState: { cookies: client.cookies(), origins: [] },
         lastAttemptAt,
+        // часть разделов не прочиталась — это тоже неудача: повторим скоро; всё прочиталось — счётчик сброшен
+        ...(unavailable.length ? { failures: (session.failures || 0) + 1 } : {}),
         snapshot: {
           version: 1, status: unavailable.length ? 'partial' : 'ready', syncedAt: new Date().toISOString(),
           sections: { ...snapshot.sections, ...sections }, unavailable,
@@ -219,6 +254,7 @@ export async function syncAll(store, portal = {}, accounts, now = Date.now, { no
       await store.saveSession(account, {
         browserState: expired ? null : { cookies: client.cookies(), origins: [] },
         lastAttemptAt,
+        ...(expired ? {} : { failures: (session.failures || 0) + 1 }),
         snapshot: { ...snapshot, status: expired ? 'expired' : 'error' },
       });
       if (!expired) console.error('Не удалось обновить один из кабинетов. Последняя версия данных сохранена.');

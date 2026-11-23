@@ -10,7 +10,7 @@ import { chromium } from 'playwright';
 import { createMockPortal } from './mock-portal.mjs';
 import { cabinetEvents, checkRelay, sendToBot } from './notify.mjs';
 import { collectCabinet, openPortal, SessionExpired, signInToPortal, SignInFailed } from './portal.mjs';
-import { dueAccounts, makeApi, manualRefreshInterval, refreshInterval, refreshIntervalAt, scheduleSync, syncAll } from './server.mjs';
+import { dueAccounts, makeApi, manualRefreshInterval, refreshInterval, refreshIntervalAt, retryDelay, scheduleSync, signInLimiter, syncAll } from './server.mjs';
 import { openStore } from './state.mjs';
 
 const indexFile = fileURLToPath(new URL('../', import.meta.url));
@@ -89,47 +89,48 @@ async function savedKey(page) {
 async function saveMockup(browser, appUrl, directory) {
   await mkdir(directory, { recursive: true });
   const columns = ['Дисциплина', 'Форма контроля', 'Дата', 'Результат'];
+  // Вымышленные данные для демонстрационных скриншотов.
   const snapshot = {
     version: 1, status: 'ready', syncedAt: '2026-11-19T05:42:00Z',
     sections: { grades: [
       { title: '3 семестр', columns, rows: [
-        ['Рельсовые цепи', 'Экзамен', '18.11.2026', 'Отлично'],
-        ['Электрические машины', 'Экзамен', '16.11.2026', 'Хорошо'],
-        ['Теория передачи сигналов', 'Зачёт', '14.11.2026', 'Зачтено'],
+        ['Дисциплина 1', 'Экзамен', '17.11.2026', 'Отлично'],
+        ['Дисциплина 2', 'Экзамен', '15.11.2026', 'Хорошо'],
+        ['Дисциплина 3', 'Зачёт', '13.11.2026', 'Зачтено'],
       ] },
       { title: '2 семестр', columns, rows: [
-        ['Электротехника', 'Экзамен', '25.06.2026', 'Отлично'],
-        ['Математика', 'Экзамен', '20.06.2026', 'Хорошо'],
+        ['Дисциплина 5', 'Экзамен', '24.06.2026', 'Отлично'],
+        ['Дисциплина 6', 'Экзамен', '19.06.2026', 'Хорошо'],
       ] },
     ],
     orders: [{ columns: ['Дата', 'Номер приказа', 'Название', 'Содержание'], rows: [
-      ['03.09.2026', '104-У', 'О переводе на следующий курс', 'Перевод на второй курс с 1 сентября.'],
-      ['21.08.2025', '182-У', 'О зачислении', 'Зачисление на очную форму обучения.'],
+      ['03.09.2026', 'ДЕМО-201', 'Демонстрационный перевод', 'Пример текста о переводе.'],
+      ['21.08.2025', 'ДЕМО-202', 'Демонстрационное зачисление', 'Пример текста о зачислении.'],
     ] }],
     plan: [{ columns: ['Индекс', 'Дисциплина', 'Часы', 'Период', 'Вид контроля'], rows: [
-      ['Б1.О.12', 'Рельсовые цепи', '108', '3 семестр', 'Экзамен'],
-      ['Б1.О.13', 'Электрические машины', '144', '3 семестр', 'Экзамен'],
-      ['Б1.В.04', 'Теория передачи сигналов', '72', '3 семестр', 'Зачёт'],
-      ['Б1.О.15', 'Метрология и стандартизация', '72', '4 семестр', 'Зачёт'],
+      ['Б1.О.12', 'Дисциплина 1', '108', '3 семестр', 'Экзамен'],
+      ['Б1.О.13', 'Дисциплина 2', '144', '3 семестр', 'Экзамен'],
+      ['Б1.В.04', 'Дисциплина 3', '72', '3 семестр', 'Зачёт'],
+      ['Б1.О.15', 'Дисциплина 4', '72', '4 семестр', 'Зачёт'],
     ] }],
     trajectory: [
       { title: '2026/2027 (зимний)', columns: ['Дисциплина', 'Контроль, нагрузка и статус'], rows: [
-        ['Рельсовые цепи', 'Экзамен · 108 ч. · 3 з. е.'],
-        ['Теория передачи сигналов', 'Зачёт · 72 ч. · 2 з. е.'],
+        ['Дисциплина 1', 'Экзамен · 108 ч. · 3 з. е.'],
+        ['Дисциплина 3', 'Зачёт · 72 ч. · 2 з. е.'],
         ['Статус семестра', 'Обучение продолжается'],
       ] },
       { title: '2025/2026 (летний)', columns: ['Дисциплина', 'Контроль, нагрузка и статус'], rows: [
-        ['Электротехника', 'Экзамен · 108 ч. · 3 з. е.'],
+        ['Дисциплина 5', 'Экзамен · 108 ч. · 3 з. е.'],
         ['Статус семестра', 'Курс полностью пройден'],
       ] },
     ],
     profile: [{ columns: ['Поле', 'Значение'], rows: [
-      ['Имя', 'Иван Соколов'], ['Группа', 'СОДП-00у'], ['Курс', '2'],
-      ['Направление подготовки', 'Системы обеспечения движения поездов'], ['Форма обучения', 'Очная'],
+      ['Имя', 'Учебный профиль'], ['Группа', 'ДЕМО-00'], ['Курс', '2'],
+      ['Направление подготовки', 'Демонстрационная программа'], ['Форма обучения', 'Очная'],
     ] }],
     group: [{ columns: ['ФИО'], rows: [
-      ['Алексеева Анна Игоревна'], ['Белов Максим Олегович'], ['Данилова Софья Павловна'],
-      ['Ковалёв Артём Денисович'], ['Соколов Иван Сергеевич'], ['Федорова Полина Андреевна'],
+      ['Участник 1'], ['Участник 2'], ['Участник 3'],
+      ['Участник 4'], ['Участник 5'], ['Участник 6'],
     ] }],
     },
   };
@@ -160,16 +161,16 @@ async function saveMockup(browser, appUrl, directory) {
       await page.getByRole('heading', { name: 'Вход', exact: true }).waitFor();
       if (colorScheme === 'dark') await capture('cabinet-connect');
       await enterCredentials(page, 'demo', 'fictional-password');
-      await page.locator('.cab-card').getByText('Иван Соколов', { exact: true }).waitFor();
-      await page.locator('.cab-card').getByText('СОДП-00у · 2 курс', { exact: true }).waitFor();
+      await page.locator('.cab-card').getByText('Учебный профиль', { exact: true }).waitFor();
+      await page.locator('.cab-card').getByText('ДЕМО-00 · 2 курс', { exact: true }).waitFor();
       await capture(`cabinet-${colorScheme}`);
       if (colorScheme === 'dark') {
         for (const [id, filename, sample] of [
-          ['grades', 'cabinet-grades', 'Рельсовые цепи'],
-          ['orders', 'cabinet-orders', 'О переводе на следующий курс'],
-          ['plan', 'cabinet-plan', 'Метрология и стандартизация'],
-          ['trajectory', 'cabinet-trajectory', 'Обучение продолжается'],
-          ['group', 'cabinet-group', 'Данилова Софья Павловна'],
+          ['grades', 'cabinet-grades', 'Дисциплина 1'],
+          ['orders', 'cabinet-orders', 'Демонстрационный перевод'],
+          ['plan', 'cabinet-plan', 'Дисциплина 1'],
+          ['trajectory', 'cabinet-trajectory', '2026/2027 (зимний)'],
+          ['group', 'cabinet-group', 'Участник 3'],
         ]) {
           await open(id);
           await page.getByText(sample, { exact: true }).first().waitFor();
@@ -177,7 +178,7 @@ async function saveMockup(browser, appUrl, directory) {
           await back();
         }
         await page.locator('.cab-card').click();
-        await page.getByText('Системы обеспечения движения поездов', { exact: true }).waitFor();
+        await page.getByText('Демонстрационная программа', { exact: true }).waitFor();
         await capture('cabinet-profile');
         await back();
         expired = true;
@@ -238,6 +239,71 @@ test('в декабре и январе обновление каждые 4 ча
   assert.deepEqual(await dueAccounts(store, undefined, Date.parse(syncedAt) + hours(4)), [account]);
 });
 
+test('сайт вуза не ответил — повтор через 15 минут, 30, час… но не реже обычного', async t => {
+  const minutes = m => m * 60 * 1000;
+  assert.equal(retryDelay(1, Date.parse('2026-11-05T10:00:00Z')), minutes(15));
+  assert.equal(retryDelay(3, Date.parse('2026-11-05T10:00:00Z')), minutes(60));
+  assert.equal(retryDelay(9, Date.parse('2026-11-05T10:00:00Z')), minutes(240));
+  assert.equal(retryDelay(9, Date.parse('2026-12-05T10:00:00Z')), minutes(240), 'в сессию тоже не чаще обычных 4 часов');
+
+  const path = await mkdtemp(join(tmpdir(), 'sodp55u-retry-'));
+  t.after(() => rm(path, { recursive: true, force: true }));
+  const store = await openStore(path);
+  const browserState = { cookies: [], origins: [] };
+  const { id } = await store.create('student', browserState);
+  const account = await store.find(id);
+  const start = Date.parse('2026-11-05T10:00:00Z');
+  await store.saveSession(account, { browserState, snapshot: { version: 1, status: 'ready', syncedAt: new Date(start).toISOString(), sections: {} } });
+  // сайт недоступен (закрытый порт): первая неудача
+  const down = { origin: 'http://127.0.0.1:9', timeout: 2000 };
+  let clock = start + refreshInterval;
+  await syncAll(store, down, [account], () => clock);
+  let session = await store.session(account);
+  assert.equal(session.snapshot.status, 'error');
+  assert.equal(session.failures, 1);
+  assert.deepEqual(await dueAccounts(store, undefined, clock + minutes(15) - 1), [], 'раньше 15 минут — ждём');
+  assert.deepEqual(await dueAccounts(store, undefined, clock + minutes(15)), [account], 'через 15 минут — снова');
+  // вторая неудача подряд — ждём 30 минут
+  clock += minutes(15);
+  await syncAll(store, down, [account], () => clock);
+  assert.equal((await store.session(account)).failures, 2);
+  assert.deepEqual(await dueAccounts(store, undefined, clock + minutes(30) - 1), []);
+  assert.deepEqual(await dueAccounts(store, undefined, clock + minutes(30)), [account]);
+  // вход истёк — повторять нечего, ждём нового входа
+  session = await store.session(account);
+  await store.saveSession(account, { ...session, browserState: null, snapshot: { ...session.snapshot, status: 'expired' } });
+  assert.deepEqual(await dueAccounts(store, undefined, clock + minutes(60)), []);
+});
+
+test('вход: неверный пароль 5 раз — логин ждёт 15 минут, 10 раз по всем — пауза для всех', () => {
+  let clock = Date.parse('2026-11-05T10:00:00Z');
+  const limit = signInLimiter(() => clock);
+  const attempt = (login, ok) => { const slot = limit(login); if (slot.blocked) return slot; slot.done(ok); return slot; };
+  for (let i = 0; i < 5; i++) assert.equal(attempt('alice', false).blocked, false);
+  const blocked = attempt('alice', false);
+  assert.equal(blocked.blocked, true, 'шестая попытка alice — отказ');
+  assert(blocked.retryAfter > 0 && blocked.retryAfter <= 15 * 60);
+  assert.equal(attempt('ALICE', false).blocked, true, 'логин без учёта регистра');
+  assert.equal(attempt('bob', true).blocked, false, 'другого логина не касается');
+  clock += 15 * 60 * 1000;
+  assert.equal(attempt('alice', true).blocked, false, 'через 15 минут — снова можно');
+  // удачный вход обнуляет неудачи; ошибки сайта вуза (null) не считаются
+  for (let i = 0; i < 4; i++) attempt('alice', false);
+  attempt('alice', true);
+  for (let i = 0; i < 20; i++) assert.equal(attempt('carol', null).blocked, false);
+  // много неверных паролей по разным логинам — пауза для всех, чтобы вуз не заблокировал сервер
+  clock += 15 * 60 * 1000;
+  for (let i = 0; i < 10; i++) assert.equal(attempt(`user${i}`, false).blocked, false);
+  assert.equal(attempt('dave', true).blocked, true);
+  // одновременно: не больше двух входов и не два входа одного логина
+  clock += 15 * 60 * 1000;
+  const one = limit('erin'), two = limit('frank');
+  assert.equal(limit('erin').blocked, true);
+  assert.equal(limit('gina').blocked, true);
+  one.done(true); two.done(true);
+  assert.equal(limit('gina').blocked, false);
+});
+
 test('портал: вход с «Запомнить меня», разделы, траектория через Livewire, истечение сессии', { timeout: 60000 }, async t => {
   const browser = process.env.CABINET_PARSER === 'chromium' ? await launchBrowser() : null;
   const portal = createMockPortal({ students: students(), marks: { А: 'Отлично', Б: 'Хорошо' } });
@@ -269,15 +335,16 @@ test('портал: вход с «Запомнить меня», разделы,
   assert.deepEqual(sections.plan[0].rows, [['Б1.О.1', 'План А', '72', '1', 'Зачёт']]);
   // Сессия: из трёх месяцев «Расписание → Список» — только консультации, экзамены и зачёты, без лекций
   assert.deepEqual(sections.session[0].columns, ['Дата', 'Время', 'Дисциплина', 'Вид', 'Аудитория', 'Преподаватель']);
-  assert.equal(sections.session[0].rows.length, 6);
-  assert(sections.session[0].rows.every(row => /Консультация|Экзамен|Зачет/.test(row[3])), 'лекции в сессию не попадают');
-  assert.deepEqual(sections.session[0].rows[1].slice(1), ['08:30–12:00', sections.session[0].rows[1][2], sections.session[0].rows[1][3], 'ауд. 1206 · Корпус 1', 'Тарасов Е. М.']);
+  assert.equal(sections.session[0].rows.length, 9);
+  assert(sections.session[0].rows.every(row => /Консультация|Экзамен|Зачет|Защита/.test(row[3])), 'лекции в сессию не попадают');
+  assert.equal(sections.session[0].rows.filter(row => row[3] === 'Защита отчета').length, 3, 'событие, отмеченное фильтром сайта «Экзамены», — в сессии, хоть по названию его не узнать');
+  assert.deepEqual(sections.session[0].rows[1].slice(1), ['08:30–12:00', sections.session[0].rows[1][2], sections.session[0].rows[1][3], 'ауд. 9901 · Учебный макет 1', 'Примеров Е. М.']);
   assert.equal(new Set(sections.session[0].rows.map(row => row[0].slice(3))).size, 3, 'три разных месяца');
   assert.deepEqual(sections.trajectory.map(section => section.title), ['2025/2026 (зимний)', '2025/2026 (летний)', '2026/2027 (зимний)']);
+  // Все дисциплины семестра, а не только первая: на сайте они идут плоским списком с разделителями
+  const semester = (n, status) => [['Предмет А ' + n, 'Зачёт · 72 ч. / 2 з.е'], ['Второй предмет А ' + n, 'Экзамен · 108 ч. / 3 з.е'], ['Статус семестра', status]];
   assert.deepEqual(sections.trajectory.map(section => section.rows), [
-    [['Предмет А 0', 'Зачёт · 72 ч.'], ['Статус семестра', 'Курс полностью пройден']],
-    [['Предмет А 1', 'Зачёт · 72 ч.'], ['Статус семестра', 'Курс полностью пройден']],
-    [['Предмет А 2', 'Зачёт · 72 ч.'], ['Статус семестра', 'Обучение продолжается']],
+    semester(0, 'Курс полностью пройден'), semester(1, 'Курс полностью пройден'), semester(2, 'Обучение продолжается'),
   ]);
   // Цепочка как в DevTools: selectSemester → select-semester → четыре события одним запросом
   assert.deepEqual(portal.livewireCalls.filter(call => call.name.startsWith('trajectory')).slice(0, 6).map(call => `${call.name}:${call.method || call.event}`), [
@@ -302,7 +369,7 @@ test('портал: вход с «Запомнить меня», разделы,
   await assert.rejects(collectCabinet(openPortal({ ...options, cookies: later.cookies() }), identity), SessionExpired);
 });
 
-test('кнопка «Обновить»: сразу на сайт вуза, не чаще раза в 30 минут', { timeout: 60000 }, async t => {
+test('обновление свайпом: каждый раз сразу на сайт вуза, одновременно — одно', { timeout: 60000 }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'sodp55u-refresh-now-'));
   const browser = process.env.CABINET_PARSER === 'chromium' ? await launchBrowser() : null;
   const marks = { А: 'Отлично', Б: 'Хорошо' };
@@ -313,9 +380,10 @@ test('кнопка «Обновить»: сразу на сайт вуза, не
   const options = { origin: await portal.listen(), ...parser(browser) };
   const store = await openStore(dir);
   const synced = [];
+  let hold = null;
   api = makeApi(store, new Set([pwa]), {
     signIn: credentials => signInToPortal(credentials, options),
-    onRefresh: account => syncAll(store, options, [account], () => clock).then(() => synced.push(account.id)),
+    onRefresh: async account => { if (hold) await hold; await syncAll(store, options, [account], () => clock); synced.push(account.id); },
     now: () => clock,
   });
   const apiUrl = await address(api);
@@ -335,25 +403,28 @@ test('кнопка «Обновить»: сразу на сайт вуза, не
   await waitFor(() => synced.length === 1);
   assert.equal((await snapshot()).sections.grades[0].rows[0][5], 'Отлично');
 
-  // Через 10 минут — рано: ждать ещё 20 минут
+  // Сразу же ещё раз — тоже идём на сайт, новая оценка приходит сразу
   marks.А = 'Хорошо';
-  clock += 10 * 60 * 1000;
-  const early = await call('refresh', { method: 'POST', headers: auth });
-  assert.equal(early.status, 429);
-  assert.equal((await early.json()).retryAfter, 20 * 60);
-  assert.equal(synced.length, 1, 'на сайт вуза не ходили');
-
-  // Через 30 минут после прошлого обновления — можно, новая оценка приходит сразу
-  clock += manualRefreshInterval - 10 * 60 * 1000;
+  clock += 60 * 1000;
   assert.equal((await call('refresh', { method: 'POST', headers: auth })).status, 202);
   await waitFor(() => synced.length === 2);
   assert.equal((await snapshot()).sections.grades[0].rows[0][5], 'Хорошо');
+
+  // Пока обновление идёт, второе параллельно не запускается
+  let release; const gate = new Promise(r => (release = r));
+  hold = gate;
+  assert.equal((await call('refresh', { method: 'POST', headers: auth })).status, 202);
+  assert.equal((await call('refresh', { method: 'POST', headers: auth })).status, 202);
+  release(); hold = null;
+  await waitFor(() => synced.length === 3);
+  await new Promise(r => setTimeout(r, 200));
+  assert.equal(synced.length, 3, 'одновременно — одно обращение к сайту');
 
   // Вход в вуз истёк — обновлять нечего, приложение попросит войти снова
   portal.signOutEverywhere('alice');
   clock += manualRefreshInterval;
   assert.equal((await call('refresh', { method: 'POST', headers: auth })).status, 202);
-  await waitFor(() => synced.length === 3);
+  await waitFor(() => synced.length === 4);
   assert.equal((await snapshot()).status, 'expired');
   assert.equal((await call('refresh', { method: 'POST', headers: auth })).status, 409);
 });
@@ -437,10 +508,10 @@ test('уведомления: что считается изменением', (
   assert.deepEqual(cabinetEvents({ grades: g([['Физика', 'Экзамен', '', '']]) }, { grades: g([['Физика', 'Экзамен', '', '']]) }), [], 'оценки ещё нет');
   assert.equal(cabinetEvents({ grades: g([['Физика', 'Экзамен', '', '']]) }, { grades: g([['Физика', 'Экзамен', '10.01.2027', 'Хорошо']]) })[0].r, 'Хорошо');
   assert.equal(cabinetEvents({ grades: g([['Физика', 'Экзамен', '', 'Неудовлетворительно']]) }, { grades: g([['Физика', 'Экзамен', '', 'Удовлетворительно']]) })[0].r, 'Удовлетворительно', 'пересдача');
-  const exam = ['10.01.2027', '08:30–12:00', 'Физика', 'Экзамен', 'ауд. 1206', ''];
+  const exam = ['10.01.2027', '08:30–12:00', 'Физика', 'Экзамен', 'ауд. 9901', ''];
   assert.deepEqual(cabinetEvents({ session: e([exam]) }, { session: e([exam]) }), []);
   assert.equal(cabinetEvents({ session: e([]) }, { session: e([exam]) })[0].o, undefined, 'новый экзамен');
-  assert.equal(cabinetEvents({ session: e([exam]) }, { session: e([[...exam.slice(0, 4), 'ауд. 2303', '']]) })[0].o, '10.01.2027 · 08:30–12:00 · ауд. 1206', 'перенос');
+  assert.equal(cabinetEvents({ session: e([exam]) }, { session: e([[...exam.slice(0, 4), 'ауд. 9902', '']]) })[0].o, '10.01.2027 · 08:30–12:00 · ауд. 9901', 'перенос');
   assert.equal(checkRelay('https://ntfy.sh/sodp55u-0123456789abcdef', ['ntfy.sh']), 'https://ntfy.sh/sodp55u-0123456789abcdef');
   for (const bad of ['http://ntfy.sh/sodp55u-0123456789abcdef', 'https://ntfy.sh/a', 'https://ntfy.sh/sodp55u-0123456789abcdef?x=1', 'https://example.com/sodp55u-0123456789abcdef', 'https://user@ntfy.sh/sodp55u-0123456789abcdef']) {
     assert.equal(checkRelay(bad, ['ntfy.sh']), null, bad);
@@ -533,6 +604,12 @@ test('вход по паролю, повторный вход и синхрон�
   assert.equal(a.sections.grades[0].rows[0][5], 'Отлично');
   assert.equal(b.sections.grades[0].rows[0][5], 'Хорошо');
   assert.deepEqual(b.sections.orders, []);
+  // все приказы: и без «Содержания» (ячейки нет), и с обрезанным текстом — целиком
+  assert.deepEqual(a.sections.orders[0].rows, [
+    ['01.11.2026', 'ТЕСТ-А', 'Приказ', 'Содержание'],
+    ['12.03.2030', 'ТЕСТ-101', 'Тестовый приказ', 'по результатам проверки демонстрационной записи в тестовом журнале'],
+    ['18.02.2030', 'ТЕСТ-102', 'Тестовый приказ без содержания', ''],
+  ]);
   assert.equal(a.sections.trajectory.length, 3);
   assert.equal(a.sections.trajectory[1].rows[0][0], 'Предмет А 1');
   assert.deepEqual(a.sections.group[0], { columns: ['ФИО', 'День рождения'], title: '', rows: [['Участник А', '01.01']] });
@@ -549,13 +626,16 @@ test('вход по паролю, повторный вход и синхрон�
   await first.locator('.cab-card').getByText('Студент А', { exact: true }).waitFor();
   assert.deepEqual((await first.locator('.tabs .tab').allTextContents()).map(label => label.trim()), ['Расписание', 'Преподаватели', 'Личный кабинет', 'Настройки']);
   assert.deepEqual(await first.locator('.cabinet .item[data-page] .nm').allTextContents(), ['Сессия', 'Зачётка', 'Траектория', 'Учебный план', 'Моя группа', 'Приказы']);
+  // Зачётка открывается на последнем семестре; другой — переключателем
   await openSection(first, 'grades');
+  await first.getByText('Дисциплина А 3', { exact: true }).waitFor();
+  await first.locator('[data-cab="gradesem"]', { hasText: '2 семестр' }).click();
   await first.getByText('Дисциплина А 2', { exact: true }).waitFor();
   await back(first);
   await second.locator('.cab-card').waitFor();
   await openSection(second, 'grades');
-  await second.getByText('Дисциплина Б 2', { exact: true }).waitFor();
-  assert.equal(await first.getByText('Дисциплина Б 2', { exact: true }).count(), 0);
+  await second.getByText('Дисциплина Б 3', { exact: true }).waitFor();
+  assert.equal(await first.getByText('Дисциплина Б 3', { exact: true }).count(), 0);
   for (const [section, expected] of [
     ['orders', 'Содержание'], ['plan', 'План А'], ['trajectory', 'Предмет А 1'], ['group', 'Участник А'], ['session', 'Предмет А'],
   ]) {
