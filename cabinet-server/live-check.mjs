@@ -25,7 +25,11 @@ try {
   for (const [key, tables] of Object.entries(sections)) {
     const parts = tables.map(table => `${table.title || 'без заголовка'}: ${table.rows.length} стр.`);
     console.log(`${key}: ${tables.length} табл. — ${parts.join('; ') || 'пусто'}`);
-    if (key === 'group' && tables[0]) console.log(`  столбцы группы: ${tables[0].columns.join(', ')}`);
+    if (key === 'group' && tables[0]) {
+      console.log(`  столбцы группы: ${tables[0].columns.join(', ')}`);
+      // Только количество заполненных значений, без самих данных
+      tables[0].columns.forEach((name, i) => console.log(`    ${name || '(без названия)'}: заполнено ${tables[0].rows.filter(row => String(row[i] ?? '').trim()).length} из ${tables[0].rows.length}`));
+    }
   }
   if (unavailable.length) {
     console.log(`Не прочитались: ${unavailable.join(', ')}`);

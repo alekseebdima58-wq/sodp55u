@@ -67,6 +67,25 @@ function readBookNumber(document) {
 function readTables(document, { expected, columns, semester }) {
   const text = node => (node?.textContent || '').replace(/\s+/g, ' ').trim();
   const cells = row => [...row.children].filter(cell => /^(TD|TH)$/i.test(cell.tagName));
+  // Длинный текст сайт может обрезать, а целиком поместить в подсказку или
+  // кнопку «копировать». Ищем в атрибутах ячейки строку длиннее, которая начинается так же.
+  const full = cell => {
+    const shown = text(cell);
+    if (!cell) return shown;
+    const nodes = [cell, ...cell.querySelectorAll('*')];
+    // видимый обрезанный кусок: сама ячейка или её элемент, текст которого кончается многоточием
+    const cut = [shown, ...nodes.filter(node => !node.children.length).map(text)].map(value => /^(.*?)\s*(?:\.\.\.|…)$/s.exec(value)).find(m => m && m[1].length >= 3);
+    if (!cut) return shown;
+    const prefix = cut[1].toLowerCase();
+    const found = [
+      ...nodes.map(text),                                                        // скрытый текст подсказки
+      ...nodes.flatMap(node => [...(node.attributes || [])].map(attr => attr.value))  // title, data-*, x-data
+        .flatMap(value => [value, ...[...value.matchAll(/(['"`])((?:\\.|(?!\1).)*)\1/g)].map(q => q[2])]),
+    ].map(value => value.replace(/\\(['"`\\])/g, '$1').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim())
+      .filter(value => value.length > cut[1].length && value.toLowerCase().startsWith(prefix) && !/(?:\.\.\.|…)/.test(value.slice(cut[1].length, cut[1].length + 4)))
+      .sort((a, b) => a.length - b.length)[0];
+    return found || shown;
+  };
   const sections = [...document.querySelectorAll('table')].flatMap(table => {
     const own = node => node.closest('table') === table;
     const head = [...table.querySelectorAll('thead tr')].find(own);
@@ -76,8 +95,9 @@ function readTables(document, { expected, columns, semester }) {
     const selected = columns || headings;
     const indices = selected.map(column => headings.indexOf(column));
     if (indices.some(index => index < 0)) return [];
-    const minimum = 1 + Math.max(...indices);
-    const rows = [...table.querySelectorAll('tbody tr')].filter(own).map(cells).filter(row => row.length >= minimum);
+    // Пустые ячейки в конце строки сайт может не выводить вовсе (приказ без «Содержания» — 3 ячейки из 4):
+    // такие строки берём, недостающее — пусто. Строки из одной ячейки (заголовки-разделители) пропускаем.
+    const rows = [...table.querySelectorAll('tbody tr')].filter(own).map(cells).filter(row => row.length >= Math.min(2, headings.length) && row.length > indices[0]);
     let title = '';
     if (semester) {
       for (let node = table.parentElement, depth = 0; node && depth < 8; node = node.parentElement, depth++) {
@@ -86,7 +106,7 @@ function readTables(document, { expected, columns, semester }) {
         if (title) break;
       }
     }
-    return [{ title, columns: selected, rows: rows.map(row => indices.map(i => text(row[i]))).filter(row => row.some(Boolean)) }];
+    return [{ title, columns: selected, rows: rows.map(row => indices.map(i => full(row[i]))).filter(row => row.some(Boolean)) }];
   });
   const empty = [...document.querySelectorAll('body *')].some(node => !node.children.length
     && /^Нет (данных(?: для отображения)?|приказов|записей|результатов)\.?$/i.test(text(node)));
@@ -106,12 +126,16 @@ function readPlan(document) {
 
 function readProfile(document) {
   const clean = node => (node?.textContent || '').replace(/\s+/g, ' ').trim();
-  const fields = ['Курс', 'Группа', 'Учебная группа', 'Направление подготовки', 'Форма обучения', 'Институт', 'Факультет', 'Подразделение', 'Квалификация'];
+  const fields = ['ФИО', 'Фамилия', 'Отчество', 'Курс', 'Группа', 'Учебная группа', 'Направление подготовки', 'Форма обучения', 'Институт', 'Факультет', 'Подразделение', 'Квалификация'];
   const result = new Map();
   const links = [...document.querySelectorAll('a[href$="/user/profile"]')];
   const label = node => node.getAttribute('aria-label') || node.getAttribute('title') || node.querySelector('img')?.getAttribute('alt') || '';
   const name = links.map(label).find(Boolean) || links.map(clean).find(Boolean);
   if (name) result.set('Имя', name);
+  // Полное имя из формы профиля (поле «Имя»/«ФИО»), если оно длиннее, чем в меню
+  const input = document.querySelector('input#name, input[name="name"], input[name="fio"]');
+  const full = (input?.getAttribute('value') || '').replace(/\s+/g, ' ').trim();
+  if (full && full.split(' ').length >= 2 && full.length > (name || '').length) result.set('ФИО', full);
   for (const node of document.querySelectorAll('div, dt')) {
     const field = clean(node);
     if (!fields.includes(field) || node.children.length || result.has(field)) continue;
@@ -144,12 +168,29 @@ function trajectoryState(document) {
     return [{ label, key, component: link ? owner(link) : '' }];
   });
   const panel = nav.nextElementSibling;
-  const main = panel?.firstElementChild;
-  const rows = [...(main?.children || [])].flatMap(block => {
-    const parts = [...block.children];
-    const subject = text(parts[0]);
-    if (!subject || parts.length < 2) return [];
-    return [[subject, parts.slice(1).map(text).filter(Boolean).join(' · ')]];
+  // Список дисциплин: спускаемся через обёртки (прокрутка и т. п.) до блока, где элементов больше одного.
+  let list = panel?.firstElementChild;
+  while (list && list.children.length === 1) list = list.firstElementChild;
+  const items = [...(list?.children || [])];
+  // Текст части: если внутри несколько блоков (вид контроля, часы) — через « · »
+  const part = node => node.children.length > 1 ? [...node.children].map(text).filter(Boolean).join(' · ') : text(node);
+  // На сайте дисциплины идут плоско: название, вид контроля и часы, пустой разделитель — и так далее.
+  // Если же каждая дисциплина в своём блоке — у всех элементов по несколько частей; тогда блок = дисциплина.
+  const groups = [];
+  if (items.length && items.every(item => item.children.length >= 2 && text(item))) {
+    for (const item of items) groups.push([...item.children]);
+  } else {
+    let current = [];
+    for (const item of items) {
+      if (!text(item)) { if (current.length) groups.push(current); current = []; continue; }
+      current.push(item);
+    }
+    if (current.length) groups.push(current);
+  }
+  const rows = groups.flatMap(group => {
+    const subject = text(group[0]);
+    if (!subject || group.length < 2) return [];
+    return [[subject, group.slice(1).map(part).filter(Boolean).join(' · ')]];
   });
   const footer = panel?.children[1];
   const status = text(footer?.lastElementChild);

@@ -9,7 +9,9 @@ const loginPath = '/cabinet/v1/login';
 const refreshPath = '/cabinet/v1/refresh';
 const notifyPath = '/cabinet/v1/notify';
 // Кнопка «Обновить» в приложении: сервер сразу идёт на сайт вуза, но не чаще раза в 30 минут на подключение
-export const manualRefreshInterval = 30 * 60 * 1000;
+// Ручное обновление (свайп) — без ограничения по времени: каждый раз сразу на сайт вуза.
+// Параллельно для одного подключения идёт только одно обновление.
+export const manualRefreshInterval = 0;
 const bearer = request => /^Bearer (\S+)$/.exec(request.headers.authorization || '')?.[1] || '';
 // Как часто обновлять кабинет каждого подключения: обычно раз в 3 дня,
 // в декабре и январе (зимняя сессия) — каждые 4 часа, чтобы новые оценки приходили сразу
@@ -120,9 +122,6 @@ export function makeApi(store, allowedOrigins, { signIn, onConnected = () => {},
         if (!browserState || snapshot.status === 'expired') return send(409, { error: 'expired' });
         // Ответ сразу; приложение ждёт новую копию через /snapshot (в ней изменится syncedAt)
         if (refreshing.has(account.id)) return send(202, { status: 'queued' });
-        const last = Date.parse(lastAttemptAt ?? '');
-        const wait = Number.isFinite(last) ? last + manualRefreshInterval - now() : 0;
-        if (wait > 0) return send(429, { error: 'too_soon', retryAfter: Math.ceil(wait / 1000), lastAttemptAt });
         refreshing.add(account.id);
         Promise.resolve().then(() => onRefresh(account)).catch(() => {}).finally(() => refreshing.delete(account.id));
         return send(202, { status: 'queued' });

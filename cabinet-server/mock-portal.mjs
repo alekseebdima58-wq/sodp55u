@@ -1,3 +1,4 @@
+// Все данные в ответах макета вымышлены.
 // Макет newlk.samgups.ru для тестов. Повторяет то, что видно в DevTools у настоящего сайта:
 // форма входа с _token / login / password / remember, ответ 302 на /dashboard, cookie
 // licnyi_kabinet_studenta_session (2 часа) и remember_web_… (долгий), Livewire 2 на траектории
@@ -6,7 +7,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 
 const sessionCookie = 'licnyi_kabinet_studenta_session';
-const rememberCookie = 'remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d';
+const rememberCookie = 'remember_web_mock';
 const secret = randomBytes(16).toString('hex');
 const token = () => randomBytes(16).toString('hex');
 const esc = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -68,7 +69,12 @@ export function createMockPortal({ students, marks }) {
       <div x-show="activeTab === '1-course'">${term(student, 1)}${term(student, 2)}</div>
       <div x-show="activeTab === '2-course'" style="display:none">${term(student, 3)}</div></div>`,
     '/student/orders': student => student.name === 'Б' ? '<p>Нет данных для отображения</p>'
-      : table(['Дата', 'Номер приказа', 'Название', 'Содержание'], [['01.11.2026', `ТЕСТ-${student.name}`, 'Приказ', 'Содержание']]),
+      // как на сайте: у приказа без содержания последней ячейки нет; длинный текст обрезан, целиком — в подсказке
+      : `<table><thead><tr><th>Дата</th><th>Номер приказа</th><th>Название</th><th>Содержание</th></tr></thead><tbody>
+          <tr><td>01.11.2026</td><td>ТЕСТ-${student.name}</td><td>Приказ</td><td>Содержание</td></tr>
+          <tr><td>12.03.2030</td><td>ТЕСТ-101</td><td>Тестовый приказ</td><td class="xl:p-4 align-top relative xl:table-cell"> <div class="flex items-center"> <div wire:loading.attr="disabled" class=" inline-flex items-center justify-center tandem-popper-tooltip-root relative" data-tandem-popper-tooltip="" data-tandem-popper-placement="bottom-start" data-tandem-popper-title="по результатам проверки демонстрационной записи в тестовом журнале" data-tandem-popper-html="0" aria-describedby="tooltip_demo"> <div class="hidden xl:block text-sm text-indigo-900 font-semibold hover:text-indigo-600"> по результатам проверки демонстрационной... </div> </div> <span onclick="copyToClipboard('по результатам проверки демонстрационной записи в тестовом журнале')" class="cursor-pointer pl-2" style=""> <svg width="16" height="16"><path d="M6 2"></path></svg> </span> </div> </td></tr>
+          <tr><td>18.02.2030</td><td>ТЕСТ-102</td><td>Тестовый приказ без содержания</td></tr>
+        </tbody></table>`,
     '/student/curriculum': student => `<div>Название дисциплины</div><div class="hidden xl:block"><div class="flex items-center">
       <div>Б1.О.1</div><div>План ${student.name}</div><div></div><div>72</div><div>1</div><div>Зачёт</div></div></div>`,
     '/user/profile': student => `<a href="/user/profile" aria-label="Студент ${student.name}">Профиль</a>
@@ -95,20 +101,24 @@ export function createMockPortal({ students, marks }) {
     const ready = data.selected_semester_key && data.semester?.key === data.selected_semester_key
       && data.controlTypes && data.year === Number(data.selected_semester_key.slice(0, 4));
     const index = semesterKeys.indexOf(data.selected_semester_key);
-    return `<div wire:id="D1"${full ? ` wire:initial-data='${initial('trajectory-semester-disciplines', data, 'student/trajectory')}'` : ''}>
-      ${ready ? `<div><div>Предмет ${student.name} ${index}</div><div>Зачёт · 72 ч.</div></div>` : ''}</div>`;
+    // Как на сайте: прокрутка → список, внутри плоско «название, вид контроля и часы, разделитель»
+    const subject = name => `<div class="inline-block w-full"><span class="text-emerald-600">${name}</span></div>`;
+    const details = (kind, hours) => `<div class="flex flex-col"><span class="flex"><div class="flex pr-5 items-center"><svg></svg>${kind}</div></span><span class="float-right">${hours}</span></div>`;
+    const separator = '<div><div class="py-5"><div class="border-t"></div></div></div>';
+    return `<div wire:id="D1" class="px-7 py-5 overflow-y-auto scroll-tandem"${full ? ` wire:initial-data='${initial('trajectory-semester-disciplines', data, 'student/trajectory')}'` : ''}>
+      ${ready ? `<div class="md:h-100">${subject(`Предмет ${student.name} ${index}`)}${details('Зачёт', '72 ч. / 2 з.е')}${separator}${subject(`Второй предмет ${student.name} ${index}`)}${details('Экзамен', '108 ч. / 3 з.е')}</div>` : ''}</div>`;
   };
   const semesterInfo = key => ({ key, year: Number(key.slice(0, 4)), yearTitle: semesterLabel(key) });
   const disciplinesData = key => ({ selected_semester_key: key, semester: semesterInfo(key), controlTypes: { 'c1': { title: 'Коллоквиум', abbreviation: 'Кол' } }, year: Number(key.slice(0, 4)) });
   // «Расписание → Список»: в каждом месяце лекция, консультация и экзамен (или зачёт), как события сайта
   const scheduleEvents = (student, year, month) => {
     const day = n => `${String(n).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
-    const teacher = { t1: { id: 't1', last_name: 'Тарасов', first_name_one: 'Е', middle_name_one: 'М', fio: 'Тарасов Евгений Михайлович' } };
-    const base = { teachers: [], comment: null, place: null, urlOnline: null, group: 'СОДП-55у', numberPair: null };
+    const teacher = { t1: { id: 't1', last_name: 'Примеров', first_name_one: 'Е', middle_name_one: 'М', fio: 'Примеров Е. М.' } };
+    const base = { teachers: [], comment: null, place: null, urlOnline: null, group: 'ДЕМО-00', numberPair: null };
     return [
-      { ...base, id_ext: `lec-${year}-${month}`, date: day(3), startTime: '08:30', endTime: '10:00', discipline: `Лекция ${student.name} ${month}`, groupType: 'Лекции', address: 'Корпус 2', classroom: '2303', color: 'teal', code: 'alt.lectures', abbr: 'Л' },
-      { ...base, id_ext: `cons-${year}-${month}`, date: day(14), startTime: '13:55', endTime: '15:25', discipline: `Предмет ${student.name} ${month}`, groupType: 'Консультация', address: 'Корпус 1', classroom: '1206', color: 'indigo', code: 'alt.consultation', abbr: 'К', teachers: teacher },
-      { ...base, id_ext: `exam-${year}-${month}`, date: day(15), startTime: '08:30', endTime: '12:00', discipline: `Предмет ${student.name} ${month}`, groupType: month % 2 ? 'Экзамен' : 'Зачет', address: 'Корпус 1', classroom: '1206', color: 'red', code: 'alt.exam', abbr: 'Э', teachers: teacher },
+      { ...base, id_ext: `lec-${year}-${month}`, date: day(3), startTime: '08:30', endTime: '10:00', discipline: `Лекция ${student.name} ${month}`, groupType: 'Лекции', address: 'Учебный макет 2', classroom: '9902', color: 'teal', code: 'alt.lectures', abbr: 'Л' },
+      { ...base, id_ext: `cons-${year}-${month}`, date: day(14), startTime: '13:55', endTime: '15:25', discipline: `Предмет ${student.name} ${month}`, groupType: 'Консультация', address: 'Учебный макет 1', classroom: '9901', color: 'indigo', code: 'alt.consultation', abbr: 'К', teachers: teacher },
+      { ...base, id_ext: `exam-${year}-${month}`, date: day(15), startTime: '08:30', endTime: '12:00', discipline: `Предмет ${student.name} ${month}`, groupType: month % 2 ? 'Экзамен' : 'Зачет', address: 'Учебный макет 1', classroom: '9901', color: 'red', code: 'alt.exam', abbr: 'Э', teachers: teacher },
     ];
   };
   const now = new Date(Date.now() + 4 * 3600e3);
