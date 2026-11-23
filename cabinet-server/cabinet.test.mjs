@@ -168,8 +168,8 @@ async function saveMockup(browser, appUrl, directory) {
         for (const [id, filename, sample] of [
           ['grades', 'cabinet-grades', 'Дисциплина 1'],
           ['orders', 'cabinet-orders', 'Демонстрационный перевод'],
-          ['plan', 'cabinet-plan', 'Дисциплина 4'],
-          ['trajectory', 'cabinet-trajectory', 'Обучение продолжается'],
+          ['plan', 'cabinet-plan', 'Дисциплина 1'],
+          ['trajectory', 'cabinet-trajectory', '2026/2027 (зимний)'],
           ['group', 'cabinet-group', 'Участник 3'],
         ]) {
           await open(id);
