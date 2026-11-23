@@ -109,14 +109,13 @@ button.cab-card { width: 100%; text-align: left; font: inherit; color: inherit; 
 .cab-stephead .nm { font-size: calc(17px * var(--fs, 1)); font-weight: 700; color: var(--text); }
 .cab-stephead .sub { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
 .cab-step.now .cab-stephead .sub { color: var(--k-fg); }
-.cab-fold { display: grid; transition: transform .25s var(--ease-spring, ease); color: var(--muted); }
+.cab-fold { display: grid; transition: transform .3s cubic-bezier(.25, .9, .3, 1); color: var(--muted); }
 .cab-step.open .cab-fold { transform: rotate(90deg); }
 .cab-stephead:active { opacity: .6; }
 .cab-rail { padding-top: 22px; }
 .cab-step .list { margin: 0; }
 .cab-fbody { margin-bottom: 6px; }
 .cab-fbody[hidden] { display: none; }
-.cab-fold { transition: transform .3s cubic-bezier(.25, .9, .3, 1); }
 
 /* учебный план: переключатель семестров */
 .cab-chips { display: flex; gap: 8px; overflow-x: auto; margin: 14px -20px 2px; padding: 4px 20px; scrollbar-width: none; scroll-snap-type: x proximity; }
@@ -160,8 +159,6 @@ html[data-theme="light"] .cab-pass { --k-fg: #248a3d; --k-bar: rgba(52, 199, 89,
 .cab-tchev { flex: none; align-self: center; margin-left: -4px; opacity: .45; }
 .cab-tchev svg { width: 15px; height: 15px; }
 /* имя преподавателя — ссылка на его страницу */
-.cab-tlink { display: inline; white-space: nowrap; padding: 0; border: 0; background: none; font: inherit; color: var(--accent); cursor: pointer; text-decoration: none; }
-.cab-tlink:active { opacity: .6; }
 /* карточка дисциплины */
 .cab-subj { align-items: flex-start; }
 .cab-subj .nm { font-size: calc(19px * var(--fs, 1)); line-height: 1.3; }
@@ -191,3 +188,37 @@ html[data-theme="light"] .cab-pass { --k-fg: #248a3d; --k-bar: rgba(52, 199, 89,
 .cab-check { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
 .cab-check svg { width: 13px; height: 13px; stroke-width: 3; }
 .cab-accent { color: var(--accent) !important; font-weight: 600; }
+
+/* ===== исправления ===== */
+/* строки группы скрываются поиском атрибутом hidden, но .item задаёт display:flex — без этого поиск ничего не прятал */
+.cabinet [hidden] { display: none !important; }
+/* поля входа в «Стекле» были белым по белому (светлая тема) — видна только рамка при фокусе */
+html.glass .cabinet-form input { background: rgba(127, 135, 155, .14); border-color: rgba(127, 135, 155, .4); }
+html.glass .cabinet-form input:focus { border-color: var(--accent); }
+.cabinet-form input::placeholder { color: var(--faint); }
+/* подписи в карточке «Успеваемость» и в списке разделов не обрезаются многоточием — до двух строк */
+.cab-hero .hn .x { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.cab-hero .hn { align-items: flex-start; }
+.cab-hero .hn i { margin-top: .5em; }
+.cab-hero h3 { text-wrap: balance; }
+.cabinet .item .body > .sub.cab-sub2 { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; line-height: 1.35; }
+.cabinet .cab-card .sub { white-space: normal; overflow-wrap: anywhere; }
+/* длинные адреса и номера в карточке одногруппника — по символам, без дефиса */
+.cab-link { overflow-wrap: anywhere; -webkit-hyphens: manual; hyphens: manual; }
+.cab-field .nm { overflow-wrap: anywhere; }
+/* фокус с клавиатуры */
+.cabinet :is(.cab-tap, .cab-chip, .cab-stephead, .cab-obtn, button.item, button.cab-card, button.cab-hero, .cab-ohead):focus-visible {
+  outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 14px;
+}
+.cab-order.cab-plain { padding: 0; }
+.cab-ohead { padding: 12px 14px; display: flex; align-items: flex-start; gap: 12px; width: 100%; cursor: pointer; }
+.cab-ohead .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cab-order { flex-direction: column; align-items: stretch; gap: 0; }
+.cab-order .cab-oacts { padding: 0 14px 12px; margin-top: -2px; }
+.cab-retry { margin-top: 14px; }
+/* крупный шрифт: подписи секций с пометкой справа переносятся, а не наезжают */
+.cab-sec { flex-wrap: wrap; }
+.cab-hero h3, .cab-subj .nm { overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
+
+/* подписи разделов кабинета — до двух строк, без обрезки на полуслове */
+.item .sub.cab-sub2 { white-space: normal; overflow: hidden; text-overflow: clip; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.3; overflow-wrap: anywhere; }

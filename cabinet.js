@@ -96,6 +96,7 @@
     data = null;
     loadError = "";
     connection = value;
+    loadError = "";
     reauthenticating = false;
     if (accountChanged) {
       gradeEvents = savedGradeEvents();
@@ -193,7 +194,7 @@
     const name = fullName(fields);
     const group = fields.get("Группа") || fields.get("Учебная группа");
     const course = fields.get("Курс");
-    return { name, meta: [group, /^\d+$/.test(course ?? "") ? `${course} курс` : course].filter(Boolean).join(" · ") };
+    return { name, meta: [group, /^\d+$/.test(course ?? "") ? `${course}\u00a0курс` : course].filter(Boolean).join(" · ") };
   }
   // Статус семестра — по датам, а не по подписи сайта: внизу каждого семестра у сайта стоит пояснение к значку
   // («курс полностью пройден»), а не статус — из-за него все семестры выглядели пройденными.
@@ -215,7 +216,7 @@
   }
   function statusText() {
     if (refreshRequest) return "Обновляем с сайта вуза…";
-    if (!data) return "Загрузка кабинета…";
+    if (!data) return loadError || "Загрузка кабинета…";
     if (data.status === "pending") return "Первое обновление кабинета…";
     const when = Number.isFinite(Date.parse(data.syncedAt)) ? `обновлено ${ago(data.syncedAt)}` : "обновлений пока нет";
     if (data.status === "error") return `Сайт вуза не ответил · ${when}`;
@@ -238,7 +239,7 @@
     const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     return Math.round((day - today) / 864e5);
   }
-  const inDays = (n) => n === 0 ? "сегодня" : n === 1 ? "завтра" : n === 2 ? "послезавтра" : `через ${n} ${plural(n, "день", "дня", "дней")}`;
+  const inDays = (n) => n === 0 ? "сегодня" : n === 1 ? "завтра" : n === 2 ? "послезавтра" : `через\u00a0${n}\u00a0${plural(n, "день", "дня", "дней")}`;
   const isExam = (e) => /экзам|зач/i.test(e.kind);
   function nextExam() { return sessionEvents().find((e) => isExam(e) && daysUntil(e.day) >= 0); }
   const kindClass = (kind) => /экзам/i.test(kind) ? "cab-bad" : /зач/i.test(kind) ? "k-prac" : "k-oth";
@@ -259,8 +260,8 @@
     }
     if (id === "trajectory") { const now = trajectoryNow(); return now ? `Сейчас ${now.title}` : "Нет семестров"; }
     const count = list.reduce((sum, s) => sum + s.rows.length, 0);
-    if (id === "plan") return `${count} ${plural(count, "дисциплина", "дисциплины", "дисциплин")}`;
-    if (id === "group") return `${count} ${plural(count, "человек", "человека", "человек")}`;
+    if (id === "plan") return `${count}\u00a0${plural(count, "дисциплина", "дисциплины", "дисциплин")}`;
+    if (id === "group") return `${count}\u00a0${plural(count, "человек", "человека", "человек")}`;
     if (id === "orders") { const first = list[0]?.rows[0]; return count ? `${count} · последний: ${first?.[col(list[0], "Название")] || first?.[0] || ""}` : "Приказов нет"; }
     if (id === "profile") { const f = profileFields(); return [f.get("Направление подготовки"), f.get("Форма обучения")].filter(Boolean).join(" · ") || "Сведения о студенте"; }
     return "";
@@ -338,11 +339,12 @@
       <div class="ring" aria-hidden="true"><svg viewBox="0 0 80 80"><circle class="trk" cx="40" cy="40" r="34" pathLength="100"/>
         <circle class="arc" cx="40" cy="40" r="34" pathLength="100" stroke-dasharray="100" style="stroke-dashoffset:${100 - Math.max(4, Math.min(100, p))}"/></svg>
         <span class="rv"><b>${avg == null ? passed : fmtAvg(avg)}</b><small>${avg == null ? "сдано" : "балл"}</small></span></div>
-      <div class="hb"><span class="hl">Успеваемость</span><h3>${passed === rows.length ? `Всё сдано — ${rows.length} ${plural(rows.length, "оценка", "оценки", "оценок")}` : `Сдано ${passed} из ${rows.length}`}</h3>
-        <div class="hr"><span>${avg == null ? "зачёты без баллов" : `средний балл за ${new Set(rows.map((r) => r.semester)).size} ${plural(new Set(rows.map((r) => r.semester)).size, "семестр", "семестра", "семестров")}`}</span></div></div>
+      <div class="hb"><span class="hl">Успеваемость</span><h3>${passed === rows.length ? `Всё сдано — ${rows.length}\u00a0${plural(rows.length, "оценка", "оценки", "оценок")}` : `Сдано ${passed}\u00a0из\u00a0${rows.length}`}</h3>
+        <div class="hr"><span>${avg == null ? "зачёты без баллов" : `средний балл за\u00a0${new Set(rows.map((r) => r.semester)).size}\u00a0${plural(new Set(rows.map((r) => r.semester)).size, "семестр", "семестра", "семестров")}`}</span></div></div>
       ${lines}</button>`;
   }
 
+  const retryHTML = () => `<div class="list cab-pending">${empty(icons.wifi, loadError.replace(/\.$/, "") || "Не удалось загрузить кабинет", "Проверьте подключение к интернету и повторите попытку.")}<div class="cab-oacts" style="justify-content:center;padding-bottom:20px"><button class="cab-obtn" data-cab="retry">${icons.refresh}Повторить</button></div></div>`;
   function homeHTML() {
     const summary = profileSummary();
     const name = summary.name || (data?.status === "pending" ? "Кабинет подключён" : "");
@@ -358,13 +360,13 @@
       : data?.status === "error" ? `<div class="offline stale cab-warn"><span>Сайт вуза не ответил — показаны сохранённые данные. Сервер скоро попробует снова</span></div>` : "";
     const disconnect = `<div class="list cab-actions">
           <button class="item cab-danger" data-cab="disconnect" aria-label="Отключить на этом устройстве">${iconAv(4, "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9")}
-            <span class="body"><span class="nm">Отключить кабинет</span><span class="sub">Данные исчезнут с этого устройства</span></span></button></div>`;
+            <span class="body"><span class="nm">Отключить кабинет</span><span class="sub cab-sub2">Данные исчезнут с этого устройства</span></span></button></div>`;
     if (!data) {
       const loading = `<div class="sk" style="height:132px;margin-top:22px"></div><div class="sk" style="height:300px;margin-top:22px"></div>`;
-      return headerHTML("Личный кабинет") + card + (loadError ? "" : loading) + disconnect;
+      return headerHTML("Личный кабинет") + card + (loadError ? retryHTML() : loading) + disconnect;
     }
     const rows = pages.filter(([id]) => listed.includes(id)).map(([id, label, , h, path]) => `<button class="item" data-cab="open" data-page="${id}">
-        ${iconAv(h, path)}<span class="body"><span class="nm">${esc(label)}</span><span class="sub">${esc(pageSummary(id))}</span></span>
+        ${iconAv(h, path)}<span class="body"><span class="nm">${esc(label)}</span><span class="sub cab-sub2">${esc(pageSummary(id))}</span></span>
         <span class="chev">${icons.chev}</span></button>`).join("");
     const pending = data.status === "pending"
       ? `<div class="list cab-pending">${empty(icons.refresh, "Забираем данные с сайта вуза", "Обычно это занимает меньше минуты. Экран обновится сам.")}</div>` : "";
@@ -390,7 +392,7 @@
       gradesSem = withNew.pop() || withMarks.pop() || sems[sems.length - 1];
     }
     const items = rows.filter((r) => r.semester === gradesSem);
-    const tabs = sems.length > 1 ? `<div class="cab-chips" role="tablist">${sems.map((t) => `<button class="cab-chip${t === gradesSem ? " on" : ""}" role="tab" aria-selected="${t === gradesSem}" data-cab="gradesem" data-arg="${esc(t)}">${esc(t || "Без семестра")}${rows.some((r) => r.semester === t && isNewGrade(r)) ? `<i class="cab-dot" aria-label="есть новые"></i>` : ""}</button>`).join("")}</div>` : "";
+    const tabs = sems.length > 1 ? `<div class="cab-chips" role="group" aria-label="Семестр">${sems.map((t) => { const fresh = rows.some((r) => r.semester === t && isNewGrade(r)); return `<button class="cab-chip${t === gradesSem ? " on" : ""}" aria-pressed="${t === gradesSem}" data-cab="gradesem" data-arg="${esc(t)}"${fresh ? ` aria-label="${esc(`${t || "Без семестра"}, есть новые оценки`)}"` : ""}>${esc(t || "Без семестра")}${fresh ? `<i class="cab-dot" aria-hidden="true"></i>` : ""}</button>`; }).join("")}</div>` : "";
 
     // сводка: средний балл и раскладка оценок полоской
     const marked = items.filter((r) => r.result);
@@ -400,7 +402,7 @@
       ["bad", "Не сдано", (r) => markKind(r.result) === "bad", "cab-bad"]].map(([id, label, test, tone]) => ({ id, label, tone, n: marked.filter(test).length })).filter((p) => p.n);
     const waiting = items.length - marked.length;
     const bad = marked.filter((r) => markKind(r.result) === "bad").length;
-    const status = bad ? `Есть долги: ${bad}` : waiting ? `Сдано ${marked.length} из ${items.length}` : `Всё сдано`;
+    const status = bad ? `Есть долги:\u00a0${bad}` : waiting ? `Сдано ${marked.length}\u00a0из\u00a0${items.length}` : `Всё сдано`;
     const summary = `<div class="cab-gsum">
         <div class="cab-gavg"><b>${avg == null ? marked.length : fmtAvg(avg)}</b><small>${avg == null ? plural(marked.length, "зачёт", "зачёта", "зачётов") : "средний балл"}</small></div>
         <div class="cab-gright"><div class="cab-gstatus${bad ? " cab-bad" : ""}">${esc(status)}</div>
@@ -452,11 +454,8 @@
     const same = k ? list.filter((t) => teacherKey(t.name) === k) : [];
     return same.length === 1 ? same[0] : null;
   }
-  // имена через запятую: те, что нашлись в «Преподавателях», — ссылками
-  const teacherLinks = (names) => String(names || "").split(/,\s*/).filter(Boolean).map((n) => {
-    const t = findTeacher(n);
-    return t ? `<button class="cab-tlink" data-cab="teacher" data-arg="${esc(t.id)}">${esc(shortTeacher(n))}</button>` : esc(shortTeacher(n));
-  }).join(", ");
+  // имена через запятую — обычным текстом: из личного кабинета на страницу преподавателя не переходим
+  const teacherLinks = (names) => String(names || "").split(/,\s*/).filter(Boolean).map((n) => esc(shortTeacher(n))).join(", ");
 
   function subjectHTML(index) {
     if (subjectsFor !== data) { subjectsCache = allSubjects(); subjectsFor = data; }
@@ -465,8 +464,8 @@
     const [key, name] = entry;
     const same = (n) => subjectKey(n) === key;
     const grades = gradeRows().filter((r) => same(r.subject)).sort((a, b) => (parseInt(a.semester, 10) || 0) - (parseInt(b.semester, 10) || 0));
-    const plan = [...planItems()].flatMap(([sem, items]) => items.filter((d) => same(d.subject)).map((d) => ({ ...d, sem })));
-    const traj = (sections("trajectory") || []).flatMap((s) => trajectoryItems(s.rows).filter((d) => same(d.subject)).map((d) => ({ ...d, title: s.title })));
+    const plan = [...planItems()].flatMap(([sem, items]) => items.filter((d) => same(d.subject)).map((d) => ({ ...d, sem, kinds: sem ? kindsIn(sem, d.subject, d.kinds) : d.kinds })));
+    const traj = (sections("trajectory") || []).flatMap((s, i) => trajectoryItems(s.rows).filter((d) => same(d.subject)).map((d) => ({ ...d, title: s.title, kinds: kindsIn(i + 1, d.subject, d.kinds) })));
     const events = sessionEvents().filter((e) => same(e.subject));
     const kinds = [...new Set([...plan.flatMap((d) => d.kinds), ...traj.flatMap((d) => d.kinds), ...grades.map((g) => g.form).filter(Boolean)].map(kindShort))];
     // часы в плане — на всю дисциплину (строка повторяется в каждом её семестре): считаем по индексу один раз
@@ -474,7 +473,7 @@
     const hours = [...byIndex.values()].reduce((a, b) => a + b, 0) || traj.reduce((sum, d) => sum + (parseInt(d.hours, 10) || 0), 0);
     const last = grades.filter((g) => g.result).pop();
     const head = `<div class="tcard cab-subj"><div style="min-width:0;flex:1"><div class="nm cab-wrap">${esc(name)}</div>
-        <div class="sub">${esc([plan[0]?.index, hours && `${hours} ч`, plan.length ? `${new Set(plan.map((d) => d.sem)).size} ${plural(new Set(plan.map((d) => d.sem)).size, "семестр", "семестра", "семестров")}` : ""].filter(Boolean).join(" · "))}</div>
+        <div class="sub">${esc([plan[0]?.index, hours && `${hours} ч`, plan.length ? `${new Set(plan.map((d) => d.sem)).size}\u00a0${plural(new Set(plan.map((d) => d.sem)).size, "семестр", "семестра", "семестров")}` : ""].filter(Boolean).join(" · "))}</div>
         ${kinds.length ? `<div class="cab-kinds cab-kinds-row">${kinds.map((k) => `<span class="cab-mark ${kindTone(k)}">${esc(k)}</span>`).join("")}</div>` : ""}</div>
         ${last ? markHTML(last.result) : ""}</div>`;
     const blocks = [];
@@ -558,6 +557,39 @@
       return { subject, kinds: kindsOf(text), hours: m[1], units: m[2] };
     });
   }
+  // «11 дисциплин · 5 экзаменов · 4 зачёта» — одинаково в траектории и учебном плане
+  function controlSummary(items) {
+    const has = (re) => items.filter((d) => d.kinds.some((k) => re.test(k))).length;
+    const exams = has(/экзам/i), credits = has(/зач/i), works = has(/курсов/i);
+    return [`${items.length}\u00a0${plural(items.length, "дисциплина", "дисциплины", "дисциплин")}`,
+      exams && `${exams}\u00a0${plural(exams, "экзамен", "экзамена", "экзаменов")}`,
+      credits && `${credits}\u00a0${plural(credits, "зачёт", "зачёта", "зачётов")}`,
+      works && `${works}\u00a0${plural(works, "курсовая", "курсовые", "курсовых")}`].filter(Boolean).join(" · ");
+  }
+  // Виды контроля дисциплины в семестре — из учебного плана и траектории вместе, чтобы курсовая
+  // или РГР, указанная только в одном разделе, была видна в обоих. «Зачёт» + «Диф. зачёт» → «Диф. зачёт».
+  function mergeKinds(...lists) {
+    const out = new Map();
+    for (const k of lists.flat()) if (k && !out.has(kindShort(k))) out.set(kindShort(k), k);
+    if ([...out.keys()].some((k) => /диф/i.test(k))) out.delete("Зачёт");
+    return [...out.values()];
+  }
+  let kindsCache = null;
+  function semesterKinds() {
+    if (kindsCache?.data === data) return kindsCache;
+    const plan = new Map(), traj = new Map();
+    for (const [n, items] of planItems()) for (const d of items) plan.set(`${n}|${subjKey(d.subject)}`, d.kinds);
+    (sections("trajectory") || []).forEach((s, i) => { for (const d of trajectoryItems(s.rows)) traj.set(`${i + 1}|${subjKey(d.subject)}`, d.kinds); });
+    return (kindsCache = { data, plan, traj });
+  }
+  // все виды контроля дисциплины в семестре n (номер по плану = порядковый номер в траектории)
+  const kindsIn = (n, subject, own = []) => { const k = semesterKinds(), key = `${n}|${subjKey(subject)}`; return mergeKinds(own, k.plan.get(key) || [], k.traj.get(key) || []); };
+  const subjKey = (t) => String(t || "").toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]+/g, " ").trim();
+  // Семестр траектории с тем же номером, что в учебном плане: дисциплины по названию
+  function trajectorySemester(n) {
+    const s = (sections("trajectory") || [])[n - 1];
+    return s ? new Map(trajectoryItems(s.rows).map((d) => [subjKey(d.subject), d])) : null;
+  }
   function trajectoryHTML() {
     const list = sections("trajectory") || [];
     if (!list.length) return empty(icons.empty, "Траектория пуста", "");
@@ -567,11 +599,10 @@
       const status = PHASE_TEXT[phase] || "";
       const current = phase === "now";
       const done = phase === "done";
-      const items = trajectoryItems(s.rows).sort((a, b) => kindRank(a.kinds[0] || "") - kindRank(b.kinds[0] || "") || a.subject.localeCompare(b.subject, "ru"));
+      const items = trajectoryItems(s.rows).map((d) => ({ ...d, kinds: kindsIn(index + 1, d.subject, d.kinds) })).sort((a, b) => kindRank(a.kinds[0] || "") - kindRank(b.kinds[0] || "") || a.subject.localeCompare(b.subject, "ru"));
       // по умолчанию раскрыт текущий семестр (или последний); остальные — по нажатию
       const open = openSteps.has(index) || (!closedSteps.has(index) && (current || (!list.some((x) => semesterPhase(x.title) === "now") && now && s.title === now.title)));
-      const exams = items.filter((d) => d.kinds.some((k) => /экзам/i.test(k))).length;
-      const summary = [`${items.length} ${plural(items.length, "дисциплина", "дисциплины", "дисциплин")}`, exams && `${exams} ${plural(exams, "экзамен", "экзамена", "экзаменов")}`].filter(Boolean).join(" · ");
+      const summary = controlSummary(items);
       return `<section class="cab-step ${current ? "k-prac now" : done ? "k-lec done" : "cab-neutral future"}${open ? " open" : ""}">
         <div class="cab-rail" aria-hidden="true"><span class="pt">${done ? icons.check : ""}</span></div>
         <div class="cab-stepbody">
@@ -627,19 +658,25 @@
     const sems = [...bySem.keys()];
     const now = currentSemester();
     if (!bySem.has(planSem)) planSem = bySem.has(now) ? now : sems[0];
-    const items = bySem.get(planSem);
+    const tsem = planSem ? trajectorySemester(planSem) : null;
+    // В плане — часы за всю дисциплину; в траектории — за этот семестр и ваш вид контроля. Берём из траектории.
+    const items = bySem.get(planSem).map((d) => {
+      const t = tsem?.get(subjKey(d.subject));
+      const kinds = planSem ? kindsIn(planSem, d.subject, d.kinds) : d.kinds;
+      return t ? { ...d, kinds, semHours: t.hours, chosen: true } : { ...d, kinds };
+    });
     // Дисциплины по выбору: блок «…ДВ.15» и варианты «…ДВ.15.1», «…ДВ.15.2» — вместе, вариантами
     const children = (parent) => items.filter((d) => d.index.startsWith(parent.index + ".") && d.index !== parent.index);
     const isChild = (d) => items.some((p) => p !== d && /ДВ\.\d+$/.test(p.index) && d.index.startsWith(p.index + "."));
     const top = items.filter((d) => !isChild(d))
       .sort((a, b) => kindRank(a.kinds[0] || (children(a)[0]?.kinds[0]) || "") - kindRank(b.kinds[0] || (children(b)[0]?.kinds[0]) || "") || a.subject.localeCompare(b.subject, "ru"));
     const row = (d, sub) => `<div class="item cab-plain cab-tap${sub ? " cab-option" : ""}"${subjectAttrs(d.subject)}><span class="body"><span class="nm cab-wrap">${esc(d.subject)}</span>
-      <span class="sub">${esc([d.hours && `${d.hours} ч`, d.index].filter(Boolean).join(" · "))}</span></span>${chipsHTML(d.kinds)}${tapChev(d.subject)}</div>`;
-    const count = top.length;
-    const exams = top.filter((d) => d.kinds.some((k) => /экзам/i.test(k))).length;
-    const credits = top.filter((d) => d.kinds.some((k) => /зач/i.test(k))).length;
-    const tabs = `<div class="cab-chips" role="tablist">${sems.map((n) => `<button class="cab-chip${n === planSem ? " on" : ""}${n === now ? " now" : ""}" role="tab" aria-selected="${n === planSem}" data-cab="plansem" data-arg="${n}">${n ? `${n} семестр` : "Без семестра"}</button>`).join("")}</div>`;
-    return tabs + `<h2 class="sec cab-sec">${planSem === now ? "Сейчас" : planSem ? `${planSem} семестр` : "Без семестра"}<span class="cab-sec-note">${esc([`${count} ${plural(count, "дисциплина", "дисциплины", "дисциплин")}`, exams && `${exams} ${plural(exams, "экзамен", "экзамена", "экзаменов")}`, credits && `${credits} ${plural(credits, "зачёт", "зачёта", "зачётов")}`].filter(Boolean).join(" · "))}</span></h2>
+      <span class="sub">${esc([sub && d.chosen && "Ваш выбор", hoursText(d), d.index].filter(Boolean).join(" · "))}</span></span>${chipsHTML(d.kinds)}${tapChev(d.subject)}</div>`;
+    const hoursText = (d) => d.semHours ? (d.hours && +d.hours !== +d.semHours ? `${d.semHours} ч в семестре · всего ${d.hours} ч` : `${d.semHours} ч`) : d.hours && `${d.hours} ч`;
+    // выбранный вариант дисциплины по выбору считаем за блок
+    const counted = top.map((d) => (/ДВ\.\d+$/.test(d.index) && children(d).find((o) => o.chosen)) || d);
+    const tabs = `<div class="cab-chips" role="group" aria-label="Семестр">${sems.map((n) => `<button class="cab-chip${n === planSem ? " on" : ""}${n === now ? " now" : ""}" aria-pressed="${n === planSem}"${n === now ? ` aria-label="${n} семестр, текущий"` : ""} data-cab="plansem" data-arg="${n}">${n ? `${n} семестр` : "Без семестра"}</button>`).join("")}</div>`;
+    return tabs + `<h2 class="sec cab-sec">${planSem === now ? "Сейчас" : planSem ? `${planSem} семестр` : "Без семестра"}<span class="cab-sec-note">${esc(controlSummary(counted))}</span></h2>
       <div class="list">${top.map((d) => {
         const options = /ДВ\.\d+$/.test(d.index) ? children(d) : [];
         if (!options.length) return row(d);
@@ -664,7 +701,7 @@
     const list = people();
     if (!list.length) return empty(icons.empty, "Список группы пуст", "");
     return `<label class="search">${icons.search}<input data-cab="search" type="search" placeholder="Поиск по фамилии" aria-label="Поиск по группе" autocomplete="off" value="${esc(searchText)}"></label>
-      <h2 class="sec cab-sec">${list.length} ${plural(list.length, "человек", "человека", "человек")}</h2>
+      <h2 class="sec cab-sec">${list.length}\u00a0${plural(list.length, "человек", "человека", "человек")}</h2>
       <div class="list" data-cab-people>${list.map((p, i) => `<button class="item cab-person" data-cab="open" data-page="group" data-arg="${i}" data-name="${esc(p.name.toLowerCase().replace(/ё/g, "е"))}">
         <span class="av" style="--h:${hue(p.name)}" aria-hidden="true">${esc(initials(p.name))}</span><span class="body"><span class="nm">${esc(p.name)}</span>
         ${(() => { const get = (k) => (p.fields.find(([c]) => c === k) || [])[1];
@@ -681,7 +718,7 @@
     const today = new Date(y, now.getMonth(), now.getDate());
     if (next < today) next = new Date(y + 1, +m[2] - 1, +m[1]);
     const days = Math.round((next - today) / 864e5);
-    return days === 0 ? "сегодня 🎉" : days === 1 ? "завтра" : `через ${days} ${plural(days, "день", "дня", "дней")}`;
+    return days === 0 ? "сегодня 🎉" : days === 1 ? "завтра" : `через\u00a0${days}\u00a0${plural(days, "день", "дня", "дней")}`;
   }
   function fieldValue(label, value) {
     if (/телефон/i.test(label)) return `<a class="cab-link" href="tel:${esc(String(value).replace(/[^\d+]/g, ""))}">${esc(value)}</a>`;
@@ -694,7 +731,7 @@
     if (!p) return headerHTML("Моя группа", true) + empty(icons.empty, "Человек не найден", "");
     return headerHTML("Моя группа", true)
       + `<div class="tcard"><div class="av big" style="--h:${hue(p.name)}" aria-hidden="true">${esc(initials(p.name))}</div>
-          <div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="sub">${esc([p.me ? "Это вы" : p.captain ? "Староста" : "", profileSummary().meta.split(" · ")[0] || "Одногруппник"].filter(Boolean).join(" · "))}</div></div></div>`
+          <div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="sub">${esc([p.me && "Это вы", p.captain && "Староста", profileSummary().meta.split(" · ")[0] || "Одногруппник"].filter(Boolean).join(" · "))}</div></div></div>`
       + (p.fields.length
         ? `<div class="list cab-gap">${p.fields.map(([k, v]) => `<div class="item cab-plain cab-field"><span class="body"><span class="sub">${esc(k)}</span><span class="nm cab-wrap">${fieldValue(k, v)}</span></span></div>`).join("")}</div>`
         : empty(icons.empty, "Других сведений нет", ""));
@@ -711,13 +748,12 @@
       const open = openOrders.has(i);
       const meta = r.title && r.number && r.title.includes(r.number) ? "" : [r.number && `№ ${r.number}`, shortDate(r.date)].filter(Boolean).join(" · ");
       const more = r.text && r.text !== r.title;
-      const tap = more ? ` role="button" tabindex="0" aria-expanded="${open}" data-cab="order" data-arg="${i}"` : "";
-      return `<div class="item cab-plain cab-order${more ? " cab-tap" : ""}${open ? " open" : ""}"${tap}><span class="body">
-        <span class="nm cab-wrap">${esc(r.title || r.text || "Приказ")}</span>
+      const head = `<span class="body"><span class="nm cab-wrap">${esc(r.title || r.text || "Приказ")}</span>
         ${meta ? `<span class="sub">${esc(meta)}</span>` : ""}
-        ${r.text && r.text !== r.title ? `<span class="sub cab-wrap cab-faint cab-otext">${esc(r.text)}</span>` : ""}
-        ${open ? `<span class="cab-oacts"><button class="cab-obtn" data-cab="copy" data-arg="${i}">${icons.copy}Скопировать</button></span>` : ""}</span>
-        ${more ? `<span class="chev cab-fold">${icons.chev}</span>` : ""}</div>`;
+        ${more ? `<span class="sub cab-wrap cab-faint cab-otext">${esc(r.text)}</span>` : ""}</span>${more ? `<span class="chev cab-fold">${icons.chev}</span>` : ""}`;
+      return `<div class="item cab-plain cab-order${more ? " cab-tap" : ""}${open ? " open" : ""}">
+        ${more ? `<div class="cab-ohead" role="button" tabindex="0" aria-expanded="${open}" data-cab="order" data-arg="${i}">${head}</div>` : `<div class="cab-ohead">${head}</div>`}
+        ${open && more ? `<span class="cab-oacts"><button class="cab-obtn" data-cab="copy" data-arg="${i}">${icons.copy}Скопировать</button></span>` : ""}</div>`;
     }).join("")}</div>`;
   }
 
@@ -749,7 +785,7 @@
   function sectionHTML(id) {
     const [, label] = pages.find(([p]) => p === id);
     let body;
-    if (!data) body = `<div class="sk" style="height:220px;margin-top:22px"></div>`;
+    if (!data) body = loadError ? retryHTML() : `<div class="sk" style="height:220px;margin-top:22px"></div>`;
     else if (data.unavailable?.includes(id) && !sections(id)) body = empty(icons.wifi, "Раздел пока не обновился", "Сервер заберёт его с сайта вуза при следующем обновлении.");
     else if (!sections(id)) body = empty(icons.empty, "Данных пока нет", "");
     else body = { session: sessionHTML, grades: gradesHTML, trajectory: trajectoryHTML, plan: planHTML, group: groupHTML, orders: ordersHTML, profile: profileHTML }[id]();
@@ -817,7 +853,7 @@
           };
           if (result?.error === "rate_limited" && result.retryAfter > 0) {
             const min = Math.max(1, Math.ceil(result.retryAfter / 60));
-            messages.rate_limited = `Слишком много попыток входа. Попробуйте снова через ${min} ${plural(min, "минуту", "минуты", "минут")}.`;
+            messages.rate_limited = `Слишком много попыток входа. Попробуйте снова через ${min}\u00a0${plural(min, "минуту", "минуты", "минут")}.`;
           }
           error.textContent = messages[result?.error] || "Сейчас не удалось войти в кабинет вуза.";
           haptic("heavy");
@@ -841,8 +877,26 @@
   }
 
   // ---------- отрисовка ----------
+  let lastView = "";
   function draw() {
     if (!root?.isConnected) return;
+    // перерисовка того же экрана (выбор семестра, раскрытие приказа, свежие данные) не сбрасывает прокрутку и фокус
+    const view = `${connection ? 1 : 0}|${page}|${pageArg}|${!data && loadError ? "err" : ""}`;
+    const keepY = view === lastView ? window.scrollY : null;
+    lastView = view;
+    const active = document.activeElement;
+    const focusKey = active && active !== document.body && root.contains(active)
+      ? (active.dataset?.cab ? `[data-cab="${active.dataset.cab}"]${active.dataset.arg !== undefined ? `[data-arg="${CSS.escape(active.dataset.arg)}"]` : ""}` : active.matches?.("input") ? `input[type="${active.type}"]` : "")
+      : "";
+    const caret = focusKey && active.matches?.("input") ? [active.selectionStart, active.selectionEnd] : null;
+    paint();
+    if (keepY !== null && Math.abs(window.scrollY - keepY) > 1) window.scrollTo({ top: keepY, behavior: "instant" });
+    if (focusKey && !root.contains(document.activeElement)) {
+      const again = root.querySelector(focusKey);
+      if (again) { again.focus({ preventScroll: true }); if (caret) try { again.setSelectionRange(...caret); } catch (e) { /* не текстовое поле */ } }
+    }
+  }
+  function paint() {
     if (!connection) {
       root.innerHTML = headerHTML("Личный кабинет") + `<div class="cab-center"></div>`;
       root.querySelector(".cab-center").append(connectionForm());
@@ -955,7 +1009,7 @@
       if (!active()) return false;
       const min = Math.max(1, Math.ceil((info.retryAfter || 60) / 60));
       release();
-      say(`Данные свежие. Снова обновить можно через ${min} мин`);
+      say(`Данные свежие. Снова обновить можно через ${min}\u00a0мин`);
       await load();
       return false;
     }
@@ -1017,7 +1071,7 @@
     if (open) {
       const opt = { duration: foldDur(d), easing: FOLD_EASE };
       anims = [body.animate([{ clipPath: clip(d) }, { clipPath: clip(0) }], opt)];
-      if (rail) anims.push(rail.animate([{ clipPath: `inset(0px 0px ${d}px 0px)` }, { clipPath: "inset(0px)" }], opt));
+      if (rail) anims.push(rail.animate([{ clipPath: `inset(-40px -40px ${d}px -40px)` }, { clipPath: "inset(-40px)" }], opt));
       below.forEach((el, i) => {
         const dy = tops[i] - el.getBoundingClientRect().top;
         if (Math.abs(dy) > 0.5) anims.push(el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], opt));
@@ -1029,7 +1083,7 @@
       // двигаем всё так, будто списка уже нет, а в конце убираем его — в тот же кадр, без скачка
       const opt = { duration: Math.round(foldDur(d) * 0.85), easing: FOLD_EASE, fill: "forwards" };
       anims = [body.animate([{ clipPath: clip(0) }, { clipPath: clip(d) }], opt)];
-      if (rail) anims.push(rail.animate([{ clipPath: "inset(0px)" }, { clipPath: `inset(0px 0px ${d}px 0px)` }], opt));
+      if (rail) anims.push(rail.animate([{ clipPath: "inset(-40px)" }, { clipPath: `inset(-40px -40px ${d}px -40px)` }], opt));
       for (const el of below) anims.push(el.animate([{ transform: "none" }, { transform: `translateY(${-d}px)` }], opt));
       anims.push(inner.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(-10px)" }],
         { duration: Math.round(opt.duration * 0.6), easing: "ease-in", fill: "forwards" }));
@@ -1057,9 +1111,6 @@
     } else if (act === "me") {
       const p = people()[+el.dataset.arg];
       if (p) { haptic("light"); writeJSON(scopedKey(meKey), p.name); draw(); say(`Готово: ${asShown(p.name)}`); }
-    } else if (act === "teacher") {
-      haptic("light");
-      if (app().openTeacher) app().openTeacher(el.dataset.arg);
     } else if (act === "order") {
       haptic("light");
       const i = +el.dataset.arg;
@@ -1071,6 +1122,11 @@
       const done = () => { haptic("light"); say("Скопировано"); };
       if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, () => say("Не удалось скопировать"));
       else say("Не удалось скопировать");
+    } else if (act === "retry") {
+      haptic("light");
+      loadError = "";
+      draw();
+      load();
     } else if (act === "gradesem") {
       haptic("light");
       gradesSem = el.dataset.arg;

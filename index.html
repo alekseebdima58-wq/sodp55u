@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="593095456b83">
+<meta name="app-ver" content="7d6ec8c75aa9">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -286,7 +286,7 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
     font-size: calc(12px * var(--fs, 1)); font-weight: 600;
 }
 .kind::before { content: "";     }
-.card h3 { margin: 0;  font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.card h3 { margin: 0;  font-weight: 600; line-height: 1.3; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; hyphenate-limit-chars: 10 4 4; }
 .meta { display: flex; flex-direction: column; align-items: flex-start;   color: var(--text2); min-width: 0; }
 .meta > span, .tlink { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
 .meta .x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -296,7 +296,7 @@ h1 { margin: 6px 0 0;  font-weight: 700; letter-spacing: -.02em; line-height: 1.
   min-width: 0; width: 100%; margin: 3px 0;   text-align: left;
   background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 3px;
 }
-.cc h3 { margin: 0; font-size: calc(15px * var(--fs, 1)); font-weight: 600; line-height: calc(20px * var(--fs, 1)); overflow-wrap: anywhere; }
+.cc h3 { margin: 0; font-size: calc(15px * var(--fs, 1)); font-weight: 600; line-height: calc(20px * var(--fs, 1)); overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; hyphenate-limit-chars: 10 4 4; }
 .cc .ln { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: calc(12px * var(--fs, 1)); line-height: calc(16px * var(--fs, 1)); color: var(--muted); }
 .cc .ln .bar {   flex: none;  background: var(--k-bar); }
 .cc .ln .x { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -759,6 +759,11 @@ html:not(.glass) .sbar.stuck::before { box-shadow: 0 1px 0 var(--hair); }
 
 /* Размеры шапки меняются один раз, без плавного перехода (font-size/width/height/margin пересчитывали
    раскладку всей страницы каждый кадр). Само движение доигрывают сдвиг и масштаб — flipBar в 20-springs-sticky.js */
+/* iPhone: липкая шапка без своего слоя дрожала по вертикали на 1–2 px при прокрутке (по записи экрана) —
+   Safari двигал её то в потоке прокрутки, то в основном потоке. Свой слой — и она едет вместе с прокруткой ровно */
+@supports (-webkit-touch-callout: none) {
+  .sbar { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+}
 .sbar .eyebrow { max-height: 18px; }
 .sbar.small .whead .eyebrow { max-height: 0; opacity: 0; }
 .sbar.small .days { margin-top: 8px; }
@@ -793,7 +798,7 @@ html[data-theme="light"] .ring .trk { stroke: rgba(var(--k-rgb), .22); }
 
 .hb { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .hl { font-size: calc(12px * var(--fs, 1)); font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--k-fg); }
-.hero h3 { margin: 0; font-size: calc(16px * var(--fs, 1)); font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.hero h3 { margin: 0; font-size: calc(16px * var(--fs, 1)); font-weight: 600; line-height: 1.25; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; hyphenate-limit-chars: 10 4 4; }
 .hr { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
 .hr b { font-size: calc(22px * var(--fs, 1)); font-weight: 700; letter-spacing: -.02em; }
 /* длинное место («Лаборатория автоматики №12…») — мельче и не больше двух строк; нет аудитории — тихо */
@@ -878,7 +883,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 .ipick button.on { border-color: var(--accent); color: var(--text); background: rgba(var(--acc-rgb), .1); }
 
 .ihint { margin: 12px 2px 0; font-size: calc(13px * var(--fs, 1)); line-height: 1.45; color: var(--muted); text-align: left; }
-.ibig { width: 100%; height: 50px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-size: calc(16px * var(--fs, 1)); font-weight: 700; margin-top: 4px; }
+.ibig { width: 100%; min-height: 50px; padding: 8px 14px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-size: calc(16px * var(--fs, 1)); font-weight: 700; margin-top: 4px; }
 .ibig.ghost { background: var(--bg); color: var(--accent); margin-top: 12px; }
 .iarrow { position: fixed; left: 50%; bottom: calc(4px + env(safe-area-inset-bottom, 0px)); margin-left: -16px; width: 32px; z-index: 31;
   font-size: 30px; font-weight: 800; color: var(--accent); text-align: center; animation: ibounce 1s ease-in-out infinite; pointer-events: none; }
@@ -901,7 +906,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 .ynote { width: 100%; display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 18px; text-align: left;
   background: rgba(var(--acc-rgb), .1); border: 1px solid rgba(var(--acc-rgb), .25); font-size: calc(14px * var(--fs, 1)); line-height: 1.4; color: var(--text2); }
 .ynote b { font-size: calc(15px * var(--fs, 1)); color: var(--text); }
-.ynote .ibig { display: grid; place-items: center; height: 46px; margin-top: 8px; text-decoration: none; }
+.ynote .ibig { display: grid; place-items: center; height: auto; min-height: 46px; padding: 8px 14px; margin-top: 8px; text-decoration: none; }
 .ynote .ibig.ghost { margin-top: 4px; }
 .ynote .yopt { margin-top: 8px; color: var(--text); font-weight: 600; }
 .ynote small { display: block; margin-top: 6px; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
@@ -940,7 +945,7 @@ button.offline span { min-width: 0; text-wrap: balance; }
 .vsteps li b { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: calc(12px * var(--fs, 1)); background: var(--surface2); color: var(--muted); transition: background .25s, color .25s; }
 .vsteps li.on { background: rgba(var(--acc-rgb), .1); color: var(--text); font-weight: 600; }
 .sfx { width: 100%; display: flex; flex-direction: column; gap: 2px; margin-top: 6px; padding: 12px 14px; border-radius: 14px; background: var(--surface2); text-align: left; font-size: calc(13px * var(--fs, 1)); line-height: 1.4; color: var(--text2); }
-.sfx .ibig { display: grid; place-items: center; height: 42px; margin-top: 8px; text-decoration: none; font-size: calc(15px * var(--fs, 1)); background: var(--bg); }
+.sfx .ibig { display: grid; place-items: center; height: auto; min-height: 42px; padding: 8px 14px; margin-top: 8px; text-decoration: none; font-size: calc(15px * var(--fs, 1)); background: var(--bg); }
 .vsteps li.on b { background: var(--accent); color: var(--on-accent); }
 
 .foot .ver { font-size: calc(12px * var(--fs, 1)); opacity: .85; font-variant-numeric: tabular-nums; }
@@ -1409,18 +1414,24 @@ html.onb-open, html.onb-open body { overflow: hidden; }
 }
 .onb.in { opacity: 1; transform: none; }
 .onb.out { opacity: 0; transform: scale(.97); transition-duration: .28s; pointer-events: none; }
-.onb-skip { position: relative; z-index: 2; align-self: flex-end; margin: 0 16px 0 0; padding: 8px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: calc(15px * var(--fs, 1)); font-weight: 600; }
+.onb-skip { position: relative; z-index: 2; align-self: flex-end; margin: 0 16px 0 0; padding: 8px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: calc(15px * var(--onb-fs, 1)); font-weight: 600; }
 .onb-pages { flex: 1; display: flex; margin-top: -160px; padding-top: 160px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior: contain; }
 .onb-pages::-webkit-scrollbar { display: none; }
 .onb-p { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 0 28px; text-align: center; max-width: 100%; box-sizing: border-box; }
-.onb-p h2 { margin: 26px 0 10px; font-size: calc(28px * var(--fs, 1)); line-height: calc(34px * var(--fs, 1)); font-weight: 700; letter-spacing: -.3px; color: var(--text); }
-.onb-p p { margin: 0 auto; max-width: 340px; font-size: calc(16px * var(--fs, 1)); line-height: calc(23px * var(--fs, 1)); color: var(--text2); }
-.onb-link { margin-top: 16px; padding: 10px 16px; border: 0; border-radius: 999px; background: var(--acc-soft); color: var(--accent); font: inherit; font-size: calc(15px * var(--fs, 1)); font-weight: 600; }
+/* узкий экран + крупный шрифт: страница не влезает по высоте — не срезаем картинку сверху, а даём прокрутить;
+   пока влезает — по центру, как раньше. Текст обучения растёт с настройкой шрифта, но не больше чем на 12 % */
+.onb-p { justify-content: safe center; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding-top: 8px; padding-bottom: 8px; }
+.onb-p::-webkit-scrollbar { display: none; }
+.onb-p > * { flex-shrink: 0; }
+.onb { --onb-fs: min(var(--fs, 1), 1.12); }
+.onb-p h2 { margin: 26px 0 10px; font-size: calc(28px * var(--onb-fs, 1)); line-height: calc(34px * var(--onb-fs, 1)); font-weight: 700; letter-spacing: -.3px; color: var(--text); }
+.onb-p p { margin: 0 auto; max-width: 340px; font-size: calc(16px * var(--onb-fs, 1)); line-height: calc(23px * var(--onb-fs, 1)); color: var(--text2); }
+.onb-link { margin-top: 16px; padding: 10px 16px; border: 0; border-radius: 999px; background: var(--acc-soft); color: var(--accent); font: inherit; font-size: calc(15px * var(--onb-fs, 1)); font-weight: 600; }
 .onb-dots { display: flex; justify-content: center; gap: 8px; margin: 10px 0 16px; }
 .onb-dots i { width: 7px; height: 7px; border-radius: 4px; background: var(--strong); transition: width .3s var(--ease-spring, ease), background .3s; }
 .onb-dots i.on { width: 22px; background: var(--accent); }
-.onb-next { margin: 0 24px; height: 54px; border: 0; border-radius: 26px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: calc(17px * var(--fs, 1)); font-weight: 700;
+.onb-next { margin: 0 24px; height: 54px; border: 0; border-radius: 26px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: calc(17px * var(--onb-fs, 1)); font-weight: 700;
   box-shadow: 0 8px 24px rgba(var(--acc-rgb), .35); }
 .onb-next:active, .onb-link:active, .onb-skip:active { transform: scale(.96); }
 
@@ -1432,7 +1443,7 @@ html.onb-open, html.onb-open body { overflow: hidden; }
 
 /* 1: дни и карточки едут, палец ведёт */
 .a1 .o-days { position: absolute; left: 16px; right: 16px; top: 16px; display: grid; grid-template-columns: repeat(5, 1fr); height: 34px; border-radius: 18px; background: var(--surface2); }
-.a1 .o-d { position: relative; z-index: 1; display: grid; place-items: center; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--muted); }
+.a1 .o-d { position: relative; z-index: 1; display: grid; place-items: center; font-size: calc(12px * var(--onb-fs, 1)); font-weight: 700; color: var(--muted); }
 .a1 .o-pill { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(20% - 6px); border-radius: 14px; background: var(--accent); animation: oPill 4.8s var(--ease-spring, ease) infinite; }
 /* подпись дня темнеет ровно тогда, когда под ней плашка: Пн → Вт → Ср, как едет .o-pill */
 .a1 .o-d.d0 { animation: oDay0 4.8s infinite; } .a1 .o-d.d1 { animation: oDay1 4.8s infinite; } .a1 .o-d.d2 { animation: oDay2 4.8s infinite; }
@@ -1446,9 +1457,9 @@ html.onb-open, html.onb-open body { overflow: hidden; }
 .a1 .o-card::before { content: ""; position: absolute; left: 22px; top: 16px; bottom: 16px; width: 4px; border-radius: 2px; background: var(--lab-bar); }
 .a1 .o-card.prac::before { background: var(--prac-bar); } .a1 .o-card.lec::before { background: var(--lec-bar); }
 .a1 .o-card > * { margin-left: 22px; }
-.a1 .o-card b { font-size: calc(17px * var(--fs, 1)); color: var(--text); }
-.a1 .o-card span { font-size: calc(15px * var(--fs, 1)); font-weight: 600; color: var(--text); }
-.a1 .o-card small { font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
+.a1 .o-card b { font-size: calc(17px * var(--onb-fs, 1)); color: var(--text); }
+.a1 .o-card span { font-size: calc(15px * var(--onb-fs, 1)); font-weight: 600; color: var(--text); }
+.a1 .o-card small { font-size: calc(12px * var(--onb-fs, 1)); color: var(--muted); }
 .a1 .o-finger { position: absolute; top: 120px; left: 220px; width: 34px; height: 34px; border-radius: 50%;
   background: rgba(255, 255, 255, .35); box-shadow: 0 0 0 2px rgba(255, 255, 255, .5); animation: oFinger 4.8s ease-in-out infinite; }
 html[data-theme="light"] .a1 .o-finger { background: rgba(0, 0, 0, .14); box-shadow: 0 0 0 2px rgba(0, 0, 0, .18); }
@@ -1471,9 +1482,9 @@ html[data-theme="light"] :is(.a2, .a4) .o-note { background: rgba(255, 255, 255,
 :is(.a2, .a4) .o-note.o2 { animation-delay: .35s; }
 :is(.a2, .a4) .o-note img { width: 38px; height: 38px; border-radius: 8px; flex: none; }
 :is(.a2, .a4) .o-note div { display: flex; flex-direction: column; min-width: 0; }
-:is(.a2, .a4) .o-note b { font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
-:is(.a2, .a4) .o-note span { font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-:is(.a2, .a4) .o-note small { font-size: calc(13px * var(--fs, 1)); color: var(--text2); }
+:is(.a2, .a4) .o-note b { font-size: calc(12px * var(--onb-fs, 1)); font-weight: 600; color: var(--muted); }
+:is(.a2, .a4) .o-note span { font-size: calc(14px * var(--onb-fs, 1)); font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:is(.a2, .a4) .o-note small { font-size: calc(13px * var(--onb-fs, 1)); color: var(--text2); }
 @keyframes oDrop { 0% { opacity: 0; transform: translate3d(0, -40px, 0) scale(.96); } 12%, 82% { opacity: 1; transform: none; } 94%, 100% { opacity: 0; transform: translate3d(0, -10px, 0) scale(.98); } }
 
 /* личный кабинет: карточка успеваемости, кольцо заполняется, сверху приходит уведомление о новой оценке */
@@ -1487,11 +1498,11 @@ html[data-theme="light"] .a4 .o-cab { background: rgba(255, 255, 255, .85); box-
 .a4 .o-ring circle { fill: none; stroke-width: 7; stroke-linecap: round; }
 .a4 .o-ring .trk { stroke: rgba(127, 127, 140, .22); }
 .a4 .o-ring .arc { stroke: rgb(var(--lec-rgb)); stroke-dasharray: 100; animation: oRing 4.4s var(--ease-spring, ease) infinite; }
-.a4 .o-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(17px * var(--fs, 1)); font-weight: 800; color: var(--text); }
+.a4 .o-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(17px * var(--onb-fs, 1)); font-weight: 800; color: var(--text); }
 .a4 .o-cab div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.a4 .o-cab small { font-size: calc(11px * var(--fs, 1)); font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: rgb(var(--lec-rgb)); }
-.a4 .o-cab span { font-size: calc(15px * var(--fs, 1)); font-weight: 700; color: var(--text); }
-.a4 .o-cab em { font-style: normal; font-size: calc(12px * var(--fs, 1)); color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a4 .o-cab small { font-size: calc(11px * var(--onb-fs, 1)); font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: rgb(var(--lec-rgb)); }
+.a4 .o-cab span { font-size: calc(15px * var(--onb-fs, 1)); font-weight: 700; color: var(--text); }
+.a4 .o-cab em { font-style: normal; font-size: calc(12px * var(--onb-fs, 1)); color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @keyframes oRing { 0%, 8% { stroke-dashoffset: 100; } 40%, 88% { stroke-dashoffset: 12; } 100% { stroke-dashoffset: 100; } }
 
 /* 3: иконка приложения прыгает на свободное место экрана «Домой» */
@@ -1506,7 +1517,7 @@ html[data-theme="light"] .a4 .o-cab { background: rgba(255, 255, 255, .85); box-
 /* 3 (уже ярлык): жесты */
 /* 4: жесты — два маленьких экрана с пальцем: потянуть вниз (крутится обновление) и смахнуть от левого края (назад) */
 .a3g { display: flex; align-items: center; justify-content: center; gap: 22px; padding: 0 12px; }
-.a3g .o-g { display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; color: var(--text2); text-align: center; line-height: 1.25; }
+.a3g .o-g { display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: calc(12.5px * var(--onb-fs, 1)); font-weight: 600; color: var(--text2); text-align: center; line-height: 1.25; }
 .a3g .o-ph { position: relative; width: 104px; height: 146px; border-radius: 20px; overflow: hidden; background: rgba(0, 0, 0, .35); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
 html[data-theme="light"] .a3g .o-ph { background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px rgba(20, 30, 60, .1); }
 .a3g .o-pg { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 7px; padding: 14px 11px; background: #15171c; }
@@ -1538,12 +1549,12 @@ html[data-theme="light"] .a3g .o-fing { background: rgba(20, 30, 60, .2); box-sh
 @keyframes oNudgeX { 0%, 100% { transform: none; } 50% { transform: translate3d(10px, 0, 0); } }
 
 @media (prefers-reduced-motion: reduce) { .onb-art * { animation: none !important; } }
-@media (max-height: 640px) { .onb-art { height: 170px; } .onb-p h2 { margin-top: 16px; font-size: calc(24px * var(--fs, 1)); } .onb-p p { font-size: calc(15px * var(--fs, 1)); line-height: calc(21px * var(--fs, 1)); } }
+@media (max-height: 640px) { .onb-art { height: 170px; } .onb-p h2 { margin-top: 16px; font-size: calc(24px * var(--onb-fs, 1)); } .onb-p p { font-size: calc(15px * var(--onb-fs, 1)); line-height: calc(21px * var(--onb-fs, 1)); } }
 .onb-next:focus { outline: none; } .onb-next:focus-visible { box-shadow: 0 0 0 3px rgba(var(--acc-rgb), .4), 0 8px 24px rgba(var(--acc-rgb), .35); }
 /* карточка-демо: подпись вида пары и внутренняя обёртка (в обычном оформлении — просто текст справа от полоски) */
 .a1 .o-in { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .a1 .o-in b { display: flex; align-items: center; gap: 8px; }
-.a1 .o-in em { font-style: normal; font-size: calc(12px * var(--fs, 1)); font-weight: 700; padding: 2px 7px; border-radius: 8px; color: var(--muted); background: var(--surface2); }
+.a1 .o-in em { font-style: normal; font-size: calc(12px * var(--onb-fs, 1)); font-weight: 700; padding: 2px 7px; border-radius: 8px; color: var(--muted); background: var(--surface2); }
 .a1 .o-in span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 /* ---------- оформление «Стекло»: цветной фон, полупрозрачные карточки с бликом ---------- */
 /* включается классом html.glass — остальная тема (цвета пар, жесты, размеры) не меняется */
@@ -1583,7 +1594,14 @@ html.glass .sbar { background: transparent; isolation: isolate; }
 /* размытие — на отдельном слое под содержимым шапки: так оно не конфликтует со стеклянными кнопками внутри */
 html.glass .sbar::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--g-bar);
   -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6); }
-html.glass .sbar.stuck { box-shadow: inset 0 -1px 0 var(--hair); }
+/* название пары: перенос по словам, длинное слово — по слогам с дефисом, а не «Математич / еское» */
+/* низ шапки недели не обрывается чертой: фон и размытие ещё 26px плавно сходят на нет поверх ленты
+   (как у плашки с заголовком сверху) — карточки уходят под шапку мягко, а не срезаются */
+html.glass .sbar.stuck { box-shadow: none; }
+html .sbar::before { bottom: -26px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 34px), rgba(0, 0, 0, .55) calc(100% - 17px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 34px), rgba(0, 0, 0, .55) calc(100% - 17px), transparent 100%); }
+html:not(.glass) .sbar.stuck::before { box-shadow: none; }
 
 /* стеклянные поверхности */
 html.glass :is(.days, .card, .cc, .tcard, .wbtn, .icon-btn, .offline) {
@@ -1842,7 +1860,13 @@ html.d3 .ring { width: 92px; height: 92px; }
 html.d3 .ring circle { stroke-width: 8; }
 html.d3 .ring .rv b { font-size: 30px; font-weight: 800; }
 html.d3 .hero h3 { font-size: calc(19px * var(--fs, 1)); font-weight: 700; letter-spacing: -.01em; }
+/* узкий экран (320–360 px) или крупный шрифт: название в «Сейчас» помельче и до 4 строк — иначе длинное название
+   рвалось на куски «Математи-ческое мо-делирова…» и обрезалось на 3-й строке */
+@media (max-width: 360px) { html.d3 .hero h3 { font-size: calc(16.5px * var(--fs, 1)); -webkit-line-clamp: 4; } }
 html.d3 .hr b { font-size: calc(28px * var(--fs, 1)); font-weight: 800; letter-spacing: -.03em; }
+/* «ауд. 1304» — одной строкой: при крупном шрифте на узком экране номер уезжал на следующую строку и обрезался */
+.hr b:not(.none) { white-space: nowrap; }
+@media (max-width: 400px) { html.d3 .hr b:not(.none) { font-size: min(calc(28px * var(--fs, 1)), 9.4vw); } }
 html.d3.glass .hero { background: linear-gradient(150deg, rgba(var(--k-rgb), .58), rgba(var(--k-rgb), .16) 62%, rgba(255, 255, 255, .05));
   box-shadow: var(--g-edge), 0 26px 60px -18px rgba(var(--k-rgb), .85); }
 html.d3.glass[data-theme="light"] .hero { background: linear-gradient(150deg, rgba(var(--k-rgb), .42), rgba(255, 255, 255, .72) 75%); }
@@ -2720,11 +2744,34 @@ window.__appStart = () => {
   const opened = new Set();   // раскрытые вручную компактные карточки
 
   function syncTabs() {
+    requestAnimationFrame(() => requestAnimationFrame(() => { if (typeof syncBar === "function") syncBar(); }));   // после отрисовки нового экрана
     const tab = view === "teacher" ? "teachers" : view === "notif" ? "schedule" : view === "stats" ? "settings" : view;
     tabs.forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
     syncLens();
   }
+  // Системная «назад» (Android, жест браузера): пока открыт вложенный экран или окно, в истории
+  // браузера лежит одна запись-заглушка. «Назад» снимает её — а мы закрываем окно или возвращаем экран,
+  // вместо того чтобы закрыть приложение. В Telegram этим занимается его кнопка «Назад».
+  let histGuard = false, histSkip = 0, sheetsOpen = 0;
+  function syncHistory() {
+    if (inTG) return;
+    const want = stack.length > 0 || sheetsOpen > 0;
+    try {
+      if (want && !histGuard) { history.pushState({ sodp: 1 }, ""); histGuard = true; }
+      else if (!want && histGuard && history.state && history.state.sodp) { histGuard = false; histSkip++; history.back(); }
+    } catch (e) { /* история недоступна — не страшно */ }
+  }
+  if (!inTG) window.addEventListener("popstate", () => {
+    if (histSkip) { histSkip--; return; }
+    if (!histGuard) return;
+    histGuard = false;
+    const sheet = [...document.querySelectorAll(".isheet")].map((p) => p.parentElement).filter((w) => w && !w.classList.contains("closing")).pop();
+    if (sheet) dismiss(sheet, sheet.querySelector(".isheet"), true);
+    else if (stack.length) goBack();
+    setTimeout(syncHistory, 0);   // ещё есть куда возвращаться — снова ставим заглушку
+  });
   function syncBack() {
+    syncHistory();
     if (!tg || !tg.BackButton || !tgAtLeast("6.1")) return;
     try { stack.length ? tg.BackButton.show() : tg.BackButton.hide(); } catch (e) { /* старый клиент */ }
   }
@@ -3060,7 +3107,7 @@ window.__appStart = () => {
   function weekLabel(monday) {
     const cur = mondayOf(samaraNow().date);
     const diff = Math.round((toUTC(monday) - toUTC(cur)) / (7 * 86400000));
-    return { "-1": "Прошлая неделя", "0": "Эта неделя", "1": "Следующая неделя", "2": "Через неделю" }[diff] || "";
+    return { "-1": "Прошлая неделя", "0": "Эта неделя", "1": "Следующая неделя", "2": "Через 2 недели" }[diff] || "";
   }
   function weekRange(monday) {
     const a = toUTC(monday), b = toUTC(addDays(monday, 6));
@@ -3233,9 +3280,8 @@ window.__appStart = () => {
     // Уведомления о кабинете идут через бота: метка из личного ключа (сам ключ кабинету не передаём) и канал бота
     notifyLabel: async () => (nkey && window.crypto && crypto.subtle ? hmacRaw(Uint8Array.from(nkey.match(/../g).map((h) => parseInt(h, 16))), utf8("cabinet")) : ""),
     relay: () => (index && index.relay) || "",
-    // кабинет открывает страницу преподавателя из зачётки, сессии и карточки дисциплины
-    teachers: () => (index && Array.isArray(index.teachers) ? index.teachers : []),
-    openTeacher: (id) => go("teacher", id, true) };
+    // кабинет берёт полные имена преподавателей для карточки дисциплины
+    teachers: () => (index && Array.isArray(index.teachers) ? index.teachers : []) };
   // ---------------- уведомления ----------------
   function changeItems() { return changes && Array.isArray(changes.items) ? changes.items : []; }
   // Лента «Уведомлений»: изменения расписания от бота + то, что приходит на телефон по расписанию —
@@ -4382,7 +4428,8 @@ window.__appStart = () => {
     const others = all.filter((t) => !subjects.has(t.id));
     let html = "";
     if (mine.length || !q) html += `<h2 class="sec">Ведут занятия у группы</h2><div class="list">${teacherRowsHTML(mine, subjects)}</div>`;
-    if (others.length || (q && !mine.length)) html += `<h2 class="sec">Другие преподаватели</h2><div class="list">${teacherRowsHTML(others, subjects)}</div>`;
+    if (q && !all.length) html += `<div class="list" style="margin-top:14px">${teacherRowsHTML([], subjects)}</div>`;
+    else if (others.length) html += `<h2 class="sec">Другие преподаватели</h2><div class="list">${teacherRowsHTML(others, subjects)}</div>`;
     return html;
   }
   async function renderTeachers(token) {
@@ -4416,7 +4463,7 @@ window.__appStart = () => {
     if (store.get("installDone") === "1") {
       return `<div class="list iwiz idone"><span class="tile t-ok" aria-hidden="true">${I.check}</span>
         <span class="body"><span class="nm">Готово — расписание на рабочем столе</span>
-        <span class="sub wrap">Открывай его с иконки: так быстрее, и работает даже без сети.</span>
+        <span class="sub wrap">Открывайте его с иконки: так быстрее, и работает даже без сети.</span>
         <button class="wlink" data-act="install-again">Показать инструкцию снова</button></span></div>`;
     }
     const k = installRowHTML();
@@ -4737,6 +4784,7 @@ window.__appStart = () => {
       }
     };
     sheetFocus.set(wrap, { opener, keyboard });
+    sheetsOpen++; syncHistory();
     document.body.appendChild(wrap);
     document.addEventListener("keydown", keyboard, true);
     wrap.querySelector(".isheet button")?.focus({ preventScroll: true });
@@ -4748,7 +4796,7 @@ window.__appStart = () => {
     wrap.classList.add("closing");
     const done = () => {
       const focus = sheetFocus.get(wrap);
-      if (focus) document.removeEventListener("keydown", focus.keyboard, true);
+      if (focus) { document.removeEventListener("keydown", focus.keyboard, true); sheetFocus.delete(wrap); sheetsOpen = Math.max(0, sheetsOpen - 1); setTimeout(syncHistory, 0); }
       const restoreFocus = wrap.contains(document.activeElement);
       wrap.remove();
       if (restoreFocus && focus) {
@@ -4791,7 +4839,7 @@ window.__appStart = () => {
       ${STANDALONE ? "" : installWizardHTML()}
       <div class="list" style="margin-top:10px"><button class="item" data-act="onb">
         <span class="sic sic-blue" aria-hidden="true">${svg('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 0 1 5 1c0 1.8-2.5 2.2-2.5 3.8M12 17.5h.01"/>', 18)}</span>
-        <span class="body"><span class="nm">Как пользоваться</span><span class="sub">Жесты, уведомления, ярлык на экране «Домой»</span></span>
+        <span class="body"><span class="nm">Как пользоваться</span><span class="sub wrap">Дни недели, уведомления, личный кабинет и жесты</span></span>
         <span class="chev" aria-hidden="true">${I.chev}</span></button></div>
       <p class="foot${dataAgeH() >= 24 ? " old" : ""}">@sodp55u_bot · <button class="flink" data-act="site">Открыть на сайте</button><br>
         ${upd ? (dataAgeH() >= 24 ? `⚠ Расписание не обновлялось с ${esc(upd)}` : `Расписание обновлено ${esc(fmtAgo(meta.updated))}`) : ""}
@@ -5004,7 +5052,8 @@ window.__appStart = () => {
   }
   function syncBar() {
     const bar = app.querySelector(".sbar");
-    if (!bar) return;
+    // на других вкладках шапки недели нет — затемнение под часами снимаем, иначе оставалась чёрная полоса сверху
+    if (!bar || !bar.isConnected) { if (veil) veil.classList.remove("dim"); return; }
     const y = window.scrollY;
     if (!barSmall && y > 56) barSmall = true;
     else if (barSmall && y < 8) barSmall = false;
