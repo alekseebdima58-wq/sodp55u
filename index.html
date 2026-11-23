@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="7d6ec8c75aa9">
+<meta name="app-ver" content="1c5f527cfcd9">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -759,11 +759,11 @@ html:not(.glass) .sbar.stuck::before { box-shadow: 0 1px 0 var(--hair); }
 
 /* Размеры шапки меняются один раз, без плавного перехода (font-size/width/height/margin пересчитывали
    раскладку всей страницы каждый кадр). Само движение доигрывают сдвиг и масштаб — flipBar в 20-springs-sticky.js */
-/* iPhone: липкая шапка без своего слоя дрожала по вертикали на 1–2 px при прокрутке (по записи экрана) —
-   Safari двигал её то в потоке прокрутки, то в основном потоке. Свой слой — и она едет вместе с прокруткой ровно */
-@supports (-webkit-touch-callout: none) {
-  .sbar { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
-}
+/* iPhone: прилипшая шапка закреплена по-настоящему (pinBar в JS), на её месте в ленте — распорка .sbar-sp.
+   Пока экран сдвигают жестом или анимацией, #app с transform — fixed внутри него считался бы от #app,
+   поэтому на это время шапка снова липкая (стоит в той же точке), а распорка убрана */
+html:not(.swiping, .nav-anim, .ptr-hold, .ptr-busy) .sbar.pinned { position: fixed; margin: 0; left: var(--pin-l); width: var(--pin-w); right: auto; box-sizing: border-box; }
+html:is(.swiping, .nav-anim, .ptr-hold, .ptr-busy) .sbar-sp { display: none; }
 .sbar .eyebrow { max-height: 18px; }
 .sbar.small .whead .eyebrow { max-height: 0; opacity: 0; }
 .sbar.small .days { margin-top: 8px; }
@@ -2778,6 +2778,10 @@ window.__appStart = () => {
   // Снимок экрана, с которого уходим вглубь: его показываем под пальцем при свайпе назад (как в iOS)
   function snapshot() {
     try {
+      // Плывущий свет на видимых карточках («Сейчас», «Успеваемость») копируем застывшим в текущем положении:
+      // раньше его из снимка убирали, и при возврате назад карточка без света сменялась карточкой со светом — рывок
+      const glows = [...app.querySelectorAll(".hglow, .hstreak")].filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; });
+      glows.forEach((e) => { const cs = getComputedStyle(e); e.setAttribute("data-snapst", `transform:${cs.transform};opacity:${cs.opacity};animation:none`); });
       // Копируем без остальных дней ленты (в ней все дни расписания — копировать их и тут же удалять долго)
       const c = app.cloneNode(false);
       for (const ch of app.childNodes) {
@@ -2804,7 +2808,9 @@ window.__appStart = () => {
       // соседние дни не удаляем, а только прячем: дни стоят в ряд и сдвинуты на ширину экрана, и без соседа
       // текущий день съезжал за левый край — под пальцем и при «назад» лента пар пропадала, а потом появлялась рывком
       c.querySelectorAll("[data-pager] .page.prev, [data-pager] .page.next").forEach((e) => e.remove());   // У копии нет прокрутки — оставляем только текущий день
-      c.querySelectorAll("video, .hglow, .hstreak").forEach((e) => e.remove());   // Свет на карточке «Сейчас» в снимке не нужен
+      glows.forEach((e) => e.removeAttribute("data-snapst"));
+      c.querySelectorAll("[data-snapst]").forEach((e) => { e.setAttribute("style", e.getAttribute("data-snapst")); e.removeAttribute("data-snapst"); });
+      c.querySelectorAll("video, .hglow:not([style]), .hstreak:not([style])").forEach((e) => e.remove());   // свет за краем экрана не нужен
       return c;
     } catch (e) { return null; }
   }
@@ -2817,7 +2823,7 @@ window.__appStart = () => {
   const navRM = () => !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   const navDPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
   const navSnap = (v) => Math.round(v * navDPR) / navDPR;
-  let navBusy = false, navReady = false;   // navReady — первый экран уже показан (при запуске без выезда)
+  let navBusy = false, navReady = false, backQueued = false;   // navReady — первый экран уже показан (при запуске без выезда)
   // Анимации «через видеокарту». Запоминаем, где элементы сейчас, сразу ставим конечное положение
   // и отдаём движение браузеру: он ведёт его в отдельном потоке с частотой экрана. Такое движение
   // не урезают до 30 кадров ни встроенный браузер Telegram, ни режим энергосбережения, ни занятый скрипт.
@@ -2898,6 +2904,7 @@ window.__appStart = () => {
   }
 
   function go(v, t, push) {
+    backQueued = false;
     const anim = push && navReady && !navBusy && !navRM() && !document.hidden;
     if (push) stack.push({ view, target, y: window.scrollY, snap: snapshot() });
     else stack = [];
@@ -2921,11 +2928,17 @@ window.__appStart = () => {
     const r = render();
     window.scrollTo(0, 0);
     Promise.race([Promise.resolve(r).catch(() => {}), new Promise((res) => setTimeout(res, 450))])
-      .then(() => navRun(L, 1, 0, 380, () => { L.clear(); navBusy = false; }));
+      .then(() => navRun(L, 1, 0, 380, () => {
+        L.clear(); navBusy = false;
+        // «назад» нажали, пока экран ещё выезжал (или грузился) — возвращаемся тем же плавным сдвигом, когда он доехал.
+        // Раньше прошлый экран появлялся сразу, посреди выезда, и его карточки прыгали
+        if (backQueued) { backQueued = false; requestAnimationFrame(() => goBack()); }
+      }));
   }
   // «Назад» кнопкой (в приложении или в Telegram): тот же сдвиг, что и у жеста
   function goBack() {
     const prev = stack[stack.length - 1];
+    if (navBusy && prev && prev.snap && !navRM() && !document.hidden) { backQueued = true; return; }
     if (!prev || !prev.snap || navBusy || navRM() || document.hidden) return back();
     navBusy = true;
     haptic("light");
@@ -5050,6 +5063,33 @@ window.__appStart = () => {
     bar.style.setProperty("--bb", `1 ${((b1.height + ext) / ((b0.height + ext) || 1)).toFixed(4)}`);
     bar.__geo = true;
   }
+  // iPhone: прилипшая шапка (position: sticky) дрожала при прокрутке на 1–3 px (запись экрана) — Safari
+  // пересчитывает липкое положение то в потоке прокрутки, то в основном. Прилипшую шапку закрепляем
+  // по-настоящему (position: fixed, как нижняя панель — та не дрожит), а на её место в ленте ставим
+  // распорку той же высоты. В момент переключения липкая и закреплённая стоят в одной точке — скачка нет.
+  function pinBar(bar, on) {
+    const pinned = bar.classList.contains("pinned");
+    if (on === pinned) return;
+    if (on) {
+      const cs = getComputedStyle(bar), r = bar.getBoundingClientRect();
+      const mt = parseFloat(cs.marginTop) || 0, mb = parseFloat(cs.marginBottom) || 0;
+      const sp = document.createElement("div");
+      sp.className = "sbar-sp";
+      sp.setAttribute("aria-hidden", "true");
+      sp.style.marginTop = `${mt}px`; sp.style.marginBottom = "0px";
+      sp.style.height = `${Math.max(0, r.height + mb)}px`;
+      bar.after(sp);
+      bar.__sp = sp; bar.__mt = 0;
+      bar.style.setProperty("--pin-l", `${r.left}px`); bar.style.setProperty("--pin-w", `${r.width}px`);
+      bar.classList.add("pinned");
+    } else {
+      bar.classList.remove("pinned");
+      bar.style.removeProperty("--pin-l"); bar.style.removeProperty("--pin-w");
+      if (bar.__sp) bar.__sp.remove();
+      bar.__sp = null;
+    }
+  }
+  window.addEventListener("resize", () => { const bar = app.querySelector(".sbar.pinned"); if (bar) { pinBar(bar, false); syncBar(); } }, { passive: true });
   function syncBar() {
     const bar = app.querySelector(".sbar");
     // на других вкладках шапки недели нет — затемнение под часами снимаем, иначе оставалась чёрная полоса сверху
@@ -5066,8 +5106,11 @@ window.__appStart = () => {
       // (замер на iPhone: рывок в начале первого сжатия шапки)
       if (CAN_FLIP && !REDUCED) setTimeout(() => { if (bar.isConnected && !bar.__geo && !bar.classList.contains("vsmall") && !scrolling && !pagerTouch) barGeo(bar); }, 600);
     }
-    const stuck = y > 2 && (bar === app.firstElementChild || bar.getBoundingClientRect().top <= barTop + 1);
+    const sp = bar.__sp && bar.__sp.isConnected ? bar.__sp : null;
+    const natTop = sp ? sp.getBoundingClientRect().top + bar.__mt : bar.getBoundingClientRect().top;
+    const stuck = y > 2 && (bar === app.firstElementChild || natTop <= barTop + 1);
     bar.classList.toggle("stuck", stuck);
+    if (IOS) pinBar(bar, natTop <= barTop + 0.5 && y > 0);   // закрепляем, только когда шапка уже упёрлась в верх
     // Полоса под часами темнеет вместе со стеклом шапки — иначе по верхнему краю шапки шла граница
     // (сверху — яркий фон, ниже — затемнённое стекло)
     if (veil) veil.classList.toggle("dim", stuck);

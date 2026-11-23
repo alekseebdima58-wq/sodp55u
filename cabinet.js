@@ -335,13 +335,17 @@
       last ? `<div class="hn ${markClass[markKind(last.result)]}"><i></i><span class="x">Последняя · <b>${esc(last.result)}</b> · ${esc(last.subject)}</span></div>` : "",
       now ? `<div class="hn k-prac"><i></i><span class="x">Сейчас · <b>${esc(now.title)}</b></span></div>` : "",
     ].join("");
-    return `<button class="hero hv-ring ${kind} cab-hero" data-cab="open" data-page="grades" aria-label="Зачётка">
+    const body = `
       <div class="ring" aria-hidden="true"><svg viewBox="0 0 80 80"><circle class="trk" cx="40" cy="40" r="34" pathLength="100"/>
         <circle class="arc" cx="40" cy="40" r="34" pathLength="100" stroke-dasharray="100" style="stroke-dashoffset:${100 - Math.max(4, Math.min(100, p))}"/></svg>
         <span class="rv"><b>${avg == null ? passed : fmtAvg(avg)}</b><small>${avg == null ? "сдано" : "балл"}</small></span></div>
       <div class="hb"><span class="hl">Успеваемость</span><h3>${passed === rows.length ? `Всё сдано — ${rows.length}\u00a0${plural(rows.length, "оценка", "оценки", "оценок")}` : `Сдано ${passed}\u00a0из\u00a0${rows.length}`}</h3>
         <div class="hr"><span>${avg == null ? "зачёты без баллов" : `средний балл за\u00a0${new Set(rows.map((r) => r.semester)).size}\u00a0${plural(new Set(rows.map((r) => r.semester)).size, "семестр", "семестра", "семестров")}`}</span></div></div>
-      ${lines}</button>`;
+      ${lines}`;
+    // отпечаток содержимого: перерисовка с тем же отпечатком оставляет прежний блок (и его плывущий свет) на месте
+    let k = 0;
+    for (let i = 0; i < body.length; i++) k = (k * 31 + body.charCodeAt(i)) | 0;
+    return `<button class="hero hv-ring ${kind} cab-hero" data-cab="open" data-page="grades" aria-label="Зачётка" data-k="${kind}${k}">${body}</button>`;
   }
 
   const retryHTML = () => `<div class="list cab-pending">${empty(icons.wifi, loadError.replace(/\.$/, "") || "Не удалось загрузить кабинет", "Проверьте подключение к интернету и повторите попытку.")}<div class="cab-oacts" style="justify-content:center;padding-bottom:20px"><button class="cab-obtn" data-cab="retry">${icons.refresh}Повторить</button></div></div>`;
@@ -889,7 +893,12 @@
       ? (active.dataset?.cab ? `[data-cab="${active.dataset.cab}"]${active.dataset.arg !== undefined ? `[data-arg="${CSS.escape(active.dataset.arg)}"]` : ""}` : active.matches?.("input") ? `input[type="${active.type}"]` : "")
       : "";
     const caret = focusKey && active.matches?.("input") ? [active.selectionStart, active.selectionEnd] : null;
+    // «Успеваемость» не пересоздаём, если она не изменилась: новый блок начинал свечение заново, и при
+    // возврате в кабинет и при обновлении статуса («Обновляем с сайта вуза…») карточка заметно дёргалась
+    const oldHero = root.querySelector(".cab-hero");
     paint();
+    const newHero = oldHero && root.querySelector(".cab-hero");
+    if (newHero && newHero.dataset.k === oldHero.dataset.k && newHero !== oldHero) newHero.replaceWith(oldHero);
     if (keepY !== null && Math.abs(window.scrollY - keepY) > 1) window.scrollTo({ top: keepY, behavior: "instant" });
     if (focusKey && !root.contains(document.activeElement)) {
       const again = root.querySelector(focusKey);
