@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="68001adaf187">
+<meta name="app-ver" content="32fed55a496b">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -2755,15 +2755,19 @@ window.__appStart = () => {
   // Без history.back(): раньше заглушку снимали им, но его ответ (popstate) приходит позже — при быстрых
   // нажатиях он попадал уже на новый экран, и приложение само возвращалось назад. Теперь заглушку только ставим,
   // а снимает её лишь сама системная «назад». В корне лишняя заглушка безвредна: выход — вторым нажатием.
+  // Только Android: там есть системная кнопка «назад». На iPhone её нет, а у ярлыка на главном экране свой
+  // системный свайп от края — он листал эту же историю, и вместе с нашим свайпом «назад» срабатывал дважды:
+  // экран возвращался, а следующий открытый раздел сам закрывался
+  const HIST_BACK = !inTG && /Android/i.test(navigator.userAgent);
   let sheetsOpen = 0;
   const atGuard = () => { try { return !!(history.state && history.state.sodp); } catch (e) { return false; } };
   function syncHistory() {
-    if (inTG) return;
+    if (!HIST_BACK) return;
     if ((stack.length > 0 || sheetsOpen > 0) && !atGuard()) {
       try { history.pushState({ sodp: 1 }, ""); } catch (e) { /* история недоступна — не страшно */ }
     }
   }
-  if (!inTG) window.addEventListener("popstate", () => {
+  if (HIST_BACK) window.addEventListener("popstate", () => {
     if (atGuard()) return;   // вернулись вперёд на заглушку — ничего не делаем
     const sheet = [...document.querySelectorAll(".isheet")].map((p) => p.parentElement).filter((w) => w && !w.classList.contains("closing")).pop();
     if (sheet) dismiss(sheet, sheet.querySelector(".isheet"), true);
