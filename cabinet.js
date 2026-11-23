@@ -34,9 +34,10 @@
   const MONTHS = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
   const dateFormat = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Samara" });
 
-  let root, request, page = "home", pageArg = "", searchText = "", refreshing = false;
+  let root, request, refreshRequest, page = "home", pageArg = "", searchText = "";
   let connection = readConnection();
   let data = null;
+  let loadError = "";
   let reauthenticating = false;
 
   // ---------- помощники приложения (с запасным вариантом, если кабинет открыт отдельно) ----------
@@ -80,16 +81,33 @@
   function readConnection() {
     try {
       const saved = JSON.parse(localStorage.getItem(connectionKey));
-      if (saved?.key && saved?.address) return { ...saved, url: endpoint(saved.address) };
+      if (keyPattern.test(saved?.key || "") && saved?.address) return { address: saved.address, key: saved.key, url: endpoint(saved.address) };
     } catch (error) { /* вход останется доступен без сохранённого подключения */ }
     return null;
   }
-  function setConnection(value) {
+  const accountScope = (value) => value ? `${value.url}|${value.key.split(".")[0]}` : "";
+  const scopedKey = (key, value = connection) => `${key}:${accountScope(value)}`;
+  function replaceConnection(value) {
+    const accountChanged = accountScope(connection) !== accountScope(value);
     request?.abort();
+    refreshRequest?.abort();
     request = null;
+    refreshRequest = null;
     data = null;
+    loadError = "";
     connection = value;
     reauthenticating = false;
+    if (accountChanged) {
+      gradeEvents = savedGradeEvents();
+      openSteps.clear();
+      closedSteps.clear();
+      openOrders.clear();
+      planSem = gradesSem = null;
+      searchText = "";
+    }
+  }
+  function setConnection(value) {
+    replaceConnection(value);
     try {
       if (value) localStorage.setItem(connectionKey, JSON.stringify({ address: value.address, key: value.key }));
       else localStorage.removeItem(connectionKey);
@@ -103,7 +121,7 @@
         headers: { Authorization: `Bearer ${config.key}` }, signal,
       });
     } catch (failure) { throw new Error("Не удалось связаться с сервером.", { cause: failure }); }
-    if (response.status === 401) throw new Error("Ключ подключения недействителен.");
+    if (response.status === 401) throw Object.assign(new Error("Подключение отозвано. Отключите кабинет и войдите снова."), { status: 401 });
     if (!response.ok) throw new Error("Сервер пока не может предоставить данные.");
     const result = await response.json().catch(() => null);
     if (result?.version !== 1) throw new Error("Сервер вернул данные в неизвестном формате.");
@@ -160,16 +178,14 @@
       if (self) return asShown(self.name);
       const same = nameCandidates(fields);
       if (same.length === 1) return asShown(same[0].name);
-      let mine = "";
-      try { mine = localStorage.getItem(meKey) || ""; } catch (e) { /* нет хранилища */ }
-      const chosen = same.find((p) => normName(p.name) === normName(mine));
+      const chosen = same.find((p) => normName(p.name) === normName(chosenMe()));
       return chosen ? asShown(chosen.name) : words[0];
     }
     // «Фамилия Имя Отчество» (как в группе) → «Имя Фамилия»; иначе считаем, что уже «Имя Фамилия»
     const fio = fields.get("Фамилия") || people().some((p) => normName(p.name).startsWith(normName(`${words[0]} ${words[1]}`)));
     return fio ? `${words[1]} ${words[0]}` : `${words[0]} ${words[1]}`;
   }
-  function chosenMe() { try { return localStorage.getItem(meKey) || ""; } catch (e) { return ""; } }
+  function chosenMe() { return readJSON(scopedKey(meKey), ""); }
   const needsMe = () => { const c = nameCandidates(); return c.length > 1 && !c.some((p) => normName(p.name) === normName(chosenMe())); };
   function profileFields() { return new Map((sections("profile") || []).flatMap(({ rows }) => rows)); }
   function profileSummary() {
@@ -198,7 +214,7 @@
     return current ? { title: current.title, status: semesterPhase(current.title) === "now" ? "идёт сейчас" : "", count: list.length } : null;
   }
   function statusText() {
-    if (refreshing) return "Обновляем с сайта вуза…";
+    if (refreshRequest) return "Обновляем с сайта вуза…";
     if (!data) return "Загрузка кабинета…";
     if (data.status === "pending") return "Первое обновление кабинета…";
     const when = Number.isFinite(Date.parse(data.syncedAt)) ? `обновлено ${ago(data.syncedAt)}` : "обновлений пока нет";
@@ -206,6 +222,7 @@
     if (data.status === "partial") return `Часть разделов не обновилась · ${when}`;
     return when[0].toUpperCase() + when.slice(1);
   }
+  const cabinetStatus = () => loadError ? (data ? `${loadError} ${statusText()}` : loadError) : statusText();
   // ---------- сессия: экзамены, зачёты и консультации из раздела «Расписание» сайта ----------
   const WD = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
   const MONTHS_FULL = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
@@ -256,25 +273,30 @@
   const gradeId = (r) => [r.semester, r.subject, r.form, r.result].join("|");
   const readJSON = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } };
   const writeJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* без хранилища */ } };
-  let gradeEvents = readJSON(eventsKey, []);
+  function savedGradeEvents() {
+    const events = connection ? readJSON(scopedKey(eventsKey), []) : [];
+    return Array.isArray(events) ? events.filter((event) => event && typeof event === "object") : [];
+  }
+  let gradeEvents = savedGradeEvents();
   function noteGrades() {
     if (!data || !sections("grades")) return;
     const rows = gradeRows().filter((r) => r.result);
-    const known = readJSON(knownKey, null);
+    const known = readJSON(scopedKey(knownKey), null);
     const ids = rows.map(gradeId);
-    if (!known) { writeJSON(knownKey, ids); return; }
+    if (!Array.isArray(known)) { writeJSON(scopedKey(knownKey), ids); return; }
     const fresh = rows.filter((r) => !known.includes(gradeId(r)));
     if (!fresh.length) return;
     const ts = new Date().toISOString();
     gradeEvents = gradeEvents.concat(fresh.map((r) => ({ id: gradeId(r), ts, subject: r.subject, result: r.result, form: r.form, semester: r.semester, date: shortDate(r.date) })))
       .filter((e) => Date.now() - Date.parse(e.ts) < 30 * 864e5);
-    writeJSON(eventsKey, gradeEvents);
-    writeJSON(knownKey, ids);
+    writeJSON(scopedKey(eventsKey), gradeEvents);
+    writeJSON(scopedKey(knownKey), ids);
     const text = fresh.length === 1 ? `Новая оценка: ${fresh[0].subject} — ${fresh[0].result}` : `Новых оценок: ${fresh.length}`;
     try { app().toast?.(text); } catch (e) { /* без подсказки */ }
     try {
       if ("Notification" in window && Notification.permission === "granted" && navigator.serviceWorker) {
-        navigator.serviceWorker.getRegistration().then((reg) => reg && reg.showNotification(fresh.length === 1 ? "Новая оценка" : text,
+        const account = connection;
+        navigator.serviceWorker.getRegistration().then((reg) => connection === account && reg && reg.showNotification(fresh.length === 1 ? "Новая оценка" : text,
           { body: fresh.length === 1 ? `${fresh[0].subject} — ${fresh[0].result}` : fresh.map((r) => `${r.subject} — ${r.result}`).join("\n"), tag: "grades", lang: "ru" })).catch(() => {});
       }
     } catch (e) { /* без системного уведомления */ }
@@ -329,24 +351,26 @@
     const card = `<button class="tcard cab-card" data-cab="open" data-page="profile" aria-label="Профиль">
         <div class="av big" style="--h:${hue(summary.name || "Студент")}" aria-hidden="true">${summary.name ? esc(initials(summary.name)) : icons.check.replace(/width="14" height="14"/, 'width="24" height="24"')}</div>
         <div style="min-width:0"><div class="nm">${esc(name || "Студент")}</div>
-        ${meta ? `<div class="sub">${esc(meta)}</div>` : ""}${data && needsMe() ? `<div class="sub cab-accent">Укажите, кто вы, — покажем фамилию</div>` : ""}<div class="sub" role="status" data-cabinet-status>${esc(statusText())}</div></div>
+        ${meta ? `<div class="sub">${esc(meta)}</div>` : ""}${data && needsMe() ? `<div class="sub cab-accent">Укажите, кто вы, — покажем фамилию</div>` : ""}<div class="sub" role="status" data-cabinet-status>${esc(cabinetStatus())}</div></div>
         <span class="chev cab-chev">${icons.chev}</span></button>`;
     const warn = expired
       ? `<button class="offline stale cab-warn" data-cab="relogin"><span>Вход в кабинет вуза истёк — показаны сохранённые данные</span><u>Войти снова</u></button>`
       : data?.status === "error" ? `<div class="offline stale cab-warn"><span>Сайт вуза не ответил — показаны сохранённые данные. Сервер скоро попробует снова</span></div>` : "";
+    const disconnect = `<div class="list cab-actions">
+          <button class="item cab-danger" data-cab="disconnect" aria-label="Отключить на этом устройстве">${iconAv(4, "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9")}
+            <span class="body"><span class="nm">Отключить кабинет</span><span class="sub">Данные исчезнут с этого устройства</span></span></button></div>`;
     if (!data) {
-      return headerHTML("Личный кабинет") + card + `<div class="sk" style="height:132px;margin-top:22px"></div><div class="sk" style="height:300px;margin-top:22px"></div>`;
+      const loading = `<div class="sk" style="height:132px;margin-top:22px"></div><div class="sk" style="height:300px;margin-top:22px"></div>`;
+      return headerHTML("Личный кабинет") + card + (loadError ? "" : loading) + disconnect;
     }
     const rows = pages.filter(([id]) => listed.includes(id)).map(([id, label, , h, path]) => `<button class="item" data-cab="open" data-page="${id}">
         ${iconAv(h, path)}<span class="body"><span class="nm">${esc(label)}</span><span class="sub">${esc(pageSummary(id))}</span></span>
         <span class="chev">${icons.chev}</span></button>`).join("");
     const pending = data.status === "pending"
       ? `<div class="list cab-pending">${empty(icons.refresh, "Забираем данные с сайта вуза", "Обычно это занимает меньше минуты. Экран обновится сам.")}</div>` : "";
-    return headerHTML("Личный кабинет") + card + warn + (reauthenticating ? "" : "")
+    return headerHTML("Личный кабинет") + card + warn
       + (data.status === "pending" ? pending : heroHTML() + `<h2 class="sec cab-sec">Разделы</h2><div class="list">${rows}</div>`)
-      + `<div class="list cab-actions">
-          <button class="item cab-danger" data-cab="disconnect" aria-label="Отключить на этом устройстве">${iconAv(4, "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9")}
-            <span class="body"><span class="nm">Отключить кабинет</span><span class="sub">Данные исчезнут с этого устройства</span></span></button></div>`;
+      + disconnect;
   }
 
   function markHTML(result) {
@@ -824,7 +848,8 @@
       root.querySelector(".cab-center").append(connectionForm());
       return;
     }
-    const current = page === "subject" ? "subject" : page !== "home" && pages.some(([id]) => id === page) ? page : "home";
+    const requestedPage = page === "subject" || pages.some(([id]) => id === page) ? page : "home";
+    const current = !data && loadError ? "home" : requestedPage;
     root.innerHTML = current === "home" ? homeHTML() : current === "subject" ? (data ? subjectHTML(+pageArg) : headerHTML("Дисциплина", true) + `<div class="sk" style="height:220px;margin-top:22px"></div>`)
       : current === "group" && pageArg !== "" ? personHTML(+pageArg) : sectionHTML(current);
     if (current === "home" && reauthenticating && data?.status === "expired") {
@@ -849,18 +874,25 @@
   }
 
   async function load() {
-    if (!connection || !root?.isConnected || request || reauthenticating) return;
+    if (!connection || !root?.isConnected || request || refreshRequest || reauthenticating) return;
     const controller = new AbortController();
     const thisConnection = connection;
     request = controller;
     const timer = setTimeout(() => controller.abort(), 12000);
     try {
       const next = await getSnapshot(thisConnection, controller.signal);
-      if (connection === thisConnection && JSON.stringify(data) !== JSON.stringify(next)) { data = next; noteGrades(); draw(); }
+      if (connection !== thisConnection || request !== controller) return;
+      const hadError = loadError;
+      loadError = "";
+      if (JSON.stringify(data) !== JSON.stringify(next)) { data = next; noteGrades(); draw(); }
+      else if (hadError) setStatus();
       linkNotify();
     } catch (error) {
-      const status = root?.querySelector("[data-cabinet-status]");
-      if (connection === thisConnection && status) status.textContent = data ? `${error.message} ${statusText()}` : error.message;
+      if (connection !== thisConnection || request !== controller) return;
+      const redraw = (!data && !loadError) || (error.status === 401 && !!data);
+      loadError = error.message;
+      if (error.status === 401) { data = null; gradeEvents = []; }
+      if (redraw) draw(); else setStatus();
     } finally {
       clearTimeout(timer);
       if (request === controller) request = null;
@@ -874,53 +906,77 @@
     if (!config) return;
     let label = "", relay = "";
     try { label = (await app().notifyLabel?.()) || ""; relay = app().relay?.() || ""; } catch (e) { return; }
-    if (!label || !relay) return;
+    if (connection !== config || !label || !relay) return;
     const sig = `${config.key.slice(-12)}|${label.slice(0, 12)}|${relay}`;
-    if (readJSON("cabinet-notify", "") === sig) return;
+    const notifyKey = scopedKey("cabinet-notify", config);
+    if (readJSON(notifyKey, "") === sig) return;
     try {
       const response = await fetch(endpoint(config.address, "notify"), {
         method: "POST", headers: { Authorization: `Bearer ${config.key}`, "Content-Type": "application/json" },
         body: JSON.stringify({ label, relay }), cache: "no-store", credentials: "omit", redirect: "error",
         referrerPolicy: "no-referrer", signal: AbortSignal.timeout(10000),
       });
-      if (response.ok) writeJSON("cabinet-notify", sig);
+      if (response.ok && connection === config) writeJSON(notifyKey, sig);
     } catch (e) { /* в следующий раз */ }
   }
 
   // «Потянуть вниз»: сервер сразу идёт на сайт вуза (каждый раз), приложение ждёт новую копию.
   // Возвращает true, если запрос принят: крутилка приложения убирается сразу, а данные дорисуются сами.
-  const setStatus = () => { const el = root?.querySelector("[data-cabinet-status]"); if (el) el.textContent = statusText(); };
+  const setStatus = () => { const el = root?.querySelector("[data-cabinet-status]"); if (el) el.textContent = cabinetStatus(); };
   const say = (text) => { try { app().toast?.(text); } catch (e) { /* без подсказки */ } };
   async function refresh() {
     if (!connection || reauthenticating) { await load(); return false; }
-    if (refreshing) return true;
+    if (refreshRequest) return true;
     const config = connection;
+    const controller = new AbortController();
+    refreshRequest = controller;
+    request?.abort();
+    request = null;
+    const active = () => refreshRequest === controller && connection === config;
+    const release = () => {
+      if (!active()) return;
+      refreshRequest = null;
+      setStatus();
+    };
+    const timer = setTimeout(() => controller.abort(), 10000);
     let response;
     try {
       response = await fetch(endpoint(config.address, "refresh"), {
         method: "POST", headers: { Authorization: `Bearer ${config.key}` }, cache: "no-store", credentials: "omit",
-        redirect: "error", referrerPolicy: "no-referrer", signal: AbortSignal.timeout(10000),
+        redirect: "error", referrerPolicy: "no-referrer", signal: controller.signal,
       });
-    } catch (e) { say("Нет связи с сервером кабинета"); return false; }
+    } catch (e) {
+      if (active()) { release(); say("Нет связи с сервером кабинета"); }
+      return false;
+    } finally { clearTimeout(timer); }
+    if (!active()) return false;
     if (response.status === 429) {
       const info = await response.json().catch(() => ({}));
+      if (!active()) return false;
       const min = Math.max(1, Math.ceil((info.retryAfter || 60) / 60));
+      release();
       say(`Данные свежие. Снова обновить можно через ${min} мин`);
       await load();
       return false;
     }
-    if (response.status === 409 || response.status === 404 || response.status === 405) { await load(); return false; }   // вход истёк или старый сервер
-    if (response.status !== 202) { say("Сейчас не удалось обновить кабинет"); return false; }
-    refreshing = true;
+    if (response.status !== 202) {
+      release();
+      if ([401, 404, 405, 409].includes(response.status)) await load();
+      else say("Сейчас не удалось обновить кабинет");
+      return false;
+    }
+    loadError = "";
     setStatus();
-    const before = data?.syncedAt || "";
+    const before = data;
     (async () => {
       try {
-        for (let i = 0; i < 30 && connection === config; i++) {
+        for (let i = 0; i < 30 && active(); i++) {
           await new Promise((r) => setTimeout(r, i ? 3000 : 1500));
+          if (!active()) return;
           const next = await getSnapshot(config, AbortSignal.timeout(10000)).catch(() => null);
-          if (next && (next.syncedAt !== before || next.status === "expired" || next.status === "error")) {
-            refreshing = false;
+          if (!active()) return;
+          if (next && (next.syncedAt !== before?.syncedAt || next.status !== before?.status)) {
+            release();
             data = next;
             noteGrades();
             draw();
@@ -930,8 +986,8 @@
             return;
           }
         }
-        say("Сайт вуза отвечает долго — данные обновятся чуть позже");
-      } finally { refreshing = false; setStatus(); }
+        if (active()) say("Сайт вуза отвечает долго — данные обновятся чуть позже");
+      } finally { release(); }
     })();
     return true;
   }
@@ -1000,7 +1056,7 @@
       toggleStep(el, !open);
     } else if (act === "me") {
       const p = people()[+el.dataset.arg];
-      if (p) { haptic("light"); try { localStorage.setItem(meKey, p.name); } catch (e) { /* нет хранилища */ } draw(); say(`Готово: ${asShown(p.name)}`); }
+      if (p) { haptic("light"); writeJSON(scopedKey(meKey), p.name); draw(); say(`Готово: ${asShown(p.name)}`); }
     } else if (act === "teacher") {
       haptic("light");
       if (app().openTeacher) app().openTeacher(el.dataset.arg);
@@ -1033,13 +1089,12 @@
       // уведомления о кабинете больше не нужны — просим сервер не слать (ответ не ждём)
       if (connection) fetch(endpoint(connection.address, "notify"), {
         method: "POST", headers: { Authorization: `Bearer ${connection.key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ label: "" }), credentials: "omit", referrerPolicy: "no-referrer", keepalive: true,
+        body: JSON.stringify({ label: "" }), credentials: "omit", redirect: "error", referrerPolicy: "no-referrer", keepalive: true,
       }).catch(() => {});
+      for (const key of [eventsKey, knownKey, meKey, "cabinet-notify"]) {
+        try { localStorage.removeItem(scopedKey(key)); } catch (e) { /* нет хранилища */ }
+      }
       setConnection(null);
-      gradeEvents = [];
-      writeJSON(eventsKey, []);
-      try { localStorage.removeItem("cabinet-notify"); } catch (e) { /* нет */ }
-      try { localStorage.removeItem(knownKey); } catch (e) { /* нет */ }
       draw();
     }
   }
@@ -1072,14 +1127,12 @@
     },
   };
   addEventListener("storage", (event) => {
+    if (connection && event.key === scopedKey(eventsKey)) { gradeEvents = savedGradeEvents(); return; }
+    if (connection && event.key === scopedKey(meKey)) { draw(); return; }
     if (event.key !== null && event.key !== connectionKey) return;
     const next = readConnection();
     if (JSON.stringify(next) === JSON.stringify(connection)) return;
-    request?.abort();
-    request = null;
-    connection = next;
-    data = null;
-    reauthenticating = false;
+    replaceConnection(next);
     draw();
     load();
   });

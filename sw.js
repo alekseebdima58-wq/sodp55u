@@ -1,17 +1,21 @@
 // Service worker расписания: приложение открывается с главного экрана даже без сети.
 // Страницу отдаём сразу из сохранённой копии и тихо обновляем её из сети. Иконки и шрифты — из кэша
 // с тихим обновлением. Расписание (data/*.json) не трогаем: офлайн-копию держит сама страница.
-const CACHE = "shell-v64";
+const CACHE = "shell-v65";
 const ICONS = ["icon-192", "icon-512", "maskable-512", "apple-touch-icon", "favicon-64"];
 const SHELL = [
   "./",
   "fonts/fonts.css",
+  "fonts/onest-cyrillic.woff2", "fonts/onest-latin.woff2",
   "cabinet.css",
   "cabinet.js",
   "telegram-web-app.js",   // копия скрипта Telegram (v1.8.6): запуск в Telegram не ждёт telegram.org
   "icons/badge-96.png",
   ...["", "-light", "-dark"].flatMap((s) => [`manifest${s}.webmanifest`, ...ICONS.map((n) => `icons/${n}${s}.png`)]),
 ];
+const appURL = new URL("./", self.registration.scope);
+const shellPaths = new Set(SHELL.map((path) => new URL(path, appURL).pathname));
+const appIndex = new URL("index.html", appURL).pathname;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -33,46 +37,39 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;   // telegram.org, Google Fonts — напрямую
-  if (req.headers.has("Authorization") || url.pathname.endsWith("/cabinet/v1/snapshot")) return;
-  if (url.pathname.endsWith("/cabinet-config.json")) return;
-  if (url.pathname.includes("/data/")) return;        // расписание — без кэша service worker
-  if (url.pathname.includes("/media/")) return;       // видео — напрямую (iPhone качает его кусками)
-  if (url.pathname.endsWith("/version.json")) return; // версия приложения — всегда из сети
-  if (url.pathname.includes("/splash/")) return;      // заставки iPhone берёт сам при установке
+  if (url.origin !== appURL.origin || req.headers.has("Authorization")) return;
   if (req.mode === "navigate") {
-    event.respondWith(pageFirstFromNetwork(event));
-  } else {
-    event.respondWith(cachedThenRefresh(event));
+    if (url.pathname === appURL.pathname || url.pathname === appIndex) event.respondWith(cachedPage(event));
+  } else if (shellPaths.has(url.pathname)) {
+    event.respondWith(cachedAsset(event));
   }
 });
 
-async function pageFirstFromNetwork(event) {
-  // Сохранённая страница есть — отдаём её сразу (запуск без чёрного экрана), а свежую тихо кладём
-  // в кэш на следующий раз. Вышла новая версия — страница сама заметит (version.json) и перезагрузится.
-  const cache = await caches.open(CACHE);
-  const saved = (await cache.match("./")) || (await cache.match(event.request, { ignoreSearch: true }));
-  const net = fetch(event.request).then((res) => {
-    if (res && res.ok) return cache.put("./", res.clone()).then(() => res);
-    return res;
-  });
-  if (saved) {
-    event.waitUntil(net.catch(() => {}));
-    return saved;
-  }
-  try {
-    return await net;   // первый запуск — без вариантов, из сети
-  } catch (e) {
-    return Response.error();
-  }
+function remember(cache, key, response) {
+  if (!cache || !response.ok) return Promise.resolve();
+  return cache.put(key, response.clone()).catch(() => {});
 }
 
-async function cachedThenRefresh(event) {
-  const cache = await caches.open(CACHE);
-  const hit = await cache.match(event.request, { ignoreSearch: true });
-  const net = fetch(event.request).then((res) => {
-    if (res && res.ok) cache.put(event.request, res.clone());
-    return res;
+async function cachedPage(event) {
+  const cache = await caches.open(CACHE).catch(() => null);
+  const saved = cache && await cache.match(appURL.href).catch(() => null);
+  const net = fetch(event.request, { cache: "no-cache" }).then(async (response) => {
+    await remember(cache, appURL.href, response);
+    return response;
+  }).catch(() => null);
+  if (saved) {
+    event.waitUntil(net);
+    return saved;
+  }
+  return (await net) || Response.error();
+}
+
+async function cachedAsset(event) {
+  const cache = await caches.open(CACHE).catch(() => null);
+  const hit = cache && await cache.match(event.request).catch(() => null);
+  const net = fetch(event.request, { cache: "no-cache" }).then(async (response) => {
+    await remember(cache, event.request, response);
+    return response;
   }).catch(() => null);
   event.waitUntil(net);
   return hit || (await net) || Response.error();
