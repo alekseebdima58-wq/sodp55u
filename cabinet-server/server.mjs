@@ -231,7 +231,7 @@ export async function syncAll(store, portal = {}, accounts, now = Date.now, { no
     if (!await store.saveSession(account, { ...session, lastAttemptAt })) continue;
     const client = openPortal({ ...portal, cookies: browserState.cookies });
     try {
-      const { sections, unavailable } = await collectCabinet(client, account.identity);
+      const { sections, unavailable } = await collectCabinet(client, account.identity, { me: browserState.me });
       // Новые оценки и изменения сессии — уведомлением через бота (как изменения расписания)
       const events = snapshot.sections ? cabinetEvents(snapshot.sections, sections) : [];
       const target = (await store.find(account.id))?.notify;
@@ -240,7 +240,7 @@ export async function syncAll(store, portal = {}, accounts, now = Date.now, { no
       }
       // Сайт обновляет cookie сессии при каждом входе по «Запомнить меня» — сохраняем свежие
       await store.saveSession(account, {
-        browserState: { cookies: client.cookies(), origins: [] },
+        browserState: { ...browserState, cookies: client.cookies(), origins: [] },
         lastAttemptAt,
         // часть разделов не прочиталась — это тоже неудача: повторим скоро; всё прочиталось — счётчик сброшен
         ...(unavailable.length ? { failures: (session.failures || 0) + 1 } : {}),
@@ -252,7 +252,7 @@ export async function syncAll(store, portal = {}, accounts, now = Date.now, { no
     } catch (error) {
       const expired = error instanceof SessionExpired;
       await store.saveSession(account, {
-        browserState: expired ? null : { cookies: client.cookies(), origins: [] },
+        browserState: expired ? null : { ...browserState, cookies: client.cookies(), origins: [] },
         lastAttemptAt,
         ...(expired ? {} : { failures: (session.failures || 0) + 1 }),
         snapshot: { ...snapshot, status: expired ? 'expired' : 'error' },

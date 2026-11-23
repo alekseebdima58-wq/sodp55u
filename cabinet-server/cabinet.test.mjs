@@ -330,7 +330,19 @@ test('портал: вход с «Запомнить меня», разделы,
   assert.deepEqual(sections.grades.map(section => section.title), ['1 семестр', '2 семестр', '3 семестр']);
   assert.deepEqual(sections.grades[0].columns, ['Дисциплина', 'Форма контроля', 'Часы', 'Зач. ед.', 'Дата', 'Результат', 'Преподаватель']);
   assert.equal(sections.grades[2].rows[0][0], 'Дисциплина А 3', 'скрытый курс тоже прочитан');
-  assert.deepEqual(sections.group, [{ title: '', columns: ['ФИО', 'День рождения'], rows: [['Участник А', '01.01']] }], 'все столбцы, кроме номера');
+  // «Моя группа»: таблица + сведения из окна сайта по каждому (openGroupMateModal / openGroupMateCaptainModal)
+  const group = sections.group[0];
+  const cell = (who, column) => group.rows.find(row => row[0] === who)?.[group.columns.indexOf(column)];
+  assert.deepEqual(group.rows.map(row => row[0]), ['Участник А', 'Сосед А', 'Староста А'], 'староста — из своего окна');
+  assert.equal(cell('Участник А', 'День рождения'), '01.01', 'дата из таблицы');
+  assert.equal(cell('Сосед А', 'День рождения'), '14.02.2001', 'дата — из окна, если человек её не скрыл');
+  assert.equal(cell('Участник А', 'Телефон'), '+1 202 555-0101');
+  assert.equal(cell('Сосед А', 'Телефон'), '', '«-» на сайте — пусто');
+  assert.equal(cell('Участник А', 'Направление подготовки'), 'Демонстрационная программа');
+  assert.equal(cell('Староста А', 'Староста'), 'да');
+  assert.equal(cell('Участник А', 'Это вы'), 'да', 'себя узнаём по личному номеру');
+  assert.equal(cell('Сосед А', 'Это вы'), '');
+  assert(!group.columns.includes('Тема ВКР'), 'пустые столбцы не держим');
   assert.deepEqual(sections.profile[0].rows, [['Имя', 'Студент А'], ['Курс', '2'], ['Направление подготовки', 'Тестовая программа А']]);
   assert.deepEqual(sections.plan[0].rows, [['Б1.О.1', 'План А', '72', '1', 'Зачёт']]);
   // Сессия: из трёх месяцев «Расписание → Список» — только консультации, экзамены и зачёты, без лекций
@@ -580,7 +592,7 @@ test('вход по паролю, повторный вход и синхрон�
 
   const first = await openPwa();
   await enterCredentials(first, 'alice', 'неверный');
-  await first.getByText('Проверь логин и пароль ПривГУПС.', { exact: true }).waitFor();
+  await first.getByText('Проверьте логин и пароль ПривГУПС.', { exact: true }).waitFor();
   assert.equal(await first.getByLabel('Пароль', { exact: true }).inputValue(), '');
   assert.equal((await store.accounts()).length, 0);
   await enterCredentials(first, 'verification', 'fictional-verification');
@@ -612,7 +624,9 @@ test('вход по паролю, повторный вход и синхрон�
   ]);
   assert.equal(a.sections.trajectory.length, 3);
   assert.equal(a.sections.trajectory[1].rows[0][0], 'Предмет А 1');
-  assert.deepEqual(a.sections.group[0], { columns: ['ФИО', 'День рождения'], title: '', rows: [['Участник А', '01.01']] });
+  // дата рождения текстом или значком с подсказкой — берём оба
+  assert.deepEqual(a.sections.group[0].rows.map(row => row[0]), ['Участник А', 'Сосед А', 'Староста А']);
+  assert(a.sections.group[0].columns.includes('Телефон'));
   assert.equal((await read(alice.key.replace(alice.id, bob.id))).status, 401);
   assert.equal((await fetch(apiPath, { headers: { Origin: 'https://other.invalid' } })).status, 403);
   assert.equal((await read(alice.key)).headers.get('cache-control'), 'private, no-store');
@@ -640,7 +654,12 @@ test('вход по паролю, повторный вход и синхрон�
     ['orders', 'Содержание'], ['plan', 'План А'], ['trajectory', 'Предмет А 1'], ['group', 'Участник А'], ['session', 'Предмет А'],
   ]) {
     await openSection(first, section);
-    await first.getByText(expected).first().waitFor();
+    // траектория: открыт текущий семестр, прошлый раскрываем нажатием (плавно, как карточка пары)
+    if (section === 'trajectory') {
+      await first.locator('[data-cab="step"][data-arg="1"]').click();
+      await first.waitForFunction(() => !document.getAnimations().length);
+    }
+    await first.getByText(expected, { exact: section === 'trajectory' }).first().waitFor();
     assert(await first.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `ширина экрана: ${section}`);
     await back(first);
   }
@@ -688,7 +707,7 @@ test('вход по паролю, повторный вход и синхрон�
   await first.getByText(/Вход в кабинет вуза истёк/).waitFor();
   await first.locator('[data-cab="relogin"]').click();
   await enterCredentials(first, 'bob', 'fictional-bob');
-  await first.getByText(/Введи данные того же аккаунта ПривГУПС/).waitFor();
+  await first.getByText(/Введите данные того же аккаунта ПривГУПС/).waitFor();
   await successfulLogin(first, 'alice');
   await first.getByRole('heading', { name: 'Войти повторно' }).waitFor({ state: 'hidden' });
   assert.equal(await savedKey(first), alice.key);

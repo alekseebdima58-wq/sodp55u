@@ -73,6 +73,16 @@ function readTables(document, { expected, columns, semester }) {
     const shown = text(cell);
     if (!cell) return shown;
     const nodes = [cell, ...cell.querySelectorAll('*')];
+    // пустая ячейка со значком: значение — в подсказке (data-tandem-popper-title, title, aria-label…)
+    if (!shown) {
+      for (const node of nodes) for (const name of ['data-tandem-popper-title', 'data-tooltip', 'data-tippy-content', 'title', 'aria-label', 'data-original-title', 'data-title', 'data-value']) {
+        const value = (node.getAttribute?.(name) || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (value) return value;
+      }
+      const input = nodes.find(node => /^(INPUT|TEXTAREA)$/i.test(node.tagName || ''));
+      if (input?.getAttribute('value')) return input.getAttribute('value').trim();
+      return shown;
+    }
     // видимый обрезанный кусок: сама ячейка или её элемент, текст которого кончается многоточием
     const cut = [shown, ...nodes.filter(node => !node.children.length).map(text)].map(value => /^(.*?)\s*(?:\.\.\.|…)$/s.exec(value)).find(m => m && m[1].length >= 3);
     if (!cut) return shown;
@@ -450,7 +460,8 @@ export async function signInToPortal({ login, password }, options = {}) {
     const identity = await getBookIdentity(portal);
     const cookies = portal.cookies();
     if (!cookies.length) throw new SignInFailed('portal_unavailable');
-    return { identity, browserState: { cookies, origins: [] } };
+    // хеш логина — чтобы найти себя в «Моей группе» по личному номеру (сам логин не храним)
+    return { identity, browserState: { cookies, origins: [], me: hash(String(login).trim().toLowerCase()) } };
   } catch (error) {
     if (error instanceof SignInFailed) throw error;
     throw new SignInFailed('portal_unavailable');
@@ -602,7 +613,67 @@ async function readSession(portal, months = 3) {
   return [{ columns: sessionColumns, rows }];
 }
 
-export async function collectCabinet(portal, identity, { onError } = {}) {
+// «Моя группа»: по нажатию на студента сайт вызывает openGroupMateModal(N) (староста — openGroupMateCaptainModal())
+// у компонента dashboard.group-mates-section и кладёт сведения в selectedGroupMate. Делаем то же для каждого.
+const mateFields = [
+  ['Телефон', 'mobile_phone'], ['День рождения', m => (m.privacy_show_birthday === false ? '' : m.birth_date || m.birthday_date)],
+  ['Статус', 'status'], ['Курс', 'course'], ['Год поступления', 'entrance_year'], ['Форма обучения', 'education_form'],
+  ['Уровень образования', 'education_level'], ['Направление подготовки', 'edu_program_title'], ['Квалификация', 'qualification'],
+  ['Подразделение', 'department_title'], ['Тема ВКР', 'final_qualifying_work_theme'], ['Руководитель ВКР', 'final_qualifying_work_advisor'],
+  ['Личный номер', 'personal_number'],
+];
+const clean = value => { const text = String(value ?? '').replace(/\s+/g, ' ').trim(); return text === '-' || text === '—' || text === 'null' ? '' : text; };
+async function readGroupMates(portal, html, path = '/dashboard') {
+  const calls = [...new Set([...html.matchAll(/openGroupMateModal\((\d+)\)/g)].map(m => Number(m[1])))].sort((a, b) => a - b)
+    .map(n => ({ method: 'openGroupMateModal', params: [n] }));
+  if (/openGroupMateCaptainModal\(/.test(html)) calls.unshift({ method: 'openGroupMateCaptainModal', params: [], captain: true });
+  if (!calls.length) return [];
+  const livewire = await livewireSession(portal, html, path);
+  const component = () => livewire.component('dashboard.group-mates-section');
+  if (!component()) return [];
+  const mates = [];
+  for (const call of calls) {
+    try {
+      await livewire.dispatch(component().id, [{ type: 'callMethod', payload: { id: randomId(), method: call.method, params: call.params } }]);
+      const mate = component()?.data.selectedGroupMate;
+      if (mate && mate.full_name) mates.push({ ...mate, captain: !!call.captain });
+    } catch (error) {
+      if (error instanceof SessionExpired) throw error;
+    }
+  }
+  return mates;
+}
+function mergeGroup(sections, mates, me, identity) {
+  if (!mates.length) return sections;
+  // «вы» — личный номер совпадает с логином (хеш) или с номером зачётки (идентификатор подключения)
+  const isMe = mate => { const pn = clean(mate?.personal_number); return !!pn && (hash(pn.toLowerCase()) === me || hash(pn) === identity); };
+  const norm = value => clean(value).toLowerCase().replace(/ё/g, 'е');
+  const base = sections[0] || { title: '', columns: ['ФИО'], rows: [] };
+  const fio = Math.max(0, base.columns.indexOf('ФИО'));
+  const names = [...new Set([...base.columns, ...mateFields.map(([name]) => name), 'Староста', 'Это вы'])];
+  const byName = new Map(mates.map(mate => [norm(mate.full_name), mate]));
+  const rows = base.rows.map(row => {
+    const mate = byName.get(norm(row[fio]));
+    if (mate) byName.delete(norm(row[fio]));
+    return names.map(name => {
+      const own = base.columns.indexOf(name);
+      if (name === 'Староста') return mate?.captain ? 'да' : '';
+      if (name === 'Это вы') return mate && isMe(mate) ? 'да' : '';
+      const field = mateFields.find(([title]) => title === name);
+      const value = mate && field ? clean(typeof field[1] === 'function' ? field[1](mate) : mate[field[1]]) : '';
+      return value || (own >= 0 ? row[own] : '');
+    });
+  });
+  // кто есть в сведениях, но не в таблице (обычно староста) — добавляем
+  for (const mate of byName.values()) rows.push(names.map(name => name === 'ФИО' ? clean(mate.full_name) : name === 'Староста' ? (mate.captain ? 'да' : '')
+    : name === 'Это вы' ? (isMe(mate) ? 'да' : '')
+    : (() => { const field = mateFields.find(([title]) => title === name); return field ? clean(typeof field[1] === 'function' ? field[1](mate) : mate[field[1]]) : ''; })()));
+  // пустые столбцы не держим
+  const keep = names.map((name, i) => (name === 'ФИО' || rows.some(row => row[i]) ? i : -1)).filter(i => i >= 0);
+  return [{ ...base, columns: keep.map(i => names[i]), rows: rows.map(row => keep.map(i => row[i])) }];
+}
+
+export async function collectCabinet(portal, identity, { onError, me } = {}) {
   const book = await portal.open('/student/book/list');
   if (await bookIdentity(portal, book) !== identity) throw new Error('Зачётная книжка принадлежит другой учётной записи');
   const views = [
@@ -623,10 +694,17 @@ export async function collectCabinet(portal, identity, { onError } = {}) {
     }],
     // «Моя группа» — вкладка Alpine на рабочем столе, список уже в HTML. Берём все столбцы, которые показывает
     // сайт (ФИО, день рождения и т. п.) — для карточки одногруппника; столбец без заголовка (номер) не нужен.
-    ['group', async () => (await tables(portal, await portal.open('/dashboard'), { expected: ['ФИО'] })).map(section => {
-      const keep = section.columns.map((name, i) => (name ? i : -1)).filter(i => i >= 0);
-      return { ...section, columns: keep.map(i => section.columns[i]), rows: section.rows.map(row => keep.map(i => row[i])) };
-    })],
+    ['group', async () => {
+      const html = await portal.open('/dashboard');
+      const sections = (await tables(portal, html, { expected: ['ФИО'] })).map(section => {
+        const keep = section.columns.map((name, i) => (name ? i : -1)).filter(i => i >= 0);
+        return { ...section, columns: keep.map(i => section.columns[i]), rows: section.rows.map(row => keep.map(i => row[i])) };
+      });
+      // подробности по каждому — как окно на сайте; не вышло — остаётся таблица
+      let mates = [];
+      try { mates = await readGroupMates(portal, html); } catch (error) { if (error instanceof SessionExpired) throw error; onError?.('group-details', error); }
+      return mergeGroup(sections, mates, me, identity);
+    }],
   ];
   const sections = {};
   const unavailable = [];

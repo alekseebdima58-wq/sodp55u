@@ -63,7 +63,11 @@ export function createMockPortal({ students, marks }) {
   const term = (student, n) => `<section><div>${n} семестр</div><div>${table(bookColumns, [[`Дисциплина ${student.name} ${n}`, 'Экзамен', '72', '2', '20.12.2025', marks[student.name], 'Преподаватель Т. Т.']])}</div></section>`;
   const pages = {
     '/dashboard': student => `<div x-data="{ tab: 1 }"><a href="#" @click="tab = 1">Новости</a><a href="#" @click="tab = 2">Моя группа</a>
-      <div x-show="tab === 2" style="display:none">${table(['', 'ФИО', 'День рождения'], [['1', `Участник ${student.name}`, '01.01']])}</div></div>`,
+      <div x-show="tab === 2" style="display:none"><div wire:id="G1" wire:initial-data='${initial('dashboard.group-mates-section', { userCurator: null, selectedGroupMate: null }, 'dashboard')}'>
+      <span wire:click="openGroupMateCaptainModal()">Староста ${student.name}</span><span wire:click="openGroupMateModal(0)">.</span><span wire:click="openGroupMateModal(1)">.</span></div><table><thead><tr><th></th><th>ФИО</th><th>День рождения</th></tr></thead><tbody>
+        <tr><td>1</td><td>Участник ${student.name}</td><td>01.01</td></tr>
+        <tr><td>2</td><td>Сосед ${student.name}</td><td><div class="tandem-popper-tooltip-root" data-tandem-popper-title="14.02.2001"><svg></svg></div></td></tr>
+      </tbody></table></div></div>`,
     '/student/book/list': student => `<h1>· Зачетная книжка № ${student.book} ·</h1>
       <div x-data="{ activeTab: '1-course' }"><nav><a @click="activeTab = '1-course'">1 курс</a> <a @click="activeTab = '2-course'">2 курс</a></nav>
       <div x-show="activeTab === '1-course'">${term(student, 1)}${term(student, 2)}</div>
@@ -85,6 +89,7 @@ export function createMockPortal({ students, marks }) {
   // ---------- Livewire: три компонента траектории ----------
   const components = {
     'schedule-student-main': { id: 'L1', listeners: [] },
+    'dashboard.group-mates-section': { id: 'G1', listeners: [] },
     'trajectory-semesters': { id: 'S1', listeners: [] },
     trajectory: { id: 'T1', listeners: ['select-semester'] },
     'trajectory-semester-disciplines': { id: 'D1', listeners: disciplineEvents },
@@ -139,6 +144,13 @@ export function createMockPortal({ students, marks }) {
     return `<div wire:id="T1"${full ? ` wire:initial-data='${initial('trajectory', { semester: key }, 'student/trajectory')}'` : ''}>
       ${inner}<div class="panel">${list}<div><span>${semesterLabel(key)}</span><span>${status}</span></div></div></div>`;
   }
+  // окно «одногруппник» на сайте: selectedGroupMate; личный номер «Участника» = номер его зачётки (это он сам)
+  const mate = (full, extra) => ({ id: null, full_name: full, last_name: full.split(' ')[0], first_name: full.split(' ')[1], middle_name: '', birth_date: '', birthday_date: '',
+    group: 'ДЕМО-00', status: 'активный', entrance_year: 2025, course: 2, personal_number: 'DEMO-000', department_title: 'Демонстрационный факультет',
+    final_qualifying_work_theme: '-', final_qualifying_work_advisor: '-', education_level: 'Специалитет', user: false, privacy_show_birthday: false,
+    education_form: 'Очная', edu_program_title: 'Демонстрационная программа', qualification: 'Демо-квалификация', photo_url: null, mobile_phone: '-', ...extra });
+  const mates = student => [mate(`Участник ${student.name}`, { personal_number: String(student.book), mobile_phone: '+1 202 555-0101' }),
+    mate(`Сосед ${student.name}`, { personal_number: 'DEMO-002', privacy_show_birthday: true, birth_date: '14.02.2001' })];
   function livewire(student, name, request) {
     const { fingerprint, serverMemo, updates } = request;
     if (fingerprint?.name !== name || !components[name] || serverMemo?.checksum !== checksum(name, serverMemo.data)) return null;
@@ -154,6 +166,10 @@ export function createMockPortal({ students, marks }) {
         Object.assign(data, listData(student, month, year, data.exams));
       } else if (name === 'schedule-student-main' && type === 'syncInput' && payload.name === 'exams') {
         Object.assign(data, listData(student, +data.month.number, +data.year, payload.value === true));
+      } else if (name === 'dashboard.group-mates-section' && type === 'callMethod' && payload.method === 'openGroupMateModal') {
+        data.selectedGroupMate = mates(student)[payload.params[0]] || null;
+      } else if (name === 'dashboard.group-mates-section' && type === 'callMethod' && payload.method === 'openGroupMateCaptainModal') {
+        data.selectedGroupMate = mate(`Староста ${student.name}`, { personal_number: 'DEMO-003', mobile_phone: '+1 202 555-0102' });
       } else if (name === 'trajectory-semesters' && type === 'callMethod' && payload.method === 'selectSemester' && semesterKeys.includes(payload.params[0])) {
         data.selected = payload.params[0];
         emits.push({ event: 'select-semester', params: [data.selected] });
@@ -173,7 +189,8 @@ export function createMockPortal({ students, marks }) {
     }
     // Как Livewire 2: в ответе только изменившиеся свойства — клиент обязан слить их с прежними
     const dirty = Object.keys(data).filter(key => JSON.stringify(data[key]) !== JSON.stringify(serverMemo.data[key]));
-    const view = name === 'schedule-student-main' ? '<div wire:id="L1"><a wire:click="minusMonth">‹</a><a wire:click="addMonth">›</a></div>'
+    const view = name === 'dashboard.group-mates-section' ? '<div wire:id="G1"><span wire:click="openGroupMateModal(0)">.</span></div>'
+      : name === 'schedule-student-main' ? '<div wire:id="L1"><a wire:click="minusMonth">‹</a><a wire:click="addMonth">›</a></div>'
       : name === 'trajectory-semesters' ? semestersHTML(data, false)
       : name === 'trajectory' ? trajectory(student, data, false) : disciplinesHTML(student, data, false);
     return {
