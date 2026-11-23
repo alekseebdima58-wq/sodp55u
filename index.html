@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="498d83406aa6">
+<meta name="app-ver" content="606b5f289427">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -1303,6 +1303,9 @@ html[data-theme="dark"] .c1 { background: #3987e5; } html[data-theme="dark"] .c2
    4. Кнопка «Удалить» при свайпе — круг, который тянется в таблетку (как в «Сообщениях»).
    5. Поиск — капсула. */
 
+/* подпись вкладки: одна строка в ширину подсветки; если не влезает — fitTabs() уменьшает шрифт */
+.tab .tl { display: block; max-width: 100%; white-space: nowrap; font-size: var(--tl-fs, inherit); letter-spacing: -.25px; }
+.tab .tl.cabinet-tab-label { white-space: normal; }
 /* 1. линза нижней панели */
 .tabs .in { position: relative; }
 .tab { position: relative; z-index: 1; }
@@ -1400,14 +1403,14 @@ html[data-theme="light"] .seg3 .thumb { background: #FFFFFF; box-shadow: 0 1px 3
 html.onb-open, html.onb-open body { overflow: hidden; }
 .onb {
   position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column;
-  padding: calc(env(safe-area-inset-top, 0px) + var(--safe-top, 0px) + 12px) 0 calc(max(env(safe-area-inset-bottom), var(--safe-bottom, 0px)) + 18px);
+  padding: calc(max(env(safe-area-inset-top, 0px), var(--safe-top, 0px)) + 12px) 0 calc(max(env(safe-area-inset-bottom), var(--safe-bottom, 0px)) + 18px);
   background: var(--bg); opacity: 0; transform: scale(1.03);
   transition: opacity .32s ease, transform .45s var(--ease-spring, ease);
 }
 .onb.in { opacity: 1; transform: none; }
 .onb.out { opacity: 0; transform: scale(.97); transition-duration: .28s; pointer-events: none; }
-.onb-skip { align-self: flex-end; margin: 0 16px 0 0; padding: 8px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: calc(15px * var(--fs, 1)); font-weight: 600; }
-.onb-pages { flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior: contain; }
+.onb-skip { position: relative; z-index: 2; align-self: flex-end; margin: 0 16px 0 0; padding: 8px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: calc(15px * var(--fs, 1)); font-weight: 600; }
+.onb-pages { flex: 1; display: flex; margin-top: -160px; padding-top: 160px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior: contain; }
 .onb-pages::-webkit-scrollbar { display: none; }
 .onb-p { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 0 28px; text-align: center; max-width: 100%; box-sizing: border-box; }
@@ -1431,7 +1434,8 @@ html.onb-open, html.onb-open body { overflow: hidden; }
 .a1 .o-days { position: absolute; left: 16px; right: 16px; top: 16px; display: grid; grid-template-columns: repeat(5, 1fr); height: 34px; border-radius: 18px; background: var(--surface2); }
 .a1 .o-d { position: relative; z-index: 1; display: grid; place-items: center; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--muted); }
 .a1 .o-pill { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(20% - 6px); border-radius: 14px; background: var(--accent); animation: oPill 4.8s var(--ease-spring, ease) infinite; }
-.a1 .o-d.on { color: var(--on-accent); animation: oDayOn 4.8s infinite; }
+/* подпись дня темнеет ровно тогда, когда под ней плашка: Пн → Вт → Ср, как едет .o-pill */
+.a1 .o-d.d0 { animation: oDay0 4.8s infinite; } .a1 .o-d.d1 { animation: oDay1 4.8s infinite; } .a1 .o-d.d2 { animation: oDay2 4.8s infinite; }
 .a1 .o-view { position: absolute; left: 0; right: 0; top: 66px; height: 120px; overflow: hidden; }
 .a1 .o-track { display: flex; width: 300%; height: 100%; animation: oTrack 4.8s var(--ease-spring, ease) infinite; }
 .a1 .o-card { flex: 0 0 calc(100% / 3); box-sizing: border-box; margin: 0; padding: 14px 18px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
@@ -1450,7 +1454,9 @@ html.onb-open, html.onb-open body { overflow: hidden; }
 html[data-theme="light"] .a1 .o-finger { background: rgba(0, 0, 0, .14); box-shadow: 0 0 0 2px rgba(0, 0, 0, .18); }
 @keyframes oTrack { 0%, 18% { transform: translate3d(0, 0, 0); } 30%, 52% { transform: translate3d(-33.333%, 0, 0); } 64%, 86% { transform: translate3d(-66.666%, 0, 0); } 100% { transform: translate3d(0, 0, 0); } }
 @keyframes oPill { 0%, 18% { transform: translate3d(0, 0, 0); } 30%, 52% { transform: translate3d(calc(100% + 6px), 0, 0); } 64%, 86% { transform: translate3d(calc(200% + 12px), 0, 0); } 100% { transform: translate3d(0, 0, 0); } }
-@keyframes oDayOn { 0%, 100% { color: var(--on-accent); } }
+@keyframes oDay0 { 0%, 19% { color: var(--on-accent); } 23%, 92% { color: var(--muted); } 96%, 100% { color: var(--on-accent); } }
+@keyframes oDay1 { 0%, 22% { color: var(--muted); } 25%, 53% { color: var(--on-accent); } 56%, 100% { color: var(--muted); } }
+@keyframes oDay2 { 0%, 56% { color: var(--muted); } 59%, 87% { color: var(--on-accent); } 90%, 100% { color: var(--muted); } }
 @keyframes oFinger { 0%, 8% { opacity: 0; transform: translate3d(0, 0, 0) scale(.8); } 12% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
   28% { opacity: 1; transform: translate3d(-140px, 0, 0); } 33% { opacity: 0; transform: translate3d(-150px, 0, 0); }
   42% { opacity: 0; transform: translate3d(0, 0, 0) scale(.8); } 46% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
@@ -1757,6 +1763,15 @@ html.android .tabs {
 html.android .whead .wbtn, html.android .whead .icon-btn.bell, html.android .btn.icon-btn[data-act="back"] {
   -webkit-backdrop-filter: blur(8px) saturate(180%); backdrop-filter: blur(8px) saturate(180%); }
 html.android .navbar { -webkit-backdrop-filter: blur(12px) saturate(180%); backdrop-filter: blur(12px) saturate(180%); }
+/* плашка сверху не обрывается резкой чертой: ниже заголовка она ещё 30px плавно сходит на нет —
+   и цвет, и размытие (маска действует на backdrop-filter), как у шапок в iOS 26 */
+.navbar, html.glass .navbar { --nb-fade: 30px; height: calc(var(--safe-top, 0px) + var(--top-gap, 0px) + 46px + var(--nb-fade));
+  padding-bottom: var(--nb-fade); box-shadow: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - var(--nb-fade) - 6px), rgba(0, 0, 0, .55) calc(100% - var(--nb-fade) / 2), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - var(--nb-fade) - 6px), rgba(0, 0, 0, .55) calc(100% - var(--nb-fade) / 2), transparent 100%); }
+html[data-theme="light"] .navbar { box-shadow: none; }
+.navbar::after, html[data-theme="light"] .navbar::after { display: none; }
+.nb-back { bottom: calc(4px + var(--nb-fade, 0px)); }
 html.android .ibar { -webkit-backdrop-filter: blur(12px) saturate(180%); backdrop-filter: blur(12px) saturate(180%); }
 html.android.glass .sbar::before { -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6); }
 html.android.glass .days .pill { -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -1871,19 +1886,19 @@ html.d3[data-lv="static"] .hero .hglow, html.d3[data-lv="static"] .hero .hstreak
     <span class="lens" aria-hidden="true"></span>
     <button class="tab on" data-tab="schedule">
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="12" cy="16" r="1.5"/></svg>
-      Расписание
+      <span class="tl">Расписание</span>
     </button>
     <button class="tab" data-tab="teachers">
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v1M16 4a4 4 0 0 1 0 8M22 21v-1a6 6 0 0 0-4-5.6"/></svg>
-      Преподаватели
+      <span class="tl">Преподаватели</span>
     </button>
     <button class="tab" data-tab="cabinet" aria-label="Личный кабинет">
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="12" cy="10" r="2"/><path d="M8 16a4 4 0 0 1 8 0"/></svg>
-      <span class="cabinet-tab-label">Личный кабинет</span>
+      <span class="tl cabinet-tab-label">Личный кабинет</span>
     </button>
     <button class="tab" data-tab="settings">
       <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-      Настройки
+      <span class="tl">Настройки</span>
     </button>
   </div>
 </nav>
@@ -2414,7 +2429,6 @@ window.__appStart = () => {
   let changes = null;   // лента изменений расписания из data/changes.json
 
   // ---------------- загрузка данных ----------------
-  // Источники: сам сайт и запасные адреса из <meta name="data-mirrors"> (их подставляет бот:
   // Яндекс, GitHub Pages, raw.githubusercontent.com). На github.io без списка — raw того же репозитория.
   // На каждый источник — не дольше 8 секунд; удачный запоминаем и пробуем первым в следующий раз.
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, "");
@@ -5868,7 +5882,7 @@ window.__appStart = () => {
     const h1 = (view === "teachers" || view === "cabinet" || view === "settings" || view === "notif" || view === "stats") && app.querySelector(":scope > .top h1, :scope > .cabinet > .top h1");
     let on = false;
     if (h1) {
-      const barBottom = navbar.getBoundingClientRect().height;
+      const barBottom = navbar.getBoundingClientRect().height - (parseFloat(getComputedStyle(navbar).paddingBottom) || 0);
       on = h1.getBoundingClientRect().bottom < barBottom + 2;
       if (on && nbTitle.textContent !== h1.textContent) nbTitle.textContent = h1.textContent;
     }
@@ -5881,6 +5895,34 @@ window.__appStart = () => {
   // смена экрана — заголовок новый, решаем заново (экран мог открыться уже прокрученным)
   new MutationObserver(nbQueue).observe(app, { childList: true });
   if (navbar) navbar.querySelector(".nb-back").addEventListener("click", () => { haptic("light"); goBack(); });
+
+  // Подписи нижней панели не вылезают за подсветку: на узком экране (или с крупным шрифтом)
+  // уменьшаем шрифт ровно настолько, чтобы самая длинная подпись в жирном начертании влезла в вкладку.
+  function fitTabs() {
+    const labels = [...document.querySelectorAll(".tabs .tab .tl")];
+    if (!labels.length) return;
+    const bar = document.querySelector(".tabs");
+    bar.style.removeProperty("--tl-fs");
+    const base = parseFloat(getComputedStyle(labels[0]).fontSize) || 12;
+    let scale = 1;
+    for (const el of labels) {
+      const tab = el.closest(".tab"), cs = getComputedStyle(tab);
+      const room = tab.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) - 4;
+      const old = el.style.fontWeight; el.style.fontWeight = "600";
+      // у «Личного кабинета» две строки: меряем самое длинное слово
+      const width = el.classList.contains("cabinet-tab-label")
+        ? Math.max(...el.textContent.trim().split(/\s+/).map((w) => { const r = document.createElement("span"); r.textContent = w; r.style.whiteSpace = "nowrap"; el.after(r); r.style.font = getComputedStyle(el).font; r.style.position = "absolute"; const v = r.getBoundingClientRect().width; r.remove(); return v; }))
+        : el.scrollWidth;
+      el.style.fontWeight = old;
+      if (room > 0 && width > room) scale = Math.min(scale, room / width);
+    }
+    if (scale < 1) bar.style.setProperty("--tl-fs", `${Math.max(10, Math.floor(base * scale * 10) / 10)}px`);
+  }
+  fitTabs();
+  window.addEventListener("resize", () => requestAnimationFrame(fitTabs), { passive: true });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTabs);
+  // размер шрифта в Настройках (--fs) и тема меняют ширину подписей — подгоняем заново
+  new MutationObserver(() => requestAnimationFrame(fitTabs)).observe(document.documentElement, { attributes: true, attributeFilter: ["style", "class"] });
 
   // Ползунок переключателя: стоит под выбранным вариантом; если выбор поменяли — переезжает со старого места.
   let segFrom = null;   // { left, width } прежнего варианта — запоминается перед перерисовкой
@@ -5999,7 +6041,7 @@ window.__appStart = () => {
     const icon = `icons/icon-192${iconStyle && iconStyle() === "dark" ? "-dark" : ""}.png`;
     const p1 = `<section class="onb-p" style="--o-rgb: var(--prac-rgb)" aria-label="Шаг 1 из 3">
       <div class="onb-art a1" aria-hidden="true">
-        <div class="o-days">${["Пн", "Вт", "Ср", "Чт", "Пт"].map((d, i) => `<span class="o-d${i === 1 ? " on" : ""}">${d}</span>`).join("")}<i class="o-pill"></i></div>
+        <div class="o-days">${["Пн", "Вт", "Ср", "Чт", "Пт"].map((d, i) => `<span class="o-d${i < 3 ? ` d${i}` : ""}">${d}</span>`).join("")}<i class="o-pill"></i></div>
         <div class="o-view"><div class="o-track">${[["08:30", "Теория дискретных устройств", "lab", "Лабораторная", "ауд. 1204"], ["10:10", "Теория передачи сигналов", "prac", "Практика", "ауд. 1206"], ["12:10", "Основы схемотехники", "lec", "Лекция", "ауд. 2303"]]
           .map(([t, s, k, l, r]) => `<div class="o-card ${k}"><div class="o-in"><b>${t}<em>${l}</em></b><span>${s}</span><small>${r}</small></div></div>`).join("")}</div></div>
         <i class="o-finger"></i></div>
@@ -6355,7 +6397,6 @@ window.__appStart = () => {
   }
 
   // --- новая версия приложения подхватывается сама ---
-  // Бот кладёт в страницу <meta name="app-ver"> и рядом version.json. Вернулся в приложение — сверяем;
   // если вышло обновление, тихо перезагружаемся (один раз на версию — без зацикливания).
   const APP_VER = (document.querySelector('meta[name="app-ver"]') || {}).content || "";
   let verCheckedAt = 0;

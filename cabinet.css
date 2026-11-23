@@ -96,3 +96,56 @@ button.cab-card { width: 100%; text-align: left; font: inherit; color: inherit; 
 .cab-time { flex: none; width: 46px; padding-top: 1px; font-size: calc(15px * var(--fs, 1)); font-weight: 700; font-variant-numeric: tabular-nums; }
 .cab-past { opacity: .55; }
 .cab-session-hero { cursor: default; }
+
+/* вид контроля — цветные метки справа (экзамен, диф. зачёт, зачёт, курсовая) */
+.cab-kinds { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; align-self: flex-start; }
+.cab-kinds .cab-mark { align-self: auto; margin-top: 0; }
+
+/* траектория: семестр — сворачиваемый заголовок, текущий раскрыт */
+.cab-stephead { display: flex; align-items: center; gap: 10px; width: 100%; padding: 18px 4px 10px; border: 0; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cab-stephead .body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cab-stephead .nm { font-size: calc(17px * var(--fs, 1)); font-weight: 700; color: var(--text); }
+.cab-stephead .sub { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+.cab-step.now .cab-stephead .sub { color: var(--k-fg); }
+.cab-fold { display: grid; transition: transform .25s var(--ease-spring, ease); color: var(--muted); }
+.cab-step.open .cab-fold { transform: rotate(90deg); }
+.cab-stephead:active { opacity: .6; }
+.cab-rail { padding-top: 22px; }
+.cab-step .list { margin-bottom: 6px; }
+
+/* учебный план: переключатель семестров */
+.cab-chips { display: flex; gap: 8px; overflow-x: auto; margin: 14px -20px 2px; padding: 4px 20px; scrollbar-width: none; scroll-snap-type: x proximity; }
+.cab-chips::-webkit-scrollbar { display: none; }
+.cab-chip { flex: none; scroll-snap-align: center; padding: 9px 15px; border-radius: 999px; border: 0; font: inherit;
+  font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--text2, var(--text)); background: rgba(127, 127, 140, .16); cursor: pointer; }
+.cab-chip.now { box-shadow: inset 0 0 0 1.5px rgba(var(--acc-rgb), .6); }
+.cab-chip.on { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+.cab-chip:active { transform: scale(.95); }
+/* дисциплины по выбору: заголовок блока и варианты с отступом */
+.cab-choice .nm { color: var(--muted); font-weight: 600; }
+.list > .item.cab-option { padding-left: 32px; }
+.list > .item.cab-option::before { left: 32px !important; }
+
+/* зачётка: сводка семестра — средний балл и полоска оценок */
+.cab-gsum { display: flex; align-items: center; gap: 18px; margin-top: 14px; padding: 16px 18px; border-radius: 24px;
+  background: var(--surface); box-shadow: inset 0 0 0 1px var(--hair); }
+html.glass .cab-gsum { background: var(--g-card); box-shadow: var(--g-edge), var(--g-drop); }
+.cab-gavg { flex: none; display: flex; flex-direction: column; align-items: center; min-width: 76px; }
+.cab-gavg b { font-size: calc(34px * var(--fs, 1)); line-height: 1; font-weight: 800; letter-spacing: -.5px; color: var(--text); font-variant-numeric: tabular-nums; }
+.cab-gavg small { margin-top: 4px; font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
+.cab-gright { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.cab-gstatus { font-size: calc(16px * var(--fs, 1)); font-weight: 700; color: var(--text); }
+.cab-gstatus.cab-bad { color: var(--k-fg); }
+.cab-gbar { display: flex; gap: 3px; height: 8px; border-radius: 4px; overflow: hidden; }
+.cab-gbar i { min-width: 6px; background: var(--k-bar); }
+.cab-glegend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: calc(12px * var(--fs, 1)); color: var(--text2); }
+.cab-glegend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.cab-glegend i { width: 8px; height: 8px; border-radius: 50%; background: var(--k-bar); }
+/* «Зачтено» — бледно-зелёный: в тон зелёной метке, но отличим от «Отлично» и от синего «Хорошо» */
+.cab-pass { --k-rgb: 48, 209, 88; --k-fg: #30d158; --k-bar: rgba(48, 209, 88, .42); }
+html[data-theme="light"] .cab-pass { --k-fg: #248a3d; --k-bar: rgba(52, 199, 89, .45); }
+/* новая оценка — точка на семестре и подсвеченная строка */
+.cab-chip { position: relative; }
+.cab-dot { position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: #ff453a; box-shadow: 0 0 0 2px var(--bg); }
+.item.cab-fresh { background: rgba(var(--acc-rgb), .08); }
