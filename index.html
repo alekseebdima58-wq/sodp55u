@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="1c5f527cfcd9">
+<meta name="app-ver" content="68001adaf187">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -2752,23 +2752,25 @@ window.__appStart = () => {
   // Системная «назад» (Android, жест браузера): пока открыт вложенный экран или окно, в истории
   // браузера лежит одна запись-заглушка. «Назад» снимает её — а мы закрываем окно или возвращаем экран,
   // вместо того чтобы закрыть приложение. В Telegram этим занимается его кнопка «Назад».
-  let histGuard = false, histSkip = 0, sheetsOpen = 0;
+  // Без history.back(): раньше заглушку снимали им, но его ответ (popstate) приходит позже — при быстрых
+  // нажатиях он попадал уже на новый экран, и приложение само возвращалось назад. Теперь заглушку только ставим,
+  // а снимает её лишь сама системная «назад». В корне лишняя заглушка безвредна: выход — вторым нажатием.
+  let sheetsOpen = 0;
+  const atGuard = () => { try { return !!(history.state && history.state.sodp); } catch (e) { return false; } };
   function syncHistory() {
     if (inTG) return;
-    const want = stack.length > 0 || sheetsOpen > 0;
-    try {
-      if (want && !histGuard) { history.pushState({ sodp: 1 }, ""); histGuard = true; }
-      else if (!want && histGuard && history.state && history.state.sodp) { histGuard = false; histSkip++; history.back(); }
-    } catch (e) { /* история недоступна — не страшно */ }
+    if ((stack.length > 0 || sheetsOpen > 0) && !atGuard()) {
+      try { history.pushState({ sodp: 1 }, ""); } catch (e) { /* история недоступна — не страшно */ }
+    }
   }
   if (!inTG) window.addEventListener("popstate", () => {
-    if (histSkip) { histSkip--; return; }
-    if (!histGuard) return;
-    histGuard = false;
+    if (atGuard()) return;   // вернулись вперёд на заглушку — ничего не делаем
     const sheet = [...document.querySelectorAll(".isheet")].map((p) => p.parentElement).filter((w) => w && !w.classList.contains("closing")).pop();
     if (sheet) dismiss(sheet, sheet.querySelector(".isheet"), true);
     else if (stack.length) goBack();
-    setTimeout(syncHistory, 0);   // ещё есть куда возвращаться — снова ставим заглушку
+    else return;
+    // глубже ещё есть экраны — снова ставим заглушку, когда возврат доиграет
+    setTimeout(() => { if (stack.length > 0 || sheetsOpen > 0) syncHistory(); }, 450);
   });
   function syncBack() {
     syncHistory();
