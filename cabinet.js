@@ -138,10 +138,10 @@
   function profileFields() { return new Map((sections("profile") || []).flatMap(({ rows }) => rows)); }
   function profileSummary() {
     const fields = profileFields();
-    const name = fields.get("ФИО") || [fields.get("Фамилия"), fields.get("Имя"), fields.get("Отчество")].filter(Boolean).join(" ");
+    const name = fields.get("Имя") || fields.get("ФИО") || "";
     const group = fields.get("Группа") || fields.get("Учебная группа");
     const course = fields.get("Курс");
-    return { name, group, meta: [group, /^\d+$/.test(course ?? "") ? `${course} курс` : course].filter(Boolean).join(" · ") };
+    return { name, meta: [group, /^\d+$/.test(course ?? "") ? `${course} курс` : course].filter(Boolean).join(" · ") };
   }
   function trajectoryNow() {
     const list = sections("trajectory") || [];
@@ -413,12 +413,12 @@
   function personHTML(index) {
     const p = people()[index];
     if (!p) return headerHTML("Моя группа", true) + empty(icons.empty, "Человек не найден", "");
-    const group = profileSummary().group;
-    const fields = p.fields.length ? p.fields : [["ФИО", p.name], ...(group ? [["Учебная группа", group]] : [])];
     return headerHTML("Моя группа", true)
       + `<div class="tcard"><div class="av big" style="--h:${hue(p.name)}" aria-hidden="true">${esc(initials(p.name))}</div>
-          <div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="sub">${esc(group || "Одногруппник")}</div></div></div>`
-      + `<div class="list cab-gap">${fields.map(([k, v]) => `<div class="item cab-plain cab-field"><span class="body"><span class="sub">${esc(k)}</span><span class="nm cab-wrap">${fieldValue(k, v)}</span></span></div>`).join("")}</div>`;
+          <div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="sub">${esc(profileSummary().meta.split(" · ")[0] || "Одногруппник")}</div></div></div>`
+      + (p.fields.length
+        ? `<div class="list cab-gap">${p.fields.map(([k, v]) => `<div class="item cab-plain cab-field"><span class="body"><span class="sub">${esc(k)}</span><span class="nm cab-wrap">${fieldValue(k, v)}</span></span></div>`).join("")}</div>`
+        : empty(icons.empty, "Других сведений нет", ""));
   }
 
   function ordersHTML() {

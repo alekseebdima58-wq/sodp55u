@@ -1,5 +1,9 @@
 /* Личный кабинет: только то, чего нет в общих стилях приложения (.top, .tcard, .hero, .list, .item, .av, .empty) */
 .cabinet { min-width: 0; }
+.cabinet-tab-label { line-height: 1.1; text-wrap: balance; }
+@media (max-width: 400px) {
+  .tabs .tab { padding-inline: 2px; font-size: clamp(10px, 2.8vw, 12px); }
+}
 
 /* шапка раздела: кнопка «назад» рядом с заголовком, как у преподавателя */
 .cab-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
