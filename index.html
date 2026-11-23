@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru" data-theme="dark" class="booting">
 <head>
-<meta name="app-ver" content="4b23d4df8bf7">
+<meta name="app-ver" content="31c600979066">
 <meta name="data-mirrors" content="https://sodp55u-raspisanie.website.yandexcloud.net/,https://alekseebdima58-wq.github.io/sodp55u/,https://raw.githubusercontent.com/alekseebdima58-wq/sodp55u/main/">
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -1464,17 +1464,35 @@ html[data-theme="light"] .a1 .o-finger { background: rgba(0, 0, 0, .14); box-sha
 
 /* 2: уведомления опускаются сверху стеклом */
 .a2 { display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 0 14px; box-sizing: border-box; }
-.a2 .o-note { display: flex; gap: 10px; align-items: center; padding: 11px 12px; border-radius: 22px; text-align: left;
+:is(.a2, .a4) .o-note { display: flex; gap: 10px; align-items: center; padding: 11px 12px; border-radius: 22px; text-align: left;
   background: rgba(255, 255, 255, .08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 8px 20px rgba(0, 0, 0, .25);
   animation: oDrop 4.4s var(--ease-spring, ease) infinite; }
-html[data-theme="light"] .a2 .o-note { background: rgba(255, 255, 255, .9); box-shadow: 0 6px 18px rgba(20, 30, 60, .12); }
-.a2 .o-note.o2 { animation-delay: .35s; }
-.a2 .o-note img { width: 38px; height: 38px; border-radius: 8px; flex: none; }
-.a2 .o-note div { display: flex; flex-direction: column; min-width: 0; }
-.a2 .o-note b { font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
-.a2 .o-note span { font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.a2 .o-note small { font-size: calc(13px * var(--fs, 1)); color: var(--text2); }
+html[data-theme="light"] :is(.a2, .a4) .o-note { background: rgba(255, 255, 255, .9); box-shadow: 0 6px 18px rgba(20, 30, 60, .12); }
+:is(.a2, .a4) .o-note.o2 { animation-delay: .35s; }
+:is(.a2, .a4) .o-note img { width: 38px; height: 38px; border-radius: 8px; flex: none; }
+:is(.a2, .a4) .o-note div { display: flex; flex-direction: column; min-width: 0; }
+:is(.a2, .a4) .o-note b { font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+:is(.a2, .a4) .o-note span { font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:is(.a2, .a4) .o-note small { font-size: calc(13px * var(--fs, 1)); color: var(--text2); }
 @keyframes oDrop { 0% { opacity: 0; transform: translate3d(0, -40px, 0) scale(.96); } 12%, 82% { opacity: 1; transform: none; } 94%, 100% { opacity: 0; transform: translate3d(0, -10px, 0) scale(.98); } }
+
+/* личный кабинет: карточка успеваемости, кольцо заполняется, сверху приходит уведомление о новой оценке */
+.a4 { display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 0 14px; box-sizing: border-box; }
+.a4 .o-note { animation-delay: .9s; }
+.a4 .o-cab { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 22px; text-align: left;
+  background: rgba(255, 255, 255, .06); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
+html[data-theme="light"] .a4 .o-cab { background: rgba(255, 255, 255, .85); box-shadow: 0 6px 18px rgba(20, 30, 60, .1); }
+.a4 .o-ring { position: relative; flex: none; width: 62px; height: 62px; }
+.a4 .o-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.a4 .o-ring circle { fill: none; stroke-width: 7; stroke-linecap: round; }
+.a4 .o-ring .trk { stroke: rgba(127, 127, 140, .22); }
+.a4 .o-ring .arc { stroke: rgb(var(--lec-rgb)); stroke-dasharray: 100; animation: oRing 4.4s var(--ease-spring, ease) infinite; }
+.a4 .o-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(17px * var(--fs, 1)); font-weight: 800; color: var(--text); }
+.a4 .o-cab div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.a4 .o-cab small { font-size: calc(11px * var(--fs, 1)); font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: rgb(var(--lec-rgb)); }
+.a4 .o-cab span { font-size: calc(15px * var(--fs, 1)); font-weight: 700; color: var(--text); }
+.a4 .o-cab em { font-style: normal; font-size: calc(12px * var(--fs, 1)); color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@keyframes oRing { 0%, 8% { stroke-dashoffset: 100; } 40%, 88% { stroke-dashoffset: 12; } 100% { stroke-dashoffset: 100; } }
 
 /* 3: иконка приложения прыгает на свободное место экрана «Домой» */
 .a3 .o-home { position: absolute; inset: 22px 30px; display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 52px; gap: 14px 16px; }
@@ -1486,13 +1504,36 @@ html[data-theme="light"] .a2 .o-note { background: rgba(255, 255, 255, .9); box-
 @keyframes oPop { 0%, 10% { opacity: 0; transform: translate3d(0, -60px, 0) scale(.4); } 30%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: scale(.9); } }
 
 /* 3 (уже ярлык): жесты */
-.a3g { display: flex; align-items: center; justify-content: space-around; padding: 0 12px; }
-.a3g .o-g { display: flex; flex-direction: column; align-items: center; gap: 14px; font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--text2); }
-.a3g .o-arrow { width: 64px; height: 64px; border-radius: 50%; background: var(--acc-soft); position: relative; }
-.a3g .o-arrow::after { content: ""; position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -12px 0 0 -8px; border: solid var(--accent); border-width: 0 4px 4px 0; transform: rotate(45deg); }
-.a3g .o-arrow.right::after { margin: -8px 0 0 -12px; transform: rotate(-45deg); }
-.a3g .o-arrow.down { animation: oNudgeY 1.6s ease-in-out infinite; }
-.a3g .o-arrow.right { animation: oNudgeX 1.6s ease-in-out infinite .4s; }
+/* 4: жесты — два маленьких экрана с пальцем: потянуть вниз (крутится обновление) и смахнуть от левого края (назад) */
+.a3g { display: flex; align-items: center; justify-content: center; gap: 22px; padding: 0 12px; }
+.a3g .o-g { display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; color: var(--text2); text-align: center; line-height: 1.25; }
+.a3g .o-ph { position: relative; width: 104px; height: 146px; border-radius: 20px; overflow: hidden; background: rgba(0, 0, 0, .35); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
+html[data-theme="light"] .a3g .o-ph { background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px rgba(20, 30, 60, .1); }
+.a3g .o-pg { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 7px; padding: 14px 11px; background: #15171c; }
+html[data-theme="light"] .a3g .o-pg { background: #f4f6fa; }
+.a3g .o-pg b { display: block; width: 58%; height: 9px; border-radius: 5px; background: rgba(var(--o-rgb), .8); margin-bottom: 3px; }
+.a3g .o-pg i { display: block; height: 19px; border-radius: 7px; background: rgba(127, 127, 140, .24); }
+.a3g .o-pg.pull { background: transparent; animation: oPullPg 2.8s var(--ease-spring, ease) infinite; }
+.a3g .o-pg.back b { background: rgba(127, 127, 140, .5); }
+.a3g .o-pg.back { animation: oBackPg 2.8s var(--ease-spring, ease) infinite; }
+.a3g .o-pg.front { box-shadow: -8px 0 18px rgba(0, 0, 0, .35); animation: oFrontPg 2.8s var(--ease-spring, ease) infinite; }
+.a3g .o-spin { position: absolute; top: 9px; left: 50%; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%;
+  border: 2.5px solid rgb(var(--o-rgb)); border-right-color: transparent; animation: oSpin 2.8s linear infinite; }
+.a3g .o-fing { position: absolute; z-index: 3; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%;
+  background: rgba(255, 255, 255, .5); box-shadow: 0 0 0 2px rgba(255, 255, 255, .6), 0 4px 10px rgba(0, 0, 0, .3); opacity: 0; }
+html[data-theme="light"] .a3g .o-fing { background: rgba(20, 30, 60, .2); box-shadow: 0 0 0 2px rgba(20, 30, 60, .25); }
+.a3g .o-fing.pull { left: 50%; top: 40px; animation: oFingPull 2.8s var(--ease-spring, ease) infinite; }
+.a3g .o-fing.swipe { left: 6px; top: 78px; animation: oFingSwipe 2.8s var(--ease-spring, ease) infinite; }
+@keyframes oPullPg { 0%, 12% { transform: none; } 42%, 68% { transform: translate3d(0, 34px, 0); } 88%, 100% { transform: none; } }
+@keyframes oSpin { 0%, 24% { opacity: 0; transform: scale(.4) rotate(0); } 40% { opacity: 1; transform: scale(1) rotate(200deg); } 64% { opacity: 1; transform: scale(1) rotate(560deg); }
+  70%, 100% { opacity: 0; transform: scale(.6) rotate(700deg); } }
+@keyframes oFingPull { 0%, 6% { opacity: 0; transform: none; } 14% { opacity: 1; transform: none; } 42% { opacity: 1; transform: translate3d(0, 38px, 0); }
+  54%, 100% { opacity: 0; transform: translate3d(0, 38px, 0); } }
+@keyframes oFrontPg { 0%, 14% { transform: none; opacity: 1; } 46%, 66% { transform: translate3d(88%, 0, 0); opacity: 1; } 74% { transform: translate3d(88%, 0, 0); opacity: 0; }
+  75% { transform: none; opacity: 0; } 90%, 100% { transform: none; opacity: 1; } }
+@keyframes oBackPg { 0%, 14% { transform: translate3d(-30%, 0, 0); opacity: .45; } 46%, 74% { transform: none; opacity: 1; } 90%, 100% { transform: translate3d(-30%, 0, 0); opacity: .45; } }
+@keyframes oFingSwipe { 0%, 6% { opacity: 0; transform: none; } 14% { opacity: 1; transform: none; } 46% { opacity: 1; transform: translate3d(78px, 0, 0); }
+  56%, 100% { opacity: 0; transform: translate3d(78px, 0, 0); } }
 @keyframes oNudgeY { 0%, 100% { transform: none; } 50% { transform: translate3d(0, 10px, 0); } }
 @keyframes oNudgeX { 0%, 100% { transform: none; } 50% { transform: translate3d(10px, 0, 0); } }
 
@@ -1656,16 +1697,14 @@ html.glass[data-theme="light"] .a1 .o-in { background: radial-gradient(120% 140%
 html.glass .a1 .o-in em { color: var(--k-fg); background: rgba(var(--k-rgb), .18); }
 
 /* 2: уведомления — как на экране блокировки, со свечением */
-html.glass .a2 .o-note { background: linear-gradient(160deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .06));
+html.glass :is(.a2, .a4) .o-note { background: linear-gradient(160deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .06));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), inset 0 0 0 1px rgba(255, 255, 255, .08), 0 12px 26px -10px rgba(var(--o-rgb), .55); }
 html.glass[data-theme="light"] .a2 .o-note { background: rgba(255, 255, 255, .92); box-shadow: inset 0 0 0 1px rgba(20, 30, 60, .05), 0 12px 26px -12px rgba(var(--o-rgb), .5); }
-html.glass .a2 .o-note img { box-shadow: 0 4px 12px rgba(var(--o-rgb), .45); }
+html.glass :is(.a2, .a4) .o-note img { box-shadow: 0 4px 12px rgba(var(--o-rgb), .45); }
 
 /* 3: экран «Домой» — иконки с бликом, наша светится */
 html.glass .a3 .o-app { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35); }
 html.glass .a3 .o-me { box-shadow: 0 0 0 2px rgba(255, 255, 255, .8), 0 8px 26px rgba(var(--o-rgb), .8); }
-html.glass .a3g .o-arrow { background: rgba(var(--o-rgb), .2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 0 0 1px rgba(var(--o-rgb), .45); }
-html.glass .a3g .o-arrow::after { border-color: var(--o-ink); }
 
 /* плашка «Установи на главный экран» — тоже стекло */
 html.glass .ibar { background: rgba(28, 30, 38, .82); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 0 0 1px rgba(255, 255, 255, .08), 0 16px 36px rgba(0, 0, 0, .45); }
@@ -3024,7 +3063,7 @@ window.__appStart = () => {
     // без сети — про интернет; сеть есть, а сервер не ответил — так и говорим, чтобы не искать проблему у себя
     const off = navigator.onLine === false;
     return `<div class="empty fade"><div class="ic">${I.wifi}</div><div class="h">${off ? "Нет интернета" : "Не удалось загрузить расписание"}</div>
-      <div class="p">${off ? "Подключись к сети — расписание загрузится и дальше будет открываться даже без интернета." : "Сервер расписания не ответил. Попробуй ещё раз через минуту."}</div>
+      <div class="p">${off ? "Подключитесь к сети — расписание загрузится и дальше будет открываться даже без интернета." : "Сервер расписания не ответил. Попробуйте ещё раз через минуту."}</div>
       <button class="btn" data-act="retry" style="margin-top:8px">Повторить</button></div>`;
   }
 
@@ -3815,7 +3854,7 @@ window.__appStart = () => {
     const status = canEditNotify()
       ? `Изменения сохраняются сами`
       : canLinkNotify()
-        ? `Чтобы менять здесь, <button class="flink" data-act="nlink">подключи приложение</button> — один раз`
+        ? `Чтобы менять здесь, <button class="flink" data-act="nlink">подключите приложение</button> — один раз`
         : `Менять можно в чате с ботом. <button class="flink" data-act="notify-settings">Настроить в чате</button>`;
     return `${sw("on", "Напоминание о паре", "С аудиторией и преподавателем")}
       <label class="selrow" id="nminrow"${nstate.on ? "" : " hidden"}><span>Напоминать за</span>
@@ -3910,7 +3949,7 @@ window.__appStart = () => {
   // или ярлыком на рабочем столе. Пара ключей P-256 (ECDH) + открытый ключ бота из index.json дают
   // общий секрет; им зашифрован initData (в Telegram) и ответ бота с личным ключом.
   let linkBusy = false, linkNote = "", linkStartArg = "";
-  const LINK_NOTE = "В чате с ботом нажми «✅ Подключить» и вернись сюда";
+  const LINK_NOTE = "В чате с ботом нажмите «✅ Подключить» и вернитесь сюда";
   function canLinkNotify() {
     return !!(index && index.pub && index.relay && window.crypto && crypto.subtle);
   }
@@ -4029,7 +4068,7 @@ window.__appStart = () => {
       if (res) return linkDone(res);
       slow = err === 429 ? 1 : 0;
     }
-    if (linkBusy) linkFail(`Бот не ответил. Попробуй ещё раз или <button class="flink" data-act="notify-settings">настрой в чате</button>`);
+    if (linkBusy) linkFail(`Бот не ответил. Попробуйте ещё раз или <button class="flink" data-act="notify-settings">настройте в чате</button>`);
   }
   // Открыть чат с ботом со ссылкой подключения. На телефоне — сразу приложение Telegram (tg://),
   // иначе из ярлыка на экране «Домой» ссылка t.me открывается страницей сайта, а не Telegram.
@@ -4148,7 +4187,7 @@ window.__appStart = () => {
     } catch (e) {
       el.disabled = false;
       renderSettings();
-      setNStatus(e && e.message === "denied" ? "Уведомления запрещены. Разреши их: Настройки iPhone → Уведомления → Расписание" : "Не получилось — нет связи. Попробуй ещё раз", "err");
+      setNStatus(e && e.message === "denied" ? "Уведомления запрещены. Разрешите их: Настройки iPhone → Уведомления → Расписание" : "Не получилось — нет связи. Попробуйте ещё раз", "err");
     }
   }
   async function pushTgToggle(el) {
@@ -4367,8 +4406,8 @@ window.__appStart = () => {
     }
     const k = installRowHTML();
     return `<div class="list iwiz">
-      <div class="wst"><span class="wn">1</span>Выбери иконку</div>${iconPickHTML()}
-      <div class="wst"><span class="wn">2</span>Установи</div>${k}${inlineVideoHTML()}
+      <div class="wst"><span class="wn">1</span>Выберите иконку</div>${iconPickHTML()}
+      <div class="wst"><span class="wn">2</span>Установите</div>${k}${inlineVideoHTML()}
       <button class="wdone" data-act="install-done">${I.check} Я уже установил</button></div>`;
   }
   // ---- видео-инструкция прямо в блоке установки ----
@@ -4381,16 +4420,16 @@ window.__appStart = () => {
   }
   // Шаги в роликах — моменты смены подписи в кадре (секунды)
   const VSTEPS = {
-    ios: [[0, "Открой сайт расписания в Safari"], [1.67, "Нажми «Поделиться» — кнопка со стрелкой"], [3.07, "Выбери «На экран „Домой“» — пролистай, если не видно"],
-      [4.67, "Нажми «Добавить»"], [6.07, "Иконка появится на рабочем столе"], [7.67, "Открывается как приложение — даже без сети"]],
-    android: [[0, "Открой сайт в Chrome — внизу будет плашка «Установить»"], [1.67, "Нажми «Установить» (или меню ⋮ → «Установить приложение»)"],
-      [3.17, "Подтверди установку"], [4.57, "Иконка на рабочем столе — открывается как приложение"]],
+    ios: [[0, "Откройте сайт расписания в Safari"], [1.67, "Нажмите «Поделиться» — кнопка со стрелкой"], [3.07, "Выберите «На экран „Домой“» — пролистайте, если не видно"],
+      [4.67, "Нажмите «Добавить»"], [6.07, "Иконка появится на рабочем столе"], [7.67, "Открывается как приложение — даже без сети"]],
+    android: [[0, "Откройте сайт в Chrome — внизу будет плашка «Установить»"], [1.67, "Нажмите «Установить» (или меню ⋮ → «Установить приложение»)"],
+      [3.17, "Подтвердите установку"], [4.57, "Иконка на рабочем столе — открывается как приложение"]],
   };
   // Ролик для Android есть в лёгком формате AV1 (≈220 КБ вместо 420) — берём его, если браузер умеет
   function videoSrc(os) {
     let av1 = "";
     try { av1 = document.createElement("video").canPlayType('video/webm; codecs="av01.0.05M.08"'); } catch (e) { /* старый браузер */ }
-    return os === "android" && av1 ? "media/install-android.webm?v=3" : `media/install-${os}.mp4?v=3`;
+    return `media/install-${os}.mp4?v=4`;   // новые ролики (ноябрь 2026): mp4 легче прежнего AV1
   }
   // iPhone: если страница открылась во встроенном окне (из Telegram и т. п.), там нет «На экран „Домой“» — переносим в настоящий Safari
   function safariHintHTML(dev) {
@@ -4406,7 +4445,7 @@ window.__appStart = () => {
         `<button data-iv="${v}" class="${v === os ? "on" : ""}" aria-pressed="${v === os}">${l}</button>`).join("")}</div>`;
     const steps = VSTEPS[os].map(([t, s], i) => `<li data-t="${t}" class="${i ? "" : "on"}"><b>${i + 1}</b><span>${s}</span></li>`).join("");
     return `<div class="ivid" data-ivid>${dev ? browserNoteHTML(dev) : desktopNoteHTML()}${seg}
-      <div class="vframe"><video data-src="${videoSrc(os)}" poster="media/install-${os}.jpg?v=3" muted loop playsinline preload="none"
+      <div class="vframe"><video data-src="${videoSrc(os)}" poster="media/install-${os}.jpg?v=4" muted loop playsinline preload="none"
         width="540" height="960" aria-label="Видео: как установить расписание на главный экран"></video>
         <button class="vplay" data-vplay aria-label="Смотреть видео">${I.play}</button></div>
       <ol class="vsteps" aria-label="Шаги">${steps}</ol>${safariHintHTML(dev)}</div>`;
@@ -4430,17 +4469,17 @@ window.__appStart = () => {
     if (b === "yandex") return yandexNoteHTML(dev);
     const note = (title, text, steps) => `<div class="ynote"><b>${title}</b><span>${text}</span>
       <ol class="ysteps">${steps.map((s) => `<li>${s}</li>`).join("")}</ol></div>`;
-    const iosShare = (where) => note(`Ты в ${where}`, "Он тоже умеет добавлять на экран «Домой». На видео Safari, у тебя кнопки чуть в другом месте:",
-      [`Нажми «Поделиться» ${shareSvg} — ${where === "Chrome" ? "справа в адресной строке" : "в меню браузера"}`, "Выбери <b>«На экран „Домой“»</b>", "Нажми <b>«Добавить»</b>"]);
+    const iosShare = (where) => note(`Вы в ${where}`, "Он тоже умеет добавлять на экран «Домой». На видео Safari, у вас кнопки чуть в другом месте:",
+      [`Нажмите «Поделиться» ${shareSvg} — ${where === "Chrome" ? "справа в адресной строке" : "в меню браузера"}`, "Выберите <b>«На экран „Домой“»</b>", "Нажмите <b>«Добавить»</b>"]);
     if (ios) return iosShare({ "chrome-ios": "Chrome", firefox: "Firefox", edge: "Edge", opera: "Opera", samsung: "браузере" }[b] || "браузере");
-    if (b === "samsung") return note("Ты в Samsung Internet", "Он умеет ставить настоящее приложение. На видео Chrome, у тебя так:",
-      ["Нажми значок установки <b>⤓</b> в адресной строке, если он есть", "Или меню <b>≡</b> внизу → <b>«Добавить страницу на»</b> → <b>«Главный экран»</b>"]);
-    if (b === "firefox") return note("Ты в Firefox", "Он умеет ставить приложение. На видео Chrome, у тебя так:",
-      ["Нажми меню <b>⋮</b>", "Выбери <b>«Установить»</b> или <b>«Добавить на главный экран»</b>"]);
-    if (b === "edge") return note("Ты в Edge", "Он умеет ставить приложение. На видео Chrome, у тебя так:",
-      ["Нажми меню <b>⋯</b> внизу", "Выбери <b>«Добавить на телефон»</b> или <b>«Установить приложение»</b>"]);
-    if (b === "opera") return note("Ты в Opera", "Она умеет добавлять на главный экран. На видео Chrome, у тебя так:",
-      ["Нажми меню <b>⋮</b>", "Выбери <b>«Главный экран»</b> или <b>«Добавить на главный экран»</b>"]);
+    if (b === "samsung") return note("Вы в Samsung Internet", "Он умеет ставить настоящее приложение. На видео Chrome, у вас так:",
+      ["Нажмите значок установки <b>⤓</b> в адресной строке, если он есть", "Или меню <b>≡</b> внизу → <b>«Добавить страницу на»</b> → <b>«Главный экран»</b>"]);
+    if (b === "firefox") return note("Вы в Firefox", "Он умеет ставить приложение. На видео Chrome, у вас так:",
+      ["Нажмите меню <b>⋮</b>", "Выберите <b>«Установить»</b> или <b>«Добавить на главный экран»</b>"]);
+    if (b === "edge") return note("Вы в Edge", "Он умеет ставить приложение. На видео Chrome, у вас так:",
+      ["Нажмите меню <b>⋯</b> внизу", "Выберите <b>«Добавить на телефон»</b> или <b>«Установить приложение»</b>"]);
+    if (b === "opera") return note("Вы в Opera", "Она умеет добавлять на главный экран. На видео Chrome, у вас так:",
+      ["Нажмите меню <b>⋮</b>", "Выберите <b>«Главный экран»</b> или <b>«Добавить на главный экран»</b>"]);
     return "";
   }
   function desktopNoteHTML() {
@@ -4448,11 +4487,11 @@ window.__appStart = () => {
     const note = (title, steps) => `<div class="ynote"><b>${title}</b><ol class="ysteps">${steps.map((s) => `<li>${s}</li>`).join("")}</ol></div>`;
     if (installEvt) return "";   // браузер сам предлагает установку — кнопка «Установить приложение» выше
     if (/Edg\//.test(ua)) return note("На компьютере в Edge", ["Меню <b>⋯</b> → <b>«Приложения»</b>", "<b>«Установить этот сайт как приложение»</b>"]);
-    if (/YaBrowser/i.test(ua)) return note("На компьютере", ["Яндекс Браузер не ставит такие приложения — открой эту страницу в <b>Chrome</b> или <b>Edge</b>", "Там: значок установки справа в адресной строке"]);
-    if (/Firefox/i.test(ua)) return note("На компьютере", ["Firefox не ставит такие приложения — открой эту страницу в <b>Chrome</b> или <b>Edge</b>", "Там: значок установки справа в адресной строке"]);
+    if (/YaBrowser/i.test(ua)) return note("На компьютере", ["Яндекс Браузер не ставит такие приложения — откройте эту страницу в <b>Chrome</b> или <b>Edge</b>", "Там: значок установки справа в адресной строке"]);
+    if (/Firefox/i.test(ua)) return note("На компьютере", ["Firefox не ставит такие приложения — откройте эту страницу в <b>Chrome</b> или <b>Edge</b>", "Там: значок установки справа в адресной строке"]);
     if (/Chrome\//.test(ua)) return note("На компьютере в Chrome", ["Значок установки справа в адресной строке", "Или меню <b>⋮</b> → <b>«Трансляция, сохранение и отправка»</b> → <b>«Установить страницу как приложение»</b>"]);
     if (/Safari\//.test(ua) && /Macintosh/.test(ua)) return note("На Mac в Safari", ["Меню <b>«Файл»</b> → <b>«Добавить в Dock»</b> (macOS 14 и новее)"]);
-    return note("На компьютере", ["Открой эту страницу в <b>Chrome</b> или <b>Edge</b>", "Нажми значок установки справа в адресной строке"]);
+    return note("На компьютере", ["Откройте эту страницу в <b>Chrome</b> или <b>Edge</b>", "Нажмите значок установки справа в адресной строке"]);
   }
   // Яндекс Браузер ставит не приложение, а закладку с панелью браузера — ведём в Chrome (Android) или Safari (iPhone)
   function yandexNoteHTML(dev) {
@@ -4461,7 +4500,7 @@ window.__appStart = () => {
     const href = ios ? "x-safari-" + url
       : `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url + "&nochrome=1")};end`;
     const name = ios ? "Safari" : "Chrome";
-    const shortcut = `<ol class="ysteps"><li>Нажми меню <b>⋮</b> или <b>≡</b> в Яндекс Браузере</li><li>Выбери <b>«Добавить ярлык»</b> или <b>«На главный экран»</b></li></ol>
+    const shortcut = `<ol class="ysteps"><li>Нажмите меню <b>⋮</b> или <b>≡</b> в Яндекс Браузере</li><li>Выберите <b>«Добавить ярлык»</b> или <b>«На главный экран»</b></li></ol>
       <small>Расписание откроется с иконки и будет работать без сети, только сверху останется панель Яндекса.</small>`;
     if (!ios && QS.get("nochrome") === "1") {
       return `<div class="ynote"><b>Chrome на телефоне не нашёлся</b>
@@ -4470,8 +4509,8 @@ window.__appStart = () => {
         <a class="ibig" href="https://play.google.com/store/apps/details?id=com.android.chrome" rel="noopener">Установить Chrome</a>
         <span class="yopt">2. Или сделать ярлык прямо в Яндекс Браузере:</span>${shortcut}</div>`;
     }
-    return `<div class="ynote"><b>Ты в Яндекс Браузере</b>
-      <span>${ios ? "Надёжнее всего установить через Safari" : "Он сделает обычную закладку с панелью браузера, а не приложение"}. Открой страницу в ${name} и сделай как на видео.</span>
+    return `<div class="ynote"><b>Вы в Яндекс Браузере</b>
+      <span>${ios ? "Надёжнее всего установить через Safari" : "Он сделает обычную закладку с панелью браузера, а не приложение"}. Откройте страницу в ${name} и сделайте как на видео.</span>
       <a class="ibig" href="${href}" rel="noopener">Открыть в ${name}</a>
       <button class="ibig ghost" data-ycopy>Скопировать ссылку</button>
       ${ios ? "" : `<details class="ymore"><summary>Нет Chrome?</summary>${shortcut}</details>`}</div>`;
@@ -4479,7 +4518,7 @@ window.__appStart = () => {
   document.addEventListener("click", async (ev) => {
     const c = ev.target.closest("[data-ycopy]");
     if (!c) return;
-    try { await navigator.clipboard.writeText(installLink()); toast(/iPhone|iPad|Mac/.test(navigator.userAgent) ? "Ссылка скопирована — вставь её в Safari" : "Ссылка скопирована — вставь её в Chrome"); }
+    try { await navigator.clipboard.writeText(installLink()); toast(/iPhone|iPad|Mac/.test(navigator.userAgent) ? "Ссылка скопирована — вставьте её в Safari" : "Ссылка скопирована — вставьте её в Chrome"); }
     catch (e) { toast(installLink()); }
   });
   document.addEventListener("click", (ev) => {
@@ -4548,8 +4587,8 @@ window.__appStart = () => {
       return row("Установить как приложение", `Откроется ${IOS ? "Safari" : "браузер"} с подсказками. Своя иконка, открывается без Telegram и работает без сети`, "install-open");
     }
     if (installEvt) return row("Установить приложение", "Иконка на главном экране, работает без сети и без Telegram", "install");
-    if (IOS) return row("Добавить на экран «Домой»", "Нажми «Поделиться» в Safari и выбери «На экран „Домой“». Работает без сети и без Telegram");
-    return row("Установить приложение", "В меню браузера выбери «Установить приложение» или «Добавить на главный экран»");
+    if (IOS) return row("Добавить на экран «Домой»", "Нажмите «Поделиться» в Safari и выберите «На экран „Домой“». Работает без сети и без Telegram");
+    return row("Установить приложение", "В меню браузера выберите «Установить приложение» или «Добавить на главный экран»");
   }
   async function promptInstall() {
     if (inTG) { hideInstallBar(true); openInstallPage(); return; }
@@ -4569,7 +4608,7 @@ window.__appStart = () => {
     const el = document.createElement("div");
     el.className = "ibar";
     el.innerHTML = `<span class="tile t-room" aria-hidden="true">${I.home}</span>
-      <span class="ib">Установи расписание как приложение<small>${inTG ? "Своя иконка, без Telegram, работает без сети" : "Откроется с иконки, работает без сети"}</small></span>
+      <span class="ib">Установите расписание как приложение<small>${inTG ? "Своя иконка, без Telegram, работает без сети" : "Откроется с иконки, работает без сети"}</small></span>
       <button class="ibtn" data-ib="go">${inTG || installEvt ? "Установить" : "Как?"}</button>
       <button class="ix" data-ib="x" aria-label="Закрыть">${I.x}</button>`;
     el.addEventListener("click", (ev) => {
@@ -4596,9 +4635,9 @@ window.__appStart = () => {
   function iconPickHTML() {
     const cur = iconStyle();
     const note = STANDALONE
-      ? "Иконка уже на рабочем столе. Чтобы сменить её вид — удали иконку и установи приложение заново."
-      : inTG ? "Выбери до установки — эта иконка появится на рабочем столе."
-      : "Выбери до установки — эта иконка появится на рабочем столе.";
+      ? "Иконка уже на рабочем столе. Чтобы сменить её вид, удалите иконку и установите приложение заново."
+      : inTG ? "Выберите до установки — эта иконка появится на рабочем столе."
+      : "Выберите до установки — эта иконка появится на рабочем столе.";
     return `<div class="list pad" style="margin-top:10px"><span class="lbl15">Иконка на рабочем столе</span>
       <div class="icpick" role="radiogroup" aria-label="Иконка на рабочем столе">${ICON_STYLES.map(([v, l, suf]) =>
         `<button data-act="icon-style" data-v="${v}" role="radio" aria-checked="${cur === v}" class="${cur === v ? "on" : ""}">
@@ -4652,7 +4691,7 @@ window.__appStart = () => {
         else if (a === "icon") { store.set("iconStyle", b.dataset.v); try { window.applyIconStyle(b.dataset.v); } catch (e) { /* старая страница */ } haptic("select"); wrap.innerHTML = installSheetHTML(); }
         else if (a === "install") { await promptInstall(); closeInstallSheet(); }
         else if (a === "copy") {
-          try { await navigator.clipboard.writeText(siteURL()); toast("Ссылка скопирована — вставь её в Chrome"); } catch (e) { toast(siteURL()); }
+          try { await navigator.clipboard.writeText(siteURL()); toast("Ссылка скопирована — вставьте её в Chrome"); } catch (e) { toast(siteURL()); }
         }
       });
       document.body.appendChild(wrap);
@@ -6042,7 +6081,7 @@ window.__appStart = () => {
   function onbPagesHTML() {
     const grp = esc((index && index.group) || "СОДП-55у");
     const icon = `icons/icon-192${iconStyle && iconStyle() === "dark" ? "-dark" : ""}.png`;
-    const p1 = `<section class="onb-p" style="--o-rgb: var(--prac-rgb)" aria-label="Шаг 1 из 3">
+    const p1 = `<section class="onb-p" style="--o-rgb: var(--prac-rgb)" aria-label="Шаг 1 из 4">
       <div class="onb-art a1" aria-hidden="true">
         <div class="o-days">${["Пн", "Вт", "Ср", "Чт", "Пт"].map((d, i) => `<span class="o-d${i < 3 ? ` d${i}` : ""}">${d}</span>`).join("")}<i class="o-pill"></i></div>
         <div class="o-view"><div class="o-track">${[["08:30", "Теория дискретных устройств", "lab", "Лабораторная", "ауд. 1204"], ["10:10", "Теория передачи сигналов", "prac", "Практика", "ауд. 1206"], ["12:10", "Основы схемотехники", "lec", "Лекция", "ауд. 2303"]]
@@ -6050,26 +6089,34 @@ window.__appStart = () => {
         <i class="o-finger"></i></div>
       <h2>Переключение дней</h2>
       <p>Проведите влево или вправо, чтобы перейти к соседнему дню. Цвет карточки обозначает вид занятия: зелёный — лекция, жёлтый — практика, фиолетовый — лабораторная работа.</p></section>`;
-    const p2 = `<section class="onb-p" style="--o-rgb: var(--acc-rgb)" aria-label="Шаг 2 из 3">
+    const p2 = `<section class="onb-p" style="--o-rgb: var(--acc-rgb)" aria-label="Шаг 2 из 4">
       <div class="onb-art a2" aria-hidden="true">
         <div class="o-note"><img src="${icon}" alt=""><div><b>${grp} · сейчас</b><span>Скоро пара · ауд. 2303</span><small>Схемотехника · через 15 мин</small></div></div>
         <div class="o-note o2"><img src="${icon}" alt=""><div><b>${grp} · 08:00</b><span>Сегодня 4 пары</span><small>8:30 – 15:25 · утренняя сводка</small></div></div></div>
       <h2>Напоминания о занятиях</h2>
-      <p>Уведомление за 15 минут до начала пары, утренняя сводка на день и сообщение об изменениях в расписании.</p>
+      <p>Уведомление за 15 минут до начала пары, утренняя сводка на день, сообщения об изменениях в расписании и о новых оценках.</p>
       <button class="onb-link" data-onb="notif">Настроить уведомления</button></section>`;
+    const pc = `<section class="onb-p" style="--o-rgb: var(--lec-rgb)" aria-label="Шаг 3 из 4">
+      <div class="onb-art a4" aria-hidden="true">
+        <div class="o-note"><img src="${icon}" alt=""><div><b>Личный кабинет · сейчас</b><span>Новая оценка: отлично</span><small>Теория дискретных устройств</small></div></div>
+        <div class="o-cab"><div class="o-ring"><svg viewBox="0 0 80 80"><circle class="trk" cx="40" cy="40" r="34" pathLength="100"/><circle class="arc" cx="40" cy="40" r="34" pathLength="100"/></svg><b>4,4</b></div>
+          <div><small>Успеваемость</small><span>Всё сдано</span><em>Сессия через 12 дней</em></div></div></div>
+      <h2>Личный кабинет</h2>
+      <p>Зачётная книжка, расписание сессии, учебный план, образовательная траектория и приказы из личного кабинета ПривГУПС. Для подключения используются логин и пароль от личного кабинета. О новых оценках и изменениях в расписании сессии приходит уведомление.</p>
+      <button class="onb-link" data-onb="cabinet">Открыть личный кабинет</button></section>`;
     const p3 = STANDALONE
-      ? `<section class="onb-p" style="--o-rgb: var(--lab-rgb)" aria-label="Шаг 3 из 3">
+      ? `<section class="onb-p" style="--o-rgb: var(--lab-rgb)" aria-label="Шаг 4 из 4">
       <div class="onb-art a3g" aria-hidden="true">
-        <div class="o-g"><i class="o-arrow down"></i><span>Вниз —<br>обновить</span></div>
-        <div class="o-g"><i class="o-arrow right"></i><span>От края —<br>назад</span></div></div>
+        <div class="o-g"><div class="o-ph"><i class="o-spin"></i><div class="o-pg pull"><b></b><i></i><i></i><i></i><i></i></div><i class="o-fing pull"></i></div><span>Потяните вниз —<br>обновить</span></div>
+        <div class="o-g"><div class="o-ph"><div class="o-pg back"><b></b><i></i><i></i><i></i><i></i></div><div class="o-pg front"><b></b><i></i><i></i><i></i><i></i></div><i class="o-fing swipe"></i></div><span>От левого края —<br>назад</span></div></div>
       <h2>Управление жестами</h2>
-      <p>Потяните экран вниз, чтобы обновить расписание. Проведите от левого края, чтобы вернуться назад.</p></section>`
-      : `<section class="onb-p" style="--o-rgb: var(--lab-rgb)" aria-label="Шаг 3 из 3">
+      <p>Потяните экран вниз, чтобы обновить расписание или личный кабинет. Проведите от левого края, чтобы вернуться назад. Нажмите на пару, чтобы раскрыть подробности.</p></section>`
+      : `<section class="onb-p" style="--o-rgb: var(--lab-rgb)" aria-label="Шаг 4 из 4">
       <div class="onb-art a3" aria-hidden="true"><div class="o-home">${Array.from({ length: 11 }, (_, i) => `<i class="o-app c${i % 6}"></i>`).join("")}<img class="o-me" src="${icon}" alt=""></div></div>
       <h2>Установка на экран «Домой»</h2>
       <p>Расписание открывается с иконки как отдельное приложение и доступно без подключения к интернету.</p>
       <button class="onb-link" data-onb="install">Инструкция по установке</button></section>`;
-    return p1 + p2 + p3;
+    return p1 + p2 + pc + p3;
   }
   function showOnboarding() {
     if (document.querySelector(".onb")) return;
@@ -6080,7 +6127,7 @@ window.__appStart = () => {
     wrap.setAttribute("aria-label", "Как пользоваться приложением");
     wrap.innerHTML = `<button class="onb-skip" type="button">Пропустить</button>
       <div class="onb-pages">${onbPagesHTML()}</div>
-      <div class="onb-dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+      <div class="onb-dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
       <button class="onb-next" type="button">Далее</button>`;
     document.body.appendChild(wrap);
     ROOT.classList.add("onb-open");
@@ -6118,6 +6165,7 @@ window.__appStart = () => {
       if (!a) return;
       haptic("light");
       if (a.dataset.onb === "install") close(() => showInstallSheet());
+      else if (a.dataset.onb === "cabinet") close(() => go("cabinet", "cab", true));
       else close(() => {
         if (view !== "settings") go("settings", null, false);
         setTimeout(() => { const el = document.getElementById("nsec"); if (el) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + scrollY - 70), behavior: REDUCED ? "auto" : "smooth" }); }, 350);

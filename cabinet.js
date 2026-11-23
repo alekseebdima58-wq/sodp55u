@@ -41,7 +41,9 @@
 
   // ---------- помощники приложения (с запасным вариантом, если кабинет открыт отдельно) ----------
   const app = () => window.sodp || {};
-  const esc = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const esc = (value) => String(value == null ? "" : value)
+    // «ауд. 3105», «корп. 3», «№ 1259/4», «72 ч», «2 з. е.» не разрываются переносом строки
+    .replace(/(ауд\.|корп\.|№|з\.) (?=\S)/g, "$1\u00a0").replace(/(\d) (ч|з\.|дн|мин)(?=[\s.,·]|$)/g, "$1\u00a0$2").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const hue = (name) => (app().hue ? app().hue(name) : 214);
   const initials = (name) => (app().initials ? app().initials(name) : String(name).trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase());
   const haptic = (kind) => { try { app().haptic?.(kind); } catch (e) { /* без вибрации */ } };
@@ -61,7 +63,7 @@
     const url = new URL(address);
     const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
     if ((url.protocol !== "https:" && !(local && url.protocol === "http:")) || url.username || url.password || url.search || url.hash) {
-      throw new Error("Укажи HTTPS-адрес сервера подключения.");
+      throw new Error("Укажите HTTPS-адрес сервера подключения.");
     }
     return new URL(`${url.pathname.replace(/\/$/, "")}/cabinet/v1/${method}`, url.origin).href;
   }
@@ -138,20 +140,37 @@
   const fmtAvg = (value) => value.toFixed(1).replace(".", ",");
   // «Имя Фамилия»: сайт в профиле показывает только имя — фамилию берём из ФИО в списке группы,
   // если там ровно один человек с таким именем (ФИО на сайте — «Фамилия Имя Отчество»)
+  // Сайт в профиле показывает только имя. Фамилию берём из «Моей группы»: если там один человек с таким именем —
+  // это вы; если несколько (три Дмитрия) — студент один раз выбирает себя в профиле, выбор хранится на устройстве.
+  const meKey = "cabinet-me";
+  const normName = (v) => String(v || "").toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
+  const asShown = (fio) => { const [last, first] = fio.trim().split(/\s+/); return first ? `${first} ${last}` : last || ""; };
+  function nameCandidates(fields = profileFields()) {
+    if (fields.get("ФИО") || fields.get("Фамилия")) return [];
+    const first = (fields.get("Имя") || "").trim();
+    if (!first || /\s/.test(first) || people().some((p) => p.me)) return [];
+    return people().filter((p) => normName(p.name.split(/\s+/)[1]) === normName(first));
+  }
   function fullName(fields) {
-    const norm = (v) => String(v || "").toLowerCase().replace(/ё/g, "е").trim();
     const full = (fields.get("ФИО") || [fields.get("Фамилия"), fields.get("Имя"), fields.get("Отчество")].filter(Boolean).join(" ")).trim();
     const words = full.split(/\s+/).filter(Boolean);
     if (!words.length) return "";
-    const group = people().map((p) => norm(p.name));
     if (words.length === 1) {
-      const same = people().filter((p) => norm(p.name.split(/\s+/)[1]) === norm(words[0]));
-      return same.length === 1 ? `${same[0].name.split(/\s+/)[1]} ${same[0].name.split(/\s+/)[0]}` : words[0];
+      const self = people().find((p) => p.me);   // сервер узнал вас в группе по личному номеру
+      if (self) return asShown(self.name);
+      const same = nameCandidates(fields);
+      if (same.length === 1) return asShown(same[0].name);
+      let mine = "";
+      try { mine = localStorage.getItem(meKey) || ""; } catch (e) { /* нет хранилища */ }
+      const chosen = same.find((p) => normName(p.name) === normName(mine));
+      return chosen ? asShown(chosen.name) : words[0];
     }
     // «Фамилия Имя Отчество» (как в группе) → «Имя Фамилия»; иначе считаем, что уже «Имя Фамилия»
-    const fio = fields.get("Фамилия") || group.some((g) => g.startsWith(norm(`${words[0]} ${words[1]}`)));
+    const fio = fields.get("Фамилия") || people().some((p) => normName(p.name).startsWith(normName(`${words[0]} ${words[1]}`)));
     return fio ? `${words[1]} ${words[0]}` : `${words[0]} ${words[1]}`;
   }
+  function chosenMe() { try { return localStorage.getItem(meKey) || ""; } catch (e) { return ""; } }
+  const needsMe = () => { const c = nameCandidates(); return c.length > 1 && !c.some((p) => normName(p.name) === normName(chosenMe())); };
   function profileFields() { return new Map((sections("profile") || []).flatMap(({ rows }) => rows)); }
   function profileSummary() {
     const fields = profileFields();
@@ -160,11 +179,23 @@
     const course = fields.get("Курс");
     return { name, meta: [group, /^\d+$/.test(course ?? "") ? `${course} курс` : course].filter(Boolean).join(" · ") };
   }
+  // Статус семестра — по датам, а не по подписи сайта: внизу каждого семестра у сайта стоит пояснение к значку
+  // («курс полностью пройден»), а не статус — из-за него все семестры выглядели пройденными.
+  // «2026/2027 (зимний)» — сентябрь 2026 – январь 2027 (с сессией); «(летний)» — февраль – июль 2027.
+  function semesterPhase(title, now = new Date()) {
+    const m = /(\d{4})\s*\/\s*(\d{4}).*?(зим|осен|лет|весен)/i.exec(String(title || ""));
+    if (!m) return "";
+    const winter = /зим|осен/i.test(m[3]);
+    const start = winter ? new Date(+m[1], 8, 1) : new Date(+m[2], 1, 1);
+    const end = winter ? new Date(+m[2], 1, 1) : new Date(+m[2], 7, 1);
+    return now < start ? "future" : now >= end ? "done" : "now";
+  }
+  const PHASE_TEXT = { done: "Пройден", now: "Идёт сейчас", future: "Впереди" };
   function trajectoryNow() {
     const list = sections("trajectory") || [];
-    const status = (s) => (s.rows.find((r) => r[0] === "Статус семестра") || [])[1] || "";
-    const current = list.find((s) => /продолжа/i.test(status(s))) || list[list.length - 1];
-    return current ? { title: current.title, status: status(current), count: list.length } : null;
+    const current = list.find((s) => semesterPhase(s.title) === "now")
+      || list.filter((s) => semesterPhase(s.title) === "done").pop() || list[list.length - 1];
+    return current ? { title: current.title, status: semesterPhase(current.title) === "now" ? "идёт сейчас" : "", count: list.length } : null;
   }
   function statusText() {
     if (refreshing) return "Обновляем с сайта вуза…";
@@ -209,7 +240,7 @@
       if (!next) return sessionEvents().length ? "Все экзамены сданы" : "Расписания сессии пока нет";
       return `${next.kind || "Экзамен"} ${inDays(daysUntil(next.day))} · ${next.subject}`;
     }
-    if (id === "trajectory") { const now = trajectoryNow(); return now ? `${now.title} · ${now.status.toLowerCase() || "идёт"}` : "Нет семестров"; }
+    if (id === "trajectory") { const now = trajectoryNow(); return now ? `Сейчас ${now.title}` : "Нет семестров"; }
     const count = list.reduce((sum, s) => sum + s.rows.length, 0);
     if (id === "plan") return `${count} ${plural(count, "дисциплина", "дисциплины", "дисциплин")}`;
     if (id === "group") return `${count} ${plural(count, "человек", "человека", "человек")}`;
@@ -279,7 +310,7 @@
     const lines = [
       exam ? `<div class="hn cab-bad"><i></i><span class="x">Сессия · <b>${esc(inDays(daysUntil(exam.day)))}</b> · ${esc(exam.subject)}</span></div>` : "",
       last ? `<div class="hn ${markClass[markKind(last.result)]}"><i></i><span class="x">Последняя · <b>${esc(last.result)}</b> · ${esc(last.subject)}</span></div>` : "",
-      now ? `<div class="hn k-prac"><i></i><span class="x">Сейчас · <b>${esc(now.title)}</b>${now.status ? ` · ${esc(now.status.toLowerCase())}` : ""}</span></div>` : "",
+      now ? `<div class="hn k-prac"><i></i><span class="x">Сейчас · <b>${esc(now.title)}</b></span></div>` : "",
     ].join("");
     return `<button class="hero hv-ring ${kind} cab-hero" data-cab="open" data-page="grades" aria-label="Зачётка">
       <div class="ring" aria-hidden="true"><svg viewBox="0 0 80 80"><circle class="trk" cx="40" cy="40" r="34" pathLength="100"/>
@@ -298,11 +329,11 @@
     const card = `<button class="tcard cab-card" data-cab="open" data-page="profile" aria-label="Профиль">
         <div class="av big" style="--h:${hue(summary.name || "Студент")}" aria-hidden="true">${summary.name ? esc(initials(summary.name)) : icons.check.replace(/width="14" height="14"/, 'width="24" height="24"')}</div>
         <div style="min-width:0"><div class="nm">${esc(name || "Студент")}</div>
-        ${meta ? `<div class="sub">${esc(meta)}</div>` : ""}<div class="sub" role="status" data-cabinet-status>${esc(statusText())}</div></div>
+        ${meta ? `<div class="sub">${esc(meta)}</div>` : ""}${data && needsMe() ? `<div class="sub cab-accent">Укажите, кто вы, — покажем фамилию</div>` : ""}<div class="sub" role="status" data-cabinet-status>${esc(statusText())}</div></div>
         <span class="chev cab-chev">${icons.chev}</span></button>`;
     const warn = expired
       ? `<button class="offline stale cab-warn" data-cab="relogin"><span>Вход в кабинет вуза истёк — показаны сохранённые данные</span><u>Войти снова</u></button>`
-      : data?.status === "error" ? `<div class="offline stale cab-warn"><span>Сайт вуза не ответил при последнем обновлении — показаны сохранённые данные</span></div>` : "";
+      : data?.status === "error" ? `<div class="offline stale cab-warn"><span>Сайт вуза не ответил — показаны сохранённые данные. Сервер скоро попробует снова</span></div>` : "";
     if (!data) {
       return headerHTML("Личный кабинет") + card + `<div class="sk" style="height:132px;margin-top:22px"></div><div class="sk" style="height:300px;margin-top:22px"></div>`;
     }
@@ -435,19 +466,18 @@
       <span class="nm">${esc(d.sem ? `${d.sem} семестр` : "Без семестра")}</span>${plan.length === 1 && d.hours ? `<span class="sub">${esc(`${d.hours} ч`)}</span>` : ""}</span>${chipsHTML(d.kinds)}</div>`).join("")}</div>`);
     if (traj.length) blocks.push(`<h2 class="sec cab-sec">Траектория</h2><div class="list">${traj.map((d) => `<div class="item cab-plain"><span class="body">
       <span class="nm">${esc(d.title)}</span>${d.hours ? `<span class="sub">${esc(`${d.hours} ч · ${d.units} з. е.`)}</span>` : ""}</span>${chipsHTML(d.kinds)}</div>`).join("")}</div>`);
-    // преподаватели предмета — отдельным списком, с переходом к расписанию
-    const teachers = [...new Set([...grades.map((g) => g.teacher), ...events.map((e) => e.teacher)].flatMap((t) => String(t || "").split(/,\s*/)).filter(Boolean))];
+    // преподаватели предмета — просто список (без перехода): полное имя, если нашлось в «Преподавателях»
+    const teachers = [...new Set([...grades.map((g) => g.teacher), ...events.map((e) => e.teacher)].flatMap((t) => String(t || "").split(/,\s*/)).map((n) => n.trim()).filter(Boolean))];
     if (teachers.length) blocks.push(`<h2 class="sec cab-sec">Преподаватели</h2><div class="list">${teachers.map((n) => {
-      const t = findTeacher(n), label = t ? t.name : n;
-      return t ? `<button class="item" data-cab="teacher" data-arg="${esc(t.id)}"><span class="av" style="--h:${hue(label)}" aria-hidden="true">${esc(initials(label))}</span>
-          <span class="body"><span class="nm">${esc(label)}</span><span class="sub">Расписание преподавателя</span></span><span class="chev">${icons.chev}</span></button>`
-        : `<div class="item cab-plain"><span class="av" style="--h:${hue(label)}" aria-hidden="true">${esc(initials(label))}</span><span class="body"><span class="nm">${esc(label)}</span></span></div>`;
+      const label = findTeacher(n)?.name || shortTeacher(n);
+      return `<div class="item cab-plain cab-person-row"><span class="av" style="--h:${hue(label)}" aria-hidden="true">${esc(initials(label))}</span><span class="body"><span class="nm">${esc(label)}</span></span></div>`;
     }).join("")}</div>`);
     return headerHTML("Дисциплина", true) + head + (blocks.join("") || empty(icons.empty, "Других сведений нет", ""));
   }
 
   // «Иванова Мария Сергеевна» → «Иванова М. С.»; уже сокращённое — как есть
   const shortTeacher = (name) => String(name || "").split(/,\s*/).map((n) => {
+    n = n.replace(/([А-ЯЁA-Z])\.\s*(?=[А-ЯЁA-Z]\.)/g, "$1. ");   // «И.В.» → «И. В.»
     const w = n.trim().split(/\s+/);
     return w.length === 3 && w.every((x) => x.length > 2) ? `${w[0]} ${w[1][0]}. ${w[2][0]}.` : n.trim();
   }).filter(Boolean).join(", ");
@@ -509,31 +539,31 @@
     if (!list.length) return empty(icons.empty, "Траектория пуста", "");
     const now = trajectoryNow();
     return `<div class="cab-tl">${list.map((s, index) => {
-      const status = (s.rows.find((r) => r[0] === "Статус семестра") || [])[1] || "";
-      const current = now && s.title === now.title && /продолжа/i.test(status);
-      const done = /пройден/i.test(status);
+      const phase = semesterPhase(s.title);
+      const status = PHASE_TEXT[phase] || "";
+      const current = phase === "now";
+      const done = phase === "done";
       const items = trajectoryItems(s.rows).sort((a, b) => kindRank(a.kinds[0] || "") - kindRank(b.kinds[0] || "") || a.subject.localeCompare(b.subject, "ru"));
       // по умолчанию раскрыт текущий семестр (или последний); остальные — по нажатию
-      const open = openSteps.has(index) || (!closedSteps.has(index) && (current || (!now && index === list.length - 1)));
+      const open = openSteps.has(index) || (!closedSteps.has(index) && (current || (!list.some((x) => semesterPhase(x.title) === "now") && now && s.title === now.title)));
       const exams = items.filter((d) => d.kinds.some((k) => /экзам/i.test(k))).length;
       const summary = [`${items.length} ${plural(items.length, "дисциплина", "дисциплины", "дисциплин")}`, exams && `${exams} ${plural(exams, "экзамен", "экзамена", "экзаменов")}`].filter(Boolean).join(" · ");
-      return `<section class="cab-step ${current ? "k-prac now" : done ? "k-lec done" : "k-oth"}${open ? " open" : ""}">
+      return `<section class="cab-step ${current ? "k-prac now" : done ? "k-lec done" : "cab-neutral future"}${open ? " open" : ""}">
         <div class="cab-rail" aria-hidden="true"><span class="pt">${done ? icons.check : ""}</span></div>
         <div class="cab-stepbody">
           <button class="cab-stephead" data-cab="step" data-arg="${index}" aria-expanded="${open}">
             <span class="body"><span class="nm">${esc(s.title)}</span><span class="sub">${esc([status, summary].filter(Boolean).join(" · "))}</span></span>
             <span class="chev cab-fold">${icons.chev}</span></button>
-          ${open ? `<div class="list">${items.length ? items.map((d) => `<div class="item cab-plain cab-tap"${subjectAttrs(d.subject)}><span class="body"><span class="nm cab-wrap">${esc(d.subject)}</span>
-            ${d.hours ? `<span class="sub">${esc(`${d.hours} ч · ${d.units} з. е.`)}</span>` : ""}</span>${chipsHTML(d.kinds)}${tapChev(d.subject)}</div>`).join("") : `<div class="nothing">Дисциплин нет</div>`}</div>` : ""}
+          <div class="cab-fbody"${open ? "" : " hidden inert"}><div class="list">${items.length ? items.map((d) => `<div class="item cab-plain cab-tap"${subjectAttrs(d.subject)}><span class="body"><span class="nm cab-wrap">${esc(d.subject)}</span>
+            ${d.hours ? `<span class="sub">${esc(`${d.hours} ч · ${d.units} з. е.`)}</span>` : ""}</span>${chipsHTML(d.kinds)}${tapChev(d.subject)}</div>`).join("") : `<div class="nothing">Дисциплин нет</div>`}</div></div>
         </div></section>`;
     }).join("")}</div>`;
   }
 
-  // Номер текущего семестра: по траектории (семестр «обучение продолжается»), иначе по курсу и месяцу
+  // Номер текущего семестра: по траектории (семестр, который идёт сейчас по датам), иначе по курсу и месяцу
   function currentSemester() {
     const list = sections("trajectory") || [];
-    const status = (s) => (s.rows.find((r) => r[0] === "Статус семестра") || [])[1] || "";
-    const i = list.findIndex((s) => /продолжа/i.test(status(s)));
+    const i = list.findIndex((s) => semesterPhase(s.title) === "now");
     if (i >= 0) return i + 1;
     const course = parseInt(profileFields().get("Курс"), 10);
     if (!course) return 0;
@@ -589,17 +619,20 @@
       <div class="list">${top.map((d) => {
         const options = /ДВ\.\d+$/.test(d.index) ? children(d) : [];
         if (!options.length) return row(d);
-        return `<div class="item cab-plain cab-choice"><span class="body"><span class="nm cab-wrap">По выбору — одна из</span><span class="sub">${esc([d.hours && `${d.hours} ч`, d.index].filter(Boolean).join(" · "))}</span></span>${chipsHTML(d.kinds)}</div>`
+        return `<div class="item cab-plain cab-choice"><span class="body"><span class="nm cab-wrap">По выбору — одна из</span><span class="sub">${esc([d.hours && `${d.hours} ч`, d.index].filter(Boolean).join(" · "))}</span></span>${chipsHTML(d.kinds)}<span class="chev cab-tchev" aria-hidden="true" style="visibility:hidden">${icons.chev}</span></div>`
           + options.map((o) => row(o, true)).join("");
       }).join("")}</div>`;
   }
 
+  // служебные столбцы сервера: кто староста и кто вы — не показываем полями, а отмечаем
+  const MARKS = new Set(["Староста", "Это вы"]);
   function people() {
     return (sections("group") || []).flatMap((s) => {
       const name = Math.max(0, col(s, "ФИО"));
+      const flag = (r, c) => col(s, c) >= 0 && /^да$/i.test(String(r[col(s, c)] || ""));
       return s.rows.filter((r) => r[name]).map((r) => ({
-        name: r[name],
-        fields: s.columns.map((c, i) => [c, r[i]]).filter(([c, v], i) => i !== name && c && v),
+        name: r[name], captain: flag(r, "Староста"), me: flag(r, "Это вы"),
+        fields: s.columns.map((c, i) => [c, r[i]]).filter(([c, v], i) => i !== name && c && v && !MARKS.has(c)),
       }));
     });
   }
@@ -610,7 +643,9 @@
       <h2 class="sec cab-sec">${list.length} ${plural(list.length, "человек", "человека", "человек")}</h2>
       <div class="list" data-cab-people>${list.map((p, i) => `<button class="item cab-person" data-cab="open" data-page="group" data-arg="${i}" data-name="${esc(p.name.toLowerCase().replace(/ё/g, "е"))}">
         <span class="av" style="--h:${hue(p.name)}" aria-hidden="true">${esc(initials(p.name))}</span><span class="body"><span class="nm">${esc(p.name)}</span>
-        ${p.fields.length ? `<span class="sub">${esc(p.fields.map(([, v]) => v).slice(0, 2).join(" · "))}</span>` : ""}</span>
+        ${(() => { const get = (k) => (p.fields.find(([c]) => c === k) || [])[1];
+          const sub = [p.me && "Это вы", p.captain && "Староста", get("Телефон"), get("День рождения")].filter(Boolean);
+          return sub.length ? `<span class="sub">${esc(sub.join(" · "))}</span>` : ""; })()}</span>
         <span class="chev">${icons.chev}</span></button>`).join("")}</div>
       <div class="nothing" data-cab-none hidden>Никого не нашлось</div>`;
   }
@@ -635,7 +670,7 @@
     if (!p) return headerHTML("Моя группа", true) + empty(icons.empty, "Человек не найден", "");
     return headerHTML("Моя группа", true)
       + `<div class="tcard"><div class="av big" style="--h:${hue(p.name)}" aria-hidden="true">${esc(initials(p.name))}</div>
-          <div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="sub">${esc(profileSummary().meta.split(" · ")[0] || "Одногруппник")}</div></div></div>`
+          <div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="sub">${esc([p.me ? "Это вы" : p.captain ? "Староста" : "", profileSummary().meta.split(" · ")[0] || "Одногруппник"].filter(Boolean).join(" · "))}</div></div></div>`
       + (p.fields.length
         ? `<div class="list cab-gap">${p.fields.map(([k, v]) => `<div class="item cab-plain cab-field"><span class="body"><span class="sub">${esc(k)}</span><span class="nm cab-wrap">${fieldValue(k, v)}</span></span></div>`).join("")}</div>`
         : empty(icons.empty, "Других сведений нет", ""));
@@ -662,13 +697,29 @@
     }).join("")}</div>`;
   }
 
+  function meChooserHTML() {
+    const list = nameCandidates();
+    if (list.length < 2) return "";
+    const mine = chosenMe();
+    const chosen = list.some((p) => normName(p.name) === normName(mine));
+    const all = people();
+    return `<h2 class="sec cab-sec">${chosen ? "Это вы" : "Кто из группы — вы?"}</h2>
+      ${chosen ? "" : `<div class="cab-hint">На сайте вуза в профиле только имя, а в группе несколько человек с этим именем. Выберите себя — тогда везде будет имя с фамилией.</div>`}
+      <div class="list">${list.map((p) => {
+        const on = normName(p.name) === normName(mine);
+        return `<button class="item cab-person-row${on ? " cab-me-on" : ""}" data-cab="me" data-arg="${all.findIndex((x) => x.name === p.name)}" aria-pressed="${on}">
+          <span class="av" style="--h:${hue(p.name)}" aria-hidden="true">${esc(initials(p.name))}</span><span class="body"><span class="nm">${esc(p.name)}</span></span>
+          ${on ? `<span class="cab-check">${icons.check}</span>` : ""}</button>`;
+      }).join("")}</div>`;
+  }
   function profileHTML() {
     const rows = [...profileFields()].filter(([k]) => k !== "Имя");
     const { name, meta } = profileSummary();
     const head = name ? `<div class="tcard"><div class="av big" style="--h:${hue(name)}" aria-hidden="true">${esc(initials(name))}</div>
       <div style="min-width:0"><div class="nm">${esc(name)}</div>${meta ? `<div class="sub">${esc(meta)}</div>` : ""}</div></div>` : "";
-    if (!rows.length) return head + empty(icons.empty, "Сведений нет", "");
-    return head + `<div class="list cab-gap">${rows.map(([k, v]) => `<div class="item cab-plain cab-field"><span class="body"><span class="sub">${esc(k)}</span><span class="nm cab-wrap">${esc(v)}</span></span></div>`).join("")}</div>`;
+    const chooser = meChooserHTML();
+    if (!rows.length) return head + chooser + (chooser ? "" : empty(icons.empty, "Сведений нет", ""));
+    return head + (needsMe() ? chooser : "") + `<div class="list cab-gap">${rows.map(([k, v]) => `<div class="item cab-plain cab-field"><span class="body"><span class="sub">${esc(k)}</span><span class="nm cab-wrap">${esc(v)}</span></span></div>`).join("")}</div>` + (needsMe() ? "" : chooser);
   }
 
   function sectionHTML(id) {
@@ -686,6 +737,7 @@
   function connectionForm(previous = null) {
     const form = document.createElement("form");
     form.className = "list cabinet-form";
+    form.noValidate = true;
     form.innerHTML = `<div class="cab-form-head">${iconAv(previous ? 32 : 214, "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4")}
         <h2>${previous ? "Войти повторно" : "Вход"}</h2></div>
       <label>Логин<input type="text" required maxlength="256" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
@@ -700,7 +752,7 @@
     let address;
     configuredServer().then((server) => {
       if (previous && endpoint(server) !== previous.url) {
-        error.textContent = "Это подключение относится к другому серверу. Отключи его и войди снова.";
+        error.textContent = "Это подключение относится к другому серверу. Отключите его и войдите снова.";
         return;
       }
       address = server;
@@ -709,6 +761,14 @@
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (!address || submit.disabled) return;
+      // пустые поля — своей подсказкой, а не всплывашкой браузера (на английском в некоторых браузерах)
+      const missing = !login.value.trim() ? login : !password.value ? password : null;
+      if (missing) {
+        error.textContent = missing === login ? "Введите логин ПривГУПС." : "Введите пароль.";
+        haptic("light");
+        missing.focus();
+        return;
+      }
       error.textContent = "";
       submit.disabled = true;
       submit.textContent = "Входим…";
@@ -724,16 +784,16 @@
         const result = await response.json().catch(() => null);
         if (!response.ok || !keyPattern.test(result?.key || "") || result?.snapshot?.version !== 1) {
           const messages = {
-            invalid_credentials: "Проверь логин и пароль ПривГУПС.",
-            interaction_required: "Вуз запросил дополнительную проверку. Проверь вход на официальном сайте.",
-            rate_limited: "Слишком много попыток. Подожди несколько минут.",
-            different_account: "Введи данные того же аккаунта ПривГУПС. Для другого аккаунта отключи текущее подключение.",
-            invalid_key: "Текущее подключение отозвано. Отключи его и войди снова.",
-            bad_request: "Введи логин и пароль ПривГУПС.",
+            invalid_credentials: "Проверьте логин и пароль ПривГУПС.",
+            interaction_required: "Вуз запросил дополнительную проверку. Войдите один раз на сайте вуза и повторите.",
+            rate_limited: "Слишком много попыток. Подождите несколько минут.",
+            different_account: "Введите данные того же аккаунта ПривГУПС. Для другого аккаунта отключите текущее подключение.",
+            invalid_key: "Текущее подключение отозвано. Отключите его и войдите снова.",
+            bad_request: "Введите логин и пароль ПривГУПС.",
           };
           if (result?.error === "rate_limited" && result.retryAfter > 0) {
             const min = Math.max(1, Math.ceil(result.retryAfter / 60));
-            messages.rate_limited = `Слишком много попыток входа. Попробуй снова через ${min} ${plural(min, "минуту", "минуты", "минут")}.`;
+            messages.rate_limited = `Слишком много попыток входа. Попробуйте снова через ${min} ${plural(min, "минуту", "минуты", "минут")}.`;
           }
           error.textContent = messages[result?.error] || "Сейчас не удалось войти в кабинет вуза.";
           haptic("heavy");
@@ -747,7 +807,7 @@
         haptic("medium");
         draw();
       } catch {
-        error.textContent = "Не удалось связаться с сервером входа. Попробуй позже.";
+        error.textContent = "Не удалось связаться с сервером входа. Попробуйте позже.";
       } finally {
         submit.disabled = false;
         submit.textContent = "Войти";
@@ -772,6 +832,9 @@
       card.after(connectionForm(connection));
     }
     if (current === "group" && searchText) filterPeople();
+    // переключатель семестров: выбранный — в середине полосы, а не за краем экрана
+    const chip = root.querySelector(".cab-chip.on"), strip = chip?.parentElement;
+    if (chip && strip) strip.scrollLeft = chip.offsetLeft - (strip.clientWidth - chip.offsetWidth) / 2;
   }
   function filterPeople() {
     const words = searchText.trim().toLowerCase().replace(/ё/g, "е").split(/\s+/).filter(Boolean);
@@ -873,6 +936,53 @@
     return true;
   }
 
+  // Семестр траектории раскрывается как карточка пары в расписании: список открывается маской сверху вниз,
+  // линия таймлайна дорастает вместе с ним, семестры ниже съезжают сдвигом. Та же кривая и длительность.
+  const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const FOLD_EASE = "cubic-bezier(.25, .9, .3, 1)";
+  const foldDur = (d) => Math.round(Math.min(440, Math.max(260, 200 + Math.abs(d) * 0.6)));
+  let stepAnim = null;
+  function toggleStep(head, open) {
+    const step = head.closest(".cab-step"), body = step?.querySelector(".cab-fbody");
+    if (!step || !body) { draw(); return; }
+    if (stepAnim) stepAnim();   // прошлое раскрытие ещё идёт — доводим его сразу
+    const inner = body.firstElementChild, rail = step.querySelector(".cab-rail");
+    const below = [];
+    for (let el = step.nextElementSibling; el; el = el.nextElementSibling) below.push(el);
+    const tops = below.map((el) => el.getBoundingClientRect().top);
+    step.classList.toggle("open", open);
+    head.setAttribute("aria-expanded", String(open));
+    if (open) { body.hidden = false; body.removeAttribute("inert"); } else body.setAttribute("inert", "");
+    if (REDUCED) { if (!open) body.hidden = true; return; }
+    const radius = getComputedStyle(inner).borderTopLeftRadius;
+    const clip = (b) => `inset(0px 0px ${b}px 0px round ${radius})`;
+    const d = body.getBoundingClientRect().height;
+    let anims, end;
+    if (open) {
+      const opt = { duration: foldDur(d), easing: FOLD_EASE };
+      anims = [body.animate([{ clipPath: clip(d) }, { clipPath: clip(0) }], opt)];
+      if (rail) anims.push(rail.animate([{ clipPath: `inset(0px 0px ${d}px 0px)` }, { clipPath: "inset(0px)" }], opt));
+      below.forEach((el, i) => {
+        const dy = tops[i] - el.getBoundingClientRect().top;
+        if (Math.abs(dy) > 0.5) anims.push(el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], opt));
+      });
+      anims.push(inner.animate([{ opacity: 0, transform: "translateY(-14px)" }, { opacity: 1, transform: "none" }],
+        { duration: opt.duration, delay: 30, easing: FOLD_EASE, fill: "backwards" }));
+      end = () => { if (stepAnim !== end) return; stepAnim = null; anims.forEach((a) => a.finish()); };
+    } else {
+      // двигаем всё так, будто списка уже нет, а в конце убираем его — в тот же кадр, без скачка
+      const opt = { duration: Math.round(foldDur(d) * 0.85), easing: FOLD_EASE, fill: "forwards" };
+      anims = [body.animate([{ clipPath: clip(0) }, { clipPath: clip(d) }], opt)];
+      if (rail) anims.push(rail.animate([{ clipPath: "inset(0px)" }, { clipPath: `inset(0px 0px ${d}px 0px)` }], opt));
+      for (const el of below) anims.push(el.animate([{ transform: "none" }, { transform: `translateY(${-d}px)` }], opt));
+      anims.push(inner.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(-10px)" }],
+        { duration: Math.round(opt.duration * 0.6), easing: "ease-in", fill: "forwards" }));
+      end = () => { if (stepAnim !== end) return; stepAnim = null; body.hidden = true; anims.forEach((a) => a.cancel()); };
+    }
+    stepAnim = end;
+    Promise.all(anims.map((a) => a.finished)).then(end).catch(() => {});
+  }
+
   function onClick(event) {
     const el = event.target.closest("[data-cab]");
     if (!el || !root.contains(el)) return;
@@ -887,7 +997,10 @@
       haptic("light");
       const i = +el.dataset.arg, open = el.getAttribute("aria-expanded") === "true";
       if (open) { openSteps.delete(i); closedSteps.add(i); } else { closedSteps.delete(i); openSteps.add(i); }
-      draw();
+      toggleStep(el, !open);
+    } else if (act === "me") {
+      const p = people()[+el.dataset.arg];
+      if (p) { haptic("light"); try { localStorage.setItem(meKey, p.name); } catch (e) { /* нет хранилища */ } draw(); say(`Готово: ${asShown(p.name)}`); }
     } else if (act === "teacher") {
       haptic("light");
       if (app().openTeacher) app().openTeacher(el.dataset.arg);
@@ -906,12 +1019,10 @@
       haptic("light");
       gradesSem = el.dataset.arg;
       draw();
-      root.querySelector(".cab-chip.on")?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
     } else if (act === "plansem") {
       haptic("light");
       planSem = +el.dataset.arg;
       draw();
-      root.querySelector(".cab-chip.on")?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
     } else if (act === "relogin") {
       haptic("light");
       reauthenticating = true;

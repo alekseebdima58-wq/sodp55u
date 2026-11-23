@@ -28,7 +28,8 @@
 .cabinet a.item, .cabinet button.item { width: 100%; color: inherit; text-decoration: none; text-align: left; font: inherit; }
 .cab-plain { align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
 .list > .item.cab-plain + .item::before, .list > .item + .item.cab-plain::before { left: 16px; }
-.cab-wrap { white-space: normal !important; overflow-wrap: anywhere; line-height: 1.35; }
+/* перенос по словам; длинное слово — с дефисом по слогам, а не «Социальна / я» */
+.cab-wrap { white-space: normal !important; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; line-height: 1.35; }
 .cab-faint { opacity: .8; }
 .cab-field .sub { order: -1; }
 .cab-danger .nm { color: var(--danger, #ff453a); }
@@ -112,7 +113,10 @@ button.cab-card { width: 100%; text-align: left; font: inherit; color: inherit; 
 .cab-step.open .cab-fold { transform: rotate(90deg); }
 .cab-stephead:active { opacity: .6; }
 .cab-rail { padding-top: 22px; }
-.cab-step .list { margin-bottom: 6px; }
+.cab-step .list { margin: 0; }
+.cab-fbody { margin-bottom: 6px; }
+.cab-fbody[hidden] { display: none; }
+.cab-fold { transition: transform .3s cubic-bezier(.25, .9, .3, 1); }
 
 /* учебный план: переключатель семестров */
 .cab-chips { display: flex; gap: 8px; overflow-x: auto; margin: 14px -20px 2px; padding: 4px 20px; scrollbar-width: none; scroll-snap-type: x proximity; }
@@ -156,7 +160,7 @@ html[data-theme="light"] .cab-pass { --k-fg: #248a3d; --k-bar: rgba(52, 199, 89,
 .cab-tchev { flex: none; align-self: center; margin-left: -4px; opacity: .45; }
 .cab-tchev svg { width: 15px; height: 15px; }
 /* имя преподавателя — ссылка на его страницу */
-.cab-tlink { display: inline; padding: 0; border: 0; background: none; font: inherit; color: var(--accent); cursor: pointer; text-decoration: none; }
+.cab-tlink { display: inline; white-space: nowrap; padding: 0; border: 0; background: none; font: inherit; color: var(--accent); cursor: pointer; text-decoration: none; }
 .cab-tlink:active { opacity: .6; }
 /* карточка дисциплины */
 .cab-subj { align-items: flex-start; }
@@ -171,3 +175,19 @@ html[data-theme="light"] .cab-pass { --k-fg: #248a3d; --k-bar: rgba(52, 199, 89,
 .cab-obtn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border: 0; border-radius: 999px; font: inherit;
   font-size: calc(13px * var(--fs, 1)); font-weight: 600; color: var(--accent); background: rgba(var(--acc-rgb), .14); cursor: pointer; }
 .cab-obtn:active { transform: scale(.95); }
+
+/* узкий экран (iPhone SE, 320 px): метки справа компактнее — названию больше места */
+@media (max-width: 360px) {
+  .cab-mark { padding: 3px 8px; font-size: calc(11px * var(--fs, 1)); }
+  .cab-exam .cab-time { width: 40px; font-size: calc(14px * var(--fs, 1)); }
+  .cab-tchev { display: none; }
+}
+/* строка с аватаркой и одной строкой текста — по центру аватарки */
+.item.cab-person-row { align-items: center; }
+.item.cab-person-row .body { justify-content: center; }
+/* профиль: выбор себя среди однофамильцев по имени */
+.cab-hint { margin: -2px 4px 10px; font-size: calc(13px * var(--fs, 1)); line-height: 1.4; color: var(--text2); }
+.cab-me-on .nm { color: var(--accent); }
+.cab-check { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
+.cab-check svg { width: 13px; height: 13px; stroke-width: 3; }
+.cab-accent { color: var(--accent) !important; font-weight: 600; }
